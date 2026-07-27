@@ -1,0 +1,23 @@
+{
+  "name": "living-epk",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "interactjs": "^1.10.27",
+    "jquery": "^4.0.0",
+    "lit": "^3.3.3"
+  },
+  "devDependencies": {
+    "@interactjs/types": "^1.10.27",
+    "@types/jquery": "^4.0.1",
+    "sass": "^1.102.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.5"
+  }
+}
