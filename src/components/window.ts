@@ -56,6 +56,9 @@ export class EpkWindow extends LitElement {
   @state()
   fullscreen = false
 
+  @state()
+  minimized = false
+
   private interact: Interactable | null = null;
 
   constructor() {
@@ -152,6 +155,12 @@ export class EpkWindow extends LitElement {
 
   toggleFullscreen() {
     this.fullscreen = !this.fullscreen
+    this.minimized = false
+  }
+
+  toggleMinimized() {
+    this.minimized = !this.minimized
+    this.fullscreen = false
   }
 
   render() {
@@ -167,8 +176,8 @@ export class EpkWindow extends LitElement {
       windowStyle.width = '100vw'
 
       windowStyle.position = 'fixed'
-      windowStyle.top = '0'
-      windowStyle.left = '0'
+      windowStyle.top = 0
+      windowStyle.left = 0
     } else {
       windowStyle.transform = `translate(${this.x}px, ${this.y}px)`
       windowStyle.height = `${this.height}px`
@@ -176,6 +185,12 @@ export class EpkWindow extends LitElement {
     }
 
     const iconStyle = {backgroundImage: `url(${this.thumbnail})`}
+    const bodyStyle: any = {}
+
+    if (this.minimized) {
+      windowStyle.height = '28px'
+      bodyStyle.display = 'none'
+    }
 
     return html`
       <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
@@ -186,12 +201,12 @@ export class EpkWindow extends LitElement {
             ${this.title}
           </div>
           <div class="title-bar-controls">
-            <button aria-label="Minimize"></button>
+            <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>
             <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}" @click="${this.toggleFullscreen}"></button>
             <button aria-label="Close" @click="${this.handleClose}"></button>
           </div>
         </div>
-        <div class="window-body">
+        <div class="window-body" style="${styleMap(bodyStyle)}">
           <slot></slot>
         </div>
       </div>
