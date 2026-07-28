@@ -9,7 +9,7 @@ export class EpkIcon extends LitElement {
       background-color: #316AC5;
       border: 1px dotted #FFFF7F;
     }
-    
+
     .icon-container {
       -webkit-font-smoothing: none;
       align-items: center;
@@ -23,30 +23,30 @@ export class EpkIcon extends LitElement {
       padding: 8px;
       user-select: none;
     }
-    
+
     .icon-name {
       margin: 1px;
       max-width: 64px;
       padding: 1px;
       text-align: center;
-      
+
       &:hover {
         cursor: default;
       }
     }
-    
+
     .icon-name.active {
       margin: 0;
     }
   `
 
-  @property({ type: String })
+  @property({type: String})
   image = ''
 
-  @property({ type: String })
+  @property({type: String})
   color = '#000000'
 
-  @property({ type: Boolean })
+  @property({type: Boolean})
   selected = false
 
   select() {
@@ -59,7 +59,7 @@ export class EpkIcon extends LitElement {
 
   render() {
     let className = 'icon-name'
-    const textStyle = { color: this.color };
+    const textStyle = {color: this.color};
 
     if (this.selected) {
       className += ' active'

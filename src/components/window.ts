@@ -17,13 +17,29 @@ export class EpkWindow extends LitElement {
       }
     }
 
+    .title-bar-icon {
+      height: 16px;
+      width: 16px;
+    }
+
+    .title-bar-text {
+      align-items: center;
+      display: flex;
+      gap: 1ch;
+    }
+
     .window-body {
       height: calc(100% - 28px - 8px - 8px);
     }
   `
 
+  protected static windowCount = 0
+
   @property({type: String})
   title = "Untitled Window"
+
+  @property({type: String})
+  thumbnail = ''
 
   @state()
   x = 0
@@ -50,6 +66,22 @@ export class EpkWindow extends LitElement {
 
     this.width = event.rect.width
     this.height = event.rect.height
+  }
+
+  constructor() {
+    super()
+    EpkWindow.windowCount++
+  }
+
+  handleClick() {
+    Array.from(document.querySelectorAll('epk-window'))
+      .filter(epkWindow => epkWindow !== this)
+      .sort((a, b) => parseInt((a as EpkWindow).style.zIndex) - parseInt((b as EpkWindow).style.zIndex))
+      .forEach((epkWindow, idx) => {
+        (epkWindow as EpkWindow).style.zIndex = idx.toString()
+      })
+
+    this.style.zIndex = (EpkWindow.windowCount).toString()
   }
 
   firstUpdated() {
@@ -81,6 +113,10 @@ export class EpkWindow extends LitElement {
           ]
         })
     }
+
+    this.style.position = 'relative'
+    this.style.zIndex = EpkWindow.windowCount.toString()
+    this.addEventListener('click', this.handleClick)
   }
 
   disconnectedCallback() {
@@ -89,24 +125,31 @@ export class EpkWindow extends LitElement {
     if (this.interact) {
       this.interact.unset()
     }
+
+    EpkWindow.windowCount--
   }
 
   render() {
-    const style: any = {
+    const windowStyle = {
       transform: `translate(${this.x}px, ${this.y}px)`,
       width: `${this.width}px`,
       height: `${this.height}px`,
     }
 
+    const iconStyle = {backgroundImage: `url(${this.thumbnail})`}
+
     return html`
       <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
-      <div class="window" style="${styleMap(style)}">
+      <div class="window" style="${styleMap(windowStyle)}">
         <div class="title-bar">
-          <div class="title-bar-text">${this.title}</div>
+          <div class="title-bar-text">
+            <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>
+            ${this.title}
+          </div>
           <div class="title-bar-controls">
             <button aria-label="Minimize"></button>
             <button aria-label="Maximize"></button>
-            <button aria-label="Close"></button>
+            <button aria-label="Close" @click="${() => this.remove()}"></button>
           </div>
         </div>
         <div class="window-body">
