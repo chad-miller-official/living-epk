@@ -40,6 +40,8 @@ function spawnMyDocuments() {
 
   $(epkWindow).append(contents)
   $('main').append(epkWindow)
+
+  epkWindow.focus()
 }
 
 // @ts-ignore

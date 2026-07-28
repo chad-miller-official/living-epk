@@ -53,7 +53,39 @@ export class EpkWindow extends LitElement {
   @state()
   height = 256
 
+  @state()
+  fullscreen = false
+
   private interact: Interactable | null = null;
+
+  constructor() {
+    super()
+
+    this.tabIndex = -1
+    this.style.zIndex = EpkWindow.windowCount.toString()
+
+    EpkWindow.windowCount++
+
+    this.addEventListener('click', () => this.focus())
+    this.addEventListener('focus', this.handleFocus)
+  }
+
+  private getSortedWindows(): EpkWindow[] {
+    return Array.from(document.querySelectorAll('epk-window'))
+      .filter(epkWindow => epkWindow !== this)
+      .sort((a, b) => parseInt((a as EpkWindow).style.zIndex) - parseInt((b as EpkWindow).style.zIndex))
+      .map(elem => elem as EpkWindow)
+  }
+
+  handleFocus() {
+    this.getSortedWindows().forEach((epkWindow, idx) => {
+      epkWindow.style.opacity = '0.5'
+      epkWindow.style.zIndex = idx.toString()
+    })
+
+    this.style.opacity = '1'
+    this.style.zIndex = EpkWindow.windowCount.toString()
+  }
 
   handleDrag(event: InteractEvent) {
     this.x += event.dx
@@ -61,27 +93,15 @@ export class EpkWindow extends LitElement {
   }
 
   handleResize(event: ResizeEvent) {
+    if (this.fullscreen) {
+      return
+    }
+
     this.x += event.deltaRect!.left
     this.y += event.deltaRect!.top
 
     this.width = event.rect.width
     this.height = event.rect.height
-  }
-
-  constructor() {
-    super()
-    EpkWindow.windowCount++
-  }
-
-  handleClick() {
-    Array.from(document.querySelectorAll('epk-window'))
-      .filter(epkWindow => epkWindow !== this)
-      .sort((a, b) => parseInt((a as EpkWindow).style.zIndex) - parseInt((b as EpkWindow).style.zIndex))
-      .forEach((epkWindow, idx) => {
-        (epkWindow as EpkWindow).style.zIndex = idx.toString()
-      })
-
-    this.style.zIndex = (EpkWindow.windowCount).toString()
   }
 
   firstUpdated() {
@@ -113,10 +133,11 @@ export class EpkWindow extends LitElement {
           ]
         })
     }
+  }
 
-    this.style.position = 'relative'
-    this.style.zIndex = EpkWindow.windowCount.toString()
-    this.addEventListener('click', this.handleClick)
+  handleClose() {
+    this.getSortedWindows().at(-1)?.focus()
+    this.remove()
   }
 
   disconnectedCallback() {
@@ -129,11 +150,29 @@ export class EpkWindow extends LitElement {
     EpkWindow.windowCount--
   }
 
+  toggleFullscreen() {
+    this.fullscreen = !this.fullscreen
+  }
+
   render() {
-    const windowStyle = {
-      transform: `translate(${this.x}px, ${this.y}px)`,
-      width: `${this.width}px`,
-      height: `${this.height}px`,
+    const windowStyle: any = {
+      transform: undefined,
+      height: undefined,
+      width: undefined,
+    }
+
+    if (this.fullscreen) {
+      windowStyle.transform = `translate(0, 0)`
+      windowStyle.height = '100dvh'
+      windowStyle.width = '100vw'
+
+      windowStyle.position = 'fixed'
+      windowStyle.top = '0'
+      windowStyle.left = '0'
+    } else {
+      windowStyle.transform = `translate(${this.x}px, ${this.y}px)`
+      windowStyle.height = `${this.height}px`
+      windowStyle.width = `${this.width}px`
     }
 
     const iconStyle = {backgroundImage: `url(${this.thumbnail})`}
@@ -148,8 +187,8 @@ export class EpkWindow extends LitElement {
           </div>
           <div class="title-bar-controls">
             <button aria-label="Minimize"></button>
-            <button aria-label="Maximize"></button>
-            <button aria-label="Close" @click="${() => this.remove()}"></button>
+            <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}" @click="${this.toggleFullscreen}"></button>
+            <button aria-label="Close" @click="${this.handleClose}"></button>
           </div>
         </div>
         <div class="window-body">
