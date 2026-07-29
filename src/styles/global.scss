@@ -1,5 +1,3 @@
-@use 'gui';
-
 body {
   align-items: center;
   background-color: #000000;
@@ -10,24 +8,4 @@ body {
   overflow: hidden;
   padding: 0;
   width: 100vw;
-}
-
-main {
-  background-image: url("/img/Coffee_Bean.webp");
-  background-repeat: repeat;
-  height: 100%;
-  width: 100%;
-}
-
-epk-icon {
-  display: block;
-  height: fit-content;
-  width: fit-content;
-}
-
-epk-window {
-  display: block;
-  height: 0;
-  position: relative;
-  width: 0;
 }

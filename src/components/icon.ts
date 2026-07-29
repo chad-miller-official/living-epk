@@ -1,16 +1,13 @@
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {styleMap} from "lit/directives/style-map.js";
 import {css, html, LitElement} from "lit";
+import {launchEvent} from "../lib/events.ts";
+import {EpkWindow} from "./window.ts";
+import {EpkIconList} from "./icon-list.ts";
 
-@customElement('epk-icon')
-export class EpkIcon extends LitElement {
+export abstract class EpkIcon extends LitElement {
   static styles = css`
-    .active {
-      background-color: #316AC5;
-      border: 1px dotted #FFFF7F;
-    }
-
-    .icon-container {
+    .icon {
       -webkit-font-smoothing: none;
       align-items: center;
       display: flex;
@@ -18,6 +15,7 @@ export class EpkIcon extends LitElement {
       font-family: "Pixelated MS Sans Serif", Arial;
       font-size: 11px;
       gap: 4px;
+      height: fit-content;
       justify-content: center;
       max-width: max-content;
       padding: 8px;
@@ -35,7 +33,9 @@ export class EpkIcon extends LitElement {
       }
     }
 
-    .icon-name.active {
+    .selected {
+      background-color: #316AC5;
+      border: 1px dotted #FFFF7F;
       margin: 0;
     }
   `
@@ -46,15 +46,17 @@ export class EpkIcon extends LitElement {
   @property({type: String})
   color = '#000000'
 
-  @property({type: Boolean})
+  @state()
   selected = false
 
-  select() {
-    document.querySelectorAll('epk-icon').forEach(epkIcon => {
-      (epkIcon as EpkIcon).selected = false
-    })
+  abstract createWindow(): EpkWindow
 
+  handleClick() {
     this.selected = true
+  }
+
+  handleDblClick() {
+    this.dispatchEvent(launchEvent(this.createWindow))
   }
 
   render() {
@@ -62,18 +64,49 @@ export class EpkIcon extends LitElement {
     const textStyle = {color: this.color};
 
     if (this.selected) {
-      className += ' active'
+      className += ' selected'
       textStyle.color = '#ffffff';
     }
 
     return html`
       <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
-      <div class="icon-container" @click="${this.select}">
-        <img src="${this.image}" alt="${this.image}" class="icon" width="48" height="48"/>
+      <div class="icon" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
+        <img src="${this.image}" alt="${this.image}" width="48" height="48"/>
         <span class="${className}" style="${styleMap(textStyle)}">
           <slot>Untitled</slot>
         </span>
       </div>
     `
+  }
+}
+
+@customElement('my-documents-icon')
+export class MyDocumentsIcon extends EpkIcon {
+  private static ICONS = ['123.mp3', '456.mp3']
+
+  createWindow(): EpkWindow {
+    const epkWindow = new EpkWindow()
+    epkWindow.title = 'My Documents'
+    epkWindow.thumbnail = '/img/795.ico'
+
+    const fileExplorer = new EpkIconList()
+
+    fileExplorer.append(...MyDocumentsIcon.ICONS.map(fileName => {
+      const icon = new MusicIcon()
+      icon.image = '/img/1135.ico'
+      icon.innerText = fileName
+      icon.classList.add('epk-icon')
+      return icon
+    }))
+
+    epkWindow.append(fileExplorer)
+    return epkWindow
+  }
+}
+
+@customElement('music-icon')
+export class MusicIcon extends EpkIcon {
+  createWindow(): EpkWindow {
+    return new EpkWindow()
   }
 }

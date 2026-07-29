@@ -1,4 +1,4 @@
-import {customElement, property, state} from "lit/decorators.js";
+import {customElement, property, queryAssignedElements, state} from "lit/decorators.js";
 import {css, html, LitElement} from "lit";
 import interact from "interactjs";
 import type {Interactable} from "@interactjs/types";
@@ -35,6 +35,9 @@ export class EpkWindow extends LitElement {
 
   protected static windowCount = 0
 
+  @queryAssignedElements()
+  windowBody: HTMLElement[] | undefined
+
   @property({type: String})
   title = "Untitled Window"
 
@@ -54,6 +57,9 @@ export class EpkWindow extends LitElement {
   height = 256
 
   @state()
+  active = true
+
+  @state()
   fullscreen = false
 
   @state()
@@ -61,50 +67,10 @@ export class EpkWindow extends LitElement {
 
   private interact: Interactable | null = null;
 
-  constructor() {
-    super()
-
-    this.tabIndex = -1
+  connectedCallback() {
+    super.connectedCallback()
     this.style.zIndex = EpkWindow.windowCount.toString()
-
     EpkWindow.windowCount++
-
-    this.addEventListener('click', () => this.focus())
-    this.addEventListener('focus', this.handleFocus)
-  }
-
-  private getSortedWindows(): EpkWindow[] {
-    return Array.from(document.querySelectorAll('epk-window'))
-      .filter(epkWindow => epkWindow !== this)
-      .sort((a, b) => parseInt((a as EpkWindow).style.zIndex) - parseInt((b as EpkWindow).style.zIndex))
-      .map(elem => elem as EpkWindow)
-  }
-
-  handleFocus() {
-    this.getSortedWindows().forEach((epkWindow, idx) => {
-      epkWindow.style.opacity = '0.5'
-      epkWindow.style.zIndex = idx.toString()
-    })
-
-    this.style.opacity = '1'
-    this.style.zIndex = EpkWindow.windowCount.toString()
-  }
-
-  handleDrag(event: InteractEvent) {
-    this.x += event.dx
-    this.y += event.dy
-  }
-
-  handleResize(event: ResizeEvent) {
-    if (this.fullscreen) {
-      return
-    }
-
-    this.x += event.deltaRect!.left
-    this.y += event.deltaRect!.top
-
-    this.width = event.rect.width
-    this.height = event.rect.height
   }
 
   firstUpdated() {
@@ -138,11 +104,6 @@ export class EpkWindow extends LitElement {
     }
   }
 
-  handleClose() {
-    this.getSortedWindows().at(-1)?.focus()
-    this.remove()
-  }
-
   disconnectedCallback() {
     super.disconnectedCallback()
 
@@ -151,6 +112,35 @@ export class EpkWindow extends LitElement {
     }
 
     EpkWindow.windowCount--
+  }
+
+  handleFocus() {
+    this.active = true
+  }
+
+  handleBlur() {
+    this.active = false
+  }
+
+  handleDrag(event: InteractEvent) {
+    this.x += event.dx
+    this.y += event.dy
+  }
+
+  handleResize(event: ResizeEvent) {
+    if (this.fullscreen) {
+      return
+    }
+
+    this.x += event.deltaRect!.left
+    this.y += event.deltaRect!.top
+
+    this.width = event.rect.width
+    this.height = event.rect.height
+  }
+
+  handleClose() {
+    this.remove()
   }
 
   toggleFullscreen() {
@@ -168,6 +158,7 @@ export class EpkWindow extends LitElement {
       transform: undefined,
       height: undefined,
       width: undefined,
+      opacity: this.active ? 1 : 0.5,
     }
 
     if (this.fullscreen) {
@@ -194,7 +185,8 @@ export class EpkWindow extends LitElement {
 
     return html`
       <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
-      <div class="window" style="${styleMap(windowStyle)}">
+      <div class="window" style="${styleMap(windowStyle)}" @click="${() => this.focus()}" @focus="${this.handleFocus}"
+           @blur="${this.handleBlur}">
         <div class="title-bar">
           <div class="title-bar-text">
             <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>
