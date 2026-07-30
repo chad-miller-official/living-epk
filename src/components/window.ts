@@ -127,8 +127,8 @@ export class EpkWindow extends LitElement {
     }
 
     this.resetDimensions()
+    this.setActive()
 
-    this.style.zIndex = EpkWindow.instanceCount.toString()
     EpkWindow.instanceCount++
   }
 
@@ -144,6 +144,7 @@ export class EpkWindow extends LitElement {
 
   setActive() {
     this.active = true
+    this.style.zIndex = EpkWindow.instanceCount.toString()
     this.dispatchEvent(activeWindowChangeEvent())
   }
 

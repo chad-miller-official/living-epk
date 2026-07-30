@@ -34,6 +34,12 @@ export class EpkDesktop extends LitElement {
     this.icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
 
     this.windows?.forEach(w => {
+      if ((w === event.target || (event.target instanceof Node && w.contains(event.target)))) {
+        w.setActive()
+      } else {
+        w.active = false
+      }
+
       w.windowBody?.forEach(wb => {
         if (wb instanceof EpkIconList) {
           (wb as EpkIconList).icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
@@ -43,15 +49,13 @@ export class EpkDesktop extends LitElement {
   }
 
   handleActiveWindowChange(event: Event) {
-    const inactive: EpkWindow[] = []
-    const active: EpkWindow[] = []
-
-    this.windows?.toSorted((a, b) => parseInt(a.style.zIndex) - parseInt(b.style.zIndex)).forEach(w => {
-      w.active = (w === event.target || (event.target instanceof Node && w.contains(event.target)))
-      w.active ? active.push(w) : inactive.push(w)
-    });
-
-    [...inactive, ...active].forEach((w, index) => w.style.zIndex = index.toString())
+    this.windows
+      ?.filter(w => w !== event.target)
+      .toSorted((a, b) => parseInt(a.style.zIndex) - parseInt(b.style.zIndex))
+      .forEach((w, index) => {
+        w.active = false
+        w.style.zIndex = index.toString()
+      });
   }
 
   handleLaunch(event: Event) {

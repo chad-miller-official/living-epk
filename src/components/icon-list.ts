@@ -19,7 +19,11 @@ export class EpkIconList extends LitElement {
   icons: EpkIcon[] | undefined
 
   handleClick(event: Event) {
-    this.icons?.filter(icon => icon !== event.target).forEach(icon => icon.selected = false)
+    this.deselectIcons(event.target)
+  }
+
+  deselectIcons(target: EventTarget | null) {
+    this.icons?.filter(icon => icon !== target).forEach(icon => icon.selected = false)
   }
 
   render() {
