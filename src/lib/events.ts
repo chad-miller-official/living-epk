@@ -11,3 +11,10 @@ export function launchEvent(windowCreator: () => EpkWindow): CustomEvent<Launch>
     composed: true,
   })
 }
+
+export function activeWindowChangeEvent(): CustomEvent {
+  return new CustomEvent('active-window-change', {
+    bubbles: true,
+    composed: true,
+  })
+}

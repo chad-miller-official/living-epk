@@ -27,25 +27,31 @@ export class EpkDesktop extends LitElement {
 
   firstUpdated() {
     this.addEventListener('launch', this.handleLaunch)
+    this.addEventListener('active-window-change', this.handleActiveWindowChange)
   }
 
   handleClick(event: Event) {
-    // Workaround for annoying but where dragging a window deselects selected icon
-    if (event.target instanceof EpkWindow) {
-      return
-    }
-
     this.icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
 
     this.windows?.forEach(w => {
-      w === event.target ? w.focus() : w.blur()
-
       w.windowBody?.forEach(wb => {
         if (wb instanceof EpkIconList) {
           (wb as EpkIconList).icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
         }
       })
-    })
+    });
+  }
+
+  handleActiveWindowChange(event: Event) {
+    const inactive: EpkWindow[] = []
+    const active: EpkWindow[] = []
+
+    this.windows?.toSorted((a, b) => parseInt(a.style.zIndex) - parseInt(b.style.zIndex)).forEach(w => {
+      w.active = (w === event.target || (event.target instanceof Node && w.contains(event.target)))
+      w.active ? active.push(w) : inactive.push(w)
+    });
+
+    [...inactive, ...active].forEach((w, index) => w.style.zIndex = index.toString())
   }
 
   handleLaunch(event: Event) {

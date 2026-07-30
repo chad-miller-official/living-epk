@@ -5,11 +5,14 @@ import type {Interactable} from "@interactjs/types";
 import type {InteractEvent} from "@interactjs/types/index";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
+import {activeWindowChangeEvent} from "../lib/events.ts";
 
 const TITLE_BAR_HEIGHT = '28px'
 
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
+  private static instanceCount = 0
+
   static styles = css`
     .title-bar {
       user-select: none;
@@ -71,6 +74,28 @@ export class EpkWindow extends LitElement {
 
   private interact: Interactable | null = null;
 
+  private maximizeWindow() {
+    this.style.top = '0'
+    this.style.left = '0'
+  }
+
+  private restoreWindow() {
+    this.style.top = 'initial'
+    this.style.left = 'initial'
+  }
+
+  private resetCoordinates(overrideX?: string, overrideY?: string) {
+    const useX = overrideX || `${this.x}px`
+    const useY = overrideY || `${this.y}px`
+
+    this.style.transform = `translate(${useX}, ${useY})`
+  }
+
+  private resetDimensions(overrideHeight?: string, overrideWidth?: string) {
+    this.style.height = overrideHeight || `${this.height}px`
+    this.style.width = overrideWidth || `${this.width}px`
+  }
+
   firstUpdated() {
     const epkWindow = this.shadowRoot?.querySelector('.window') as HTMLDivElement
 
@@ -102,6 +127,9 @@ export class EpkWindow extends LitElement {
     }
 
     this.resetDimensions()
+
+    this.style.zIndex = EpkWindow.instanceCount.toString()
+    EpkWindow.instanceCount++
   }
 
   disconnectedCallback() {
@@ -110,14 +138,17 @@ export class EpkWindow extends LitElement {
     if (this.interact) {
       this.interact.unset()
     }
+
+    EpkWindow.instanceCount--
   }
 
-  handleFocus() {
+  setActive() {
     this.active = true
+    this.dispatchEvent(activeWindowChangeEvent())
   }
 
-  handleBlur() {
-    this.active = false
+  handleClick() {
+    this.setActive()
   }
 
   handleDrag(event: InteractEvent) {
@@ -129,6 +160,7 @@ export class EpkWindow extends LitElement {
     this.y += event.dy
 
     this.style.transform = `translate(${this.x}px, ${this.y}px)`
+    this.setActive()
   }
 
   handleResize(event: ResizeEvent) {
@@ -144,34 +176,11 @@ export class EpkWindow extends LitElement {
 
     this.resetCoordinates()
     this.resetDimensions()
+    this.setActive()
   }
 
   handleClose() {
     this.remove()
-  }
-
-  private maximizeWindow() {
-    // this.style.position = 'fixed'
-    this.style.top = '0'
-    this.style.left = '0'
-  }
-
-  private restoreWindow() {
-    // this.style.position = 'initial'
-    this.style.top = 'initial'
-    this.style.left = 'initial'
-  }
-
-  private resetCoordinates(overrideX?: string, overrideY?: string) {
-    const useX = overrideX || `${this.x}px`
-    const useY = overrideY || `${this.y}px`
-
-    this.style.transform = `translate(${useX}, ${useY})`
-  }
-
-  private resetDimensions(overrideHeight?: string, overrideWidth?: string) {
-    this.style.height = overrideHeight || `${this.height}px`
-    this.style.width = overrideWidth || `${this.width}px`
   }
 
   toggleFullscreen() {
@@ -210,7 +219,6 @@ export class EpkWindow extends LitElement {
     }
 
     if (this.fullscreen) {
-      // windowStyle.position = 'fixed'
       windowStyle.top = 0
       windowStyle.left = 0
     }
@@ -225,8 +233,7 @@ export class EpkWindow extends LitElement {
 
     return html`
       <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
-      <div class="window" style="${styleMap(windowStyle)}" @click="${() => this.focus()}" @focus="${this.handleFocus}"
-           @blur="${this.handleBlur}">
+      <div class="window" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
         <div class="title-bar">
           <div class="title-bar-text">
             <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>
