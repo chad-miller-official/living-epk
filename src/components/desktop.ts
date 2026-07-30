@@ -2,7 +2,8 @@ import {customElement, queryAssignedElements} from "lit/decorators.js";
 import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
 import {type Launch} from "../lib/events.ts";
-import type {EpkWindow} from "./window.ts";
+import {EpkWindow} from "./window.ts";
+import {EpkIconList} from "./icon-list.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
@@ -29,7 +30,20 @@ export class EpkDesktop extends LitElement {
   }
 
   handleClick(event: Event) {
+    // Workaround for annoying but where dragging a window deselects selected icon
+    if (event.target instanceof EpkWindow) {
+      return
+    }
+
     this.icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
+
+    this.windows?.forEach(w => {
+      w.windowBody?.forEach(wb => {
+        if (wb instanceof EpkIconList) {
+          (wb as EpkIconList).icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
+        }
+      })
+    })
   }
 
   handleLaunch(event: Event) {
