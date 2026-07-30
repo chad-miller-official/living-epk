@@ -38,6 +38,8 @@ export class EpkDesktop extends LitElement {
     this.icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
 
     this.windows?.forEach(w => {
+      w === event.target ? w.focus() : w.blur()
+
       w.windowBody?.forEach(wb => {
         if (wb instanceof EpkIconList) {
           (wb as EpkIconList).icons?.filter(i => i !== event.target).forEach(i => i.selected = false)

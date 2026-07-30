@@ -6,6 +6,8 @@ import type {InteractEvent} from "@interactjs/types/index";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 
+const TITLE_BAR_HEIGHT = '28px'
+
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
   static styles = css`
@@ -28,12 +30,14 @@ export class EpkWindow extends LitElement {
       gap: 1ch;
     }
 
+    .window {
+      position: fixed;
+    }
+
     .window-body {
-      height: calc(100% - 28px - 8px - 8px);
+      height: calc(100% - 44px);
     }
   `
-
-  protected static windowCount = 0
 
   @queryAssignedElements()
   windowBody: HTMLElement[] | undefined
@@ -67,12 +71,6 @@ export class EpkWindow extends LitElement {
 
   private interact: Interactable | null = null;
 
-  connectedCallback() {
-    super.connectedCallback()
-    this.style.zIndex = EpkWindow.windowCount.toString()
-    EpkWindow.windowCount++
-  }
-
   firstUpdated() {
     const epkWindow = this.shadowRoot?.querySelector('.window') as HTMLDivElement
 
@@ -102,6 +100,8 @@ export class EpkWindow extends LitElement {
           ]
         })
     }
+
+    this.resetDimensions()
   }
 
   disconnectedCallback() {
@@ -110,8 +110,6 @@ export class EpkWindow extends LitElement {
     if (this.interact) {
       this.interact.unset()
     }
-
-    EpkWindow.windowCount--
   }
 
   handleFocus() {
@@ -123,8 +121,14 @@ export class EpkWindow extends LitElement {
   }
 
   handleDrag(event: InteractEvent) {
+    if (this.fullscreen) {
+      return
+    }
+
     this.x += event.dx
     this.y += event.dy
+
+    this.style.transform = `translate(${this.x}px, ${this.y}px)`
   }
 
   handleResize(event: ResizeEvent) {
@@ -137,51 +141,87 @@ export class EpkWindow extends LitElement {
 
     this.width = event.rect.width
     this.height = event.rect.height
+
+    this.resetCoordinates()
+    this.resetDimensions()
   }
 
   handleClose() {
     this.remove()
   }
 
+  private maximizeWindow() {
+    // this.style.position = 'fixed'
+    this.style.top = '0'
+    this.style.left = '0'
+  }
+
+  private restoreWindow() {
+    // this.style.position = 'initial'
+    this.style.top = 'initial'
+    this.style.left = 'initial'
+  }
+
+  private resetCoordinates(overrideX?: string, overrideY?: string) {
+    const useX = overrideX || `${this.x}px`
+    const useY = overrideY || `${this.y}px`
+
+    this.style.transform = `translate(${useX}, ${useY})`
+  }
+
+  private resetDimensions(overrideHeight?: string, overrideWidth?: string) {
+    this.style.height = overrideHeight || `${this.height}px`
+    this.style.width = overrideWidth || `${this.width}px`
+  }
+
   toggleFullscreen() {
     this.fullscreen = !this.fullscreen
     this.minimized = false
+
+    if (this.fullscreen) {
+      this.resetCoordinates('0', '0')
+      this.resetDimensions('100vh', '100vw')
+      this.maximizeWindow()
+    } else {
+      this.resetCoordinates()
+      this.resetDimensions()
+      this.restoreWindow()
+    }
   }
 
   toggleMinimized() {
     this.minimized = !this.minimized
     this.fullscreen = false
+
+    if (this.minimized) {
+      this.resetCoordinates()
+      this.resetDimensions(TITLE_BAR_HEIGHT)
+      this.restoreWindow()
+    } else {
+      this.resetDimensions()
+    }
   }
 
   render() {
     const windowStyle: any = {
-      transform: undefined,
-      height: undefined,
-      width: undefined,
+      height: this.fullscreen ? '100vh' : this.minimized ? TITLE_BAR_HEIGHT : `${this.height}px`,
+      width: this.fullscreen ? '100vw' : `${this.width}px`,
       opacity: this.active ? 1 : 0.5,
     }
 
     if (this.fullscreen) {
-      windowStyle.transform = `translate(0, 0)`
-      windowStyle.height = '100dvh'
-      windowStyle.width = '100vw'
-
-      windowStyle.position = 'fixed'
+      // windowStyle.position = 'fixed'
       windowStyle.top = 0
       windowStyle.left = 0
-    } else {
-      windowStyle.transform = `translate(${this.x}px, ${this.y}px)`
-      windowStyle.height = `${this.height}px`
-      windowStyle.width = `${this.width}px`
     }
 
-    const iconStyle = {backgroundImage: `url(${this.thumbnail})`}
     const bodyStyle: any = {}
 
     if (this.minimized) {
-      windowStyle.height = '28px'
       bodyStyle.display = 'none'
     }
+
+    const iconStyle = {backgroundImage: `url(${this.thumbnail})`}
 
     return html`
       <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
