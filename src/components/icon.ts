@@ -107,6 +107,24 @@ export class MyDocumentsIcon extends EpkIcon {
 @customElement('music-icon')
 export class MusicIcon extends EpkIcon {
   createWindow(): EpkWindow {
-    return new EpkWindow()
+    const epkWindow = new EpkWindow()
+    epkWindow.title = "Music Tape's"
+    epkWindow.thumbnail = '/img/1137.ico'
+    epkWindow.width = 312
+
+    const audioContainer = document.createElement('div')
+
+    const audio = document.createElement('audio')
+    audio.controls = true
+
+    const source = document.createElement('source')
+    source.src = '/audio/weirdcore2.wav'
+    source.type = 'audio/wav'
+
+    audio.appendChild(source)
+    audioContainer.appendChild(audio)
+    epkWindow.append(audioContainer)
+
+    return epkWindow
   }
 }

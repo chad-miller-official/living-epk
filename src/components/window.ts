@@ -2,7 +2,7 @@ import {customElement, property, queryAssignedElements, state} from "lit/decorat
 import {css, html, LitElement} from "lit";
 import interact from "interactjs";
 import type {Interactable} from "@interactjs/types";
-import type {InteractEvent} from "@interactjs/types/index";
+import type {InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {activeWindowChangeEvent} from "../lib/events.ts";
@@ -35,6 +35,18 @@ export class EpkWindow extends LitElement {
 
     .window {
       position: fixed;
+      
+      &.fullscreen {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        box-shadow: initial;
+
+        & > .title-bar {
+          border-top-left-radius: 0;
+          border-top-right-radius: 0;
+          padding-right: 2px;
+        }
+      }
     }
 
     .window-body {
@@ -118,7 +130,7 @@ export class EpkWindow extends LitElement {
           modifiers: [
             interact.modifiers.restrictSize({
               min: {
-                width: 256,
+                width: parseInt(window.getComputedStyle(this.windowBody![0]).width.replace('px$', '')) + 16,
                 height: 256,
               }
             })
@@ -150,6 +162,10 @@ export class EpkWindow extends LitElement {
 
   handleClick() {
     this.setActive()
+  }
+
+  handleDblClick() {
+    this.toggleFullscreen()
   }
 
   handleDrag(event: InteractEvent) {
@@ -232,10 +248,16 @@ export class EpkWindow extends LitElement {
 
     const iconStyle = {backgroundImage: `url(${this.thumbnail})`}
 
+    let windowClass = 'window'
+
+    if (this.fullscreen) {
+      windowClass += ' fullscreen'
+    }
+
     return html`
       <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
-      <div class="window" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
-        <div class="title-bar">
+      <div class="${windowClass}" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
+        <div class="title-bar" @dblclick="${this.handleDblClick}">
           <div class="title-bar-text">
             <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>
             ${this.title}
