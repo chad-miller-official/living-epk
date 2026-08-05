@@ -1,12 +1,12 @@
 import {customElement, property, state} from "lit/decorators.js";
 import {styleMap} from "lit/directives/style-map.js";
-import {css, html, LitElement} from "lit";
+import {css, type CSSResultGroup, html, LitElement} from "lit";
 import {launchEvent} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
 import {EpkIconList} from "./icon-list.ts";
 
 export abstract class EpkIcon extends LitElement {
-  static styles = css`
+  static styles: CSSResultGroup = css`
     .icon {
       -webkit-font-smoothing: none;
       align-items: center;
@@ -69,7 +69,6 @@ export abstract class EpkIcon extends LitElement {
     }
 
     return html`
-      <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
       <div class="icon" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
         <img src="${this.image}" alt="${this.image}" width="48" height="48"/>
         <span class="${className}" style="${styleMap(textStyle)}">
@@ -83,11 +82,20 @@ export abstract class EpkIcon extends LitElement {
 @customElement('my-documents-icon')
 export class MyDocumentsIcon extends EpkIcon {
   private static ICONS = ['123.mp3', '456.mp3']
+  private static TOOLBAR_ITEMS = ['File', 'Edit', 'View', 'Help']
 
   createWindow(): EpkWindow {
     const epkWindow = new EpkWindow()
     epkWindow.title = 'My Documents'
     epkWindow.thumbnail = '/img/795.ico'
+
+    const toolbarItems = MyDocumentsIcon.TOOLBAR_ITEMS.map(item => {
+      const toolbarItem = document.createElement('li')
+      toolbarItem.innerText = item
+      toolbarItem.slot = 'toolbar'
+      toolbarItem.classList.add('toolbar-item')
+      return toolbarItem
+    })
 
     const fileExplorer = new EpkIconList()
 
@@ -99,7 +107,12 @@ export class MyDocumentsIcon extends EpkIcon {
       return icon
     }))
 
-    epkWindow.append(fileExplorer)
+    const itemCount = document.createElement('p')
+    itemCount.classList.add('status-bar-field')
+    itemCount.innerText = `${MyDocumentsIcon.ICONS.length} item(s)`
+    itemCount.slot = 'status-bar'
+
+    epkWindow.append(...toolbarItems, fileExplorer, itemCount)
     return epkWindow
   }
 }

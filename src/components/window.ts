@@ -1,58 +1,86 @@
 import {customElement, property, queryAssignedElements, state} from "lit/decorators.js";
-import {css, html, LitElement} from "lit";
+import {css, html, LitElement, type TemplateResult, unsafeCSS} from "lit";
 import interact from "interactjs";
-import type {Interactable} from "@interactjs/types";
-import type {InteractEvent} from "@interactjs/types";
+import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {activeWindowChangeEvent} from "../lib/events.ts";
 
-const TITLE_BAR_HEIGHT = '28px'
+import xpStyle from 'xp.css/dist/XP.css?inline'
 
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
   private static instanceCount = 0
 
-  static styles = css`
-    .title-bar {
-      user-select: none;
+  static styles = [
+    unsafeCSS(xpStyle),
+    css`
+      .title-bar {
+        user-select: none;
 
-      &:hover {
-        cursor: default;
-      }
-    }
-
-    .title-bar-icon {
-      height: 16px;
-      width: 16px;
-    }
-
-    .title-bar-text {
-      align-items: center;
-      display: flex;
-      gap: 1ch;
-    }
-
-    .window {
-      position: fixed;
-      
-      &.fullscreen {
-        border-top-left-radius: 0;
-        border-top-right-radius: 0;
-        box-shadow: initial;
-
-        & > .title-bar {
-          border-top-left-radius: 0;
-          border-top-right-radius: 0;
-          padding-right: 2px;
+        &:hover {
+          cursor: default;
         }
       }
-    }
 
-    .window-body {
-      height: calc(100% - 44px);
-    }
-  `
+      .title-bar-icon {
+        height: 16px;
+        width: 16px;
+      }
+
+      .title-bar-text {
+        align-items: center;
+        display: flex;
+        gap: 1ch;
+      }
+
+      .toolbar {
+        border-bottom: 1px groove #D9D4BF;
+        display: flex;
+        font-family: "Pixelated MS Sans Serif";
+        font-style: normal;
+        font-weight: 400;
+        margin: 0 3px;
+        padding-inline-start: 0;
+        user-select: none;
+      }
+
+      .window {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+
+        &.fullscreen {
+          border-top-left-radius: 0;
+          border-top-right-radius: 0;
+          box-shadow: initial;
+
+          & .status-bar {
+            margin: 0;
+          }
+
+          & .title-bar {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            padding-right: 2px;
+          }
+
+          & .toolbar {
+            margin: 0;
+          }
+        }
+      }
+
+      .window-body {
+        flex-grow: 1;
+      }
+
+      .window-viewport {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+    `]
 
   @queryAssignedElements()
   windowBody: HTMLElement[] | undefined
@@ -221,18 +249,26 @@ export class EpkWindow extends LitElement {
 
     if (this.minimized) {
       this.resetCoordinates()
-      this.resetDimensions(TITLE_BAR_HEIGHT)
+      this.resetDimensions()
       this.restoreWindow()
     } else {
       this.resetDimensions()
     }
   }
 
+  protected getToolbar(): TemplateResult<1> | null {
+    return null
+  }
+
+  protected getStatusBar(): TemplateResult<1> | null {
+    return null
+  }
+
   render() {
     const windowStyle: any = {
-      height: this.fullscreen ? '100vh' : this.minimized ? TITLE_BAR_HEIGHT : `${this.height}px`,
+      height: this.fullscreen ? '100vh' : this.minimized ? 'auto' : `${this.height}px`,
       width: this.fullscreen ? '100vw' : `${this.width}px`,
-      opacity: this.active ? 1 : 0.5,
+      opacity: this.active ? 1 : 0.7,
     }
 
     if (this.fullscreen) {
@@ -240,10 +276,10 @@ export class EpkWindow extends LitElement {
       windowStyle.left = 0
     }
 
-    const bodyStyle: any = {}
+    const viewportStyle: any = {}
 
     if (this.minimized) {
-      bodyStyle.display = 'none'
+      viewportStyle.display = 'none'
     }
 
     const iconStyle = {backgroundImage: `url(${this.thumbnail})`}
@@ -254,8 +290,10 @@ export class EpkWindow extends LitElement {
       windowClass += ' fullscreen'
     }
 
+    const hasToolbar = this.querySelector('[slot="toolbar"]') != null
+    const hasStatusBar = this.querySelector('[slot="status-bar"]') != null
+
     return html`
-      <link rel="stylesheet" href="https://unpkg.com/XP.css"/>
       <div class="${windowClass}" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
         <div class="title-bar" @dblclick="${this.handleDblClick}">
           <div class="title-bar-text">
@@ -268,8 +306,18 @@ export class EpkWindow extends LitElement {
             <button aria-label="Close" @click="${this.handleClose}"></button>
           </div>
         </div>
-        <div class="window-body" style="${styleMap(bodyStyle)}">
-          <slot></slot>
+        <div class="window-viewport" style="${styleMap(viewportStyle)}">
+          ${hasToolbar ? html`
+            <menu class="toolbar">
+              <slot name="toolbar"></slot>
+            </menu>` : ''}
+          <div class="window-body">
+            <slot></slot>
+          </div>
+          ${hasStatusBar ? html`
+            <div class="status-bar">
+              <slot name="status-bar"></slot>
+            </div>` : ''}
         </div>
       </div>
     `

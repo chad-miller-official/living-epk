@@ -13,3 +13,13 @@ body {
 epk-window {
   position: fixed;
 }
+
+li.toolbar-item {
+  list-style-type: none;
+  padding: 6px;
+
+  &:hover {
+    background-color: #316AC5;
+    color: #ffffff;
+  }
+}

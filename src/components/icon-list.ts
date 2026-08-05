@@ -9,7 +9,6 @@ export class EpkIconList extends LitElement {
       align-items: flex-start;
       display: flex;
       gap: 16px;
-      height: 100%;
       overflow: auto;
       padding: 4px;
     }
