@@ -1,5 +1,5 @@
-import {customElement, property, queryAssignedElements, state} from "lit/decorators.js";
-import {css, html, LitElement, type TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query, queryAssignedElements, state} from "lit/decorators.js";
+import {css, html, LitElement, unsafeCSS} from "lit";
 import interact from "interactjs";
 import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
@@ -37,11 +37,11 @@ export class EpkWindow extends LitElement {
       .toolbar {
         border-bottom: 1px groove #D9D4BF;
         display: flex;
-        font-family: "Pixelated MS Sans Serif";
+        font-family: "Pixelated MS Sans Serif", ui-sans-serif;
         font-style: normal;
         font-weight: 400;
         margin: 0 3px;
-        padding-inline-start: 0;
+        padding: 1px 2px;
         user-select: none;
       }
 
@@ -82,6 +82,9 @@ export class EpkWindow extends LitElement {
       }
     `]
 
+  @query('.window')
+  window: HTMLElement | undefined
+
   @queryAssignedElements()
   windowBody: HTMLElement[] | undefined
 
@@ -98,10 +101,10 @@ export class EpkWindow extends LitElement {
   y = 0
 
   @state()
-  width = 256
+  width: number | null = null
 
   @state()
-  height = 256
+  height: number | null = null
 
   @state()
   active = true
@@ -140,6 +143,18 @@ export class EpkWindow extends LitElement {
     const epkWindow = this.shadowRoot?.querySelector('.window') as HTMLDivElement
 
     if (epkWindow) {
+      const bodyStyle = window.getComputedStyle(this.window!)
+      const computedWidth = parseInt(bodyStyle.width.replace('px$', ''))
+      const computedHeight = parseInt(bodyStyle.height.replace('px$', ''))
+
+      if (!this.width) {
+        this.width = computedWidth
+      }
+
+      if (!this.height) {
+        this.height = computedHeight
+      }
+
       this.interact = interact(epkWindow)
 
       this.interact
@@ -158,8 +173,8 @@ export class EpkWindow extends LitElement {
           modifiers: [
             interact.modifiers.restrictSize({
               min: {
-                width: parseInt(window.getComputedStyle(this.windowBody![0]).width.replace('px$', '')) + 16,
-                height: 256,
+                width: computedWidth,
+                height: computedHeight,
               }
             })
           ]
@@ -256,14 +271,6 @@ export class EpkWindow extends LitElement {
     }
   }
 
-  protected getToolbar(): TemplateResult<1> | null {
-    return null
-  }
-
-  protected getStatusBar(): TemplateResult<1> | null {
-    return null
-  }
-
   render() {
     const windowStyle: any = {
       height: this.fullscreen ? '100vh' : this.minimized ? 'auto' : `${this.height}px`,
@@ -302,7 +309,8 @@ export class EpkWindow extends LitElement {
           </div>
           <div class="title-bar-controls">
             <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>
-            <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}" @click="${this.toggleFullscreen}"></button>
+            <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}"
+                    @click="${this.toggleFullscreen}"></button>
             <button aria-label="Close" @click="${this.handleClose}"></button>
           </div>
         </div>

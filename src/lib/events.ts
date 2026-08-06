@@ -1,12 +1,12 @@
-import type {EpkWindow} from "../components/window.ts";
+import type {EpkApp} from "../apps/base.ts";
 
 export type Launch = {
-  init: () => EpkWindow,
+  init: () => EpkApp,
 }
 
-export function launchEvent(windowCreator: () => EpkWindow): CustomEvent<Launch> {
+export function launchEvent(appInit: () => EpkApp): CustomEvent<Launch> {
   return new CustomEvent<Launch>('launch', {
-    detail: {init: windowCreator},
+    detail: {init: appInit},
     bubbles: true,
     composed: true,
   })

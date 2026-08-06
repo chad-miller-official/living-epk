@@ -59,8 +59,31 @@ export class EpkDesktop extends LitElement {
   }
 
   handleLaunch(event: Event) {
-    const epkWindow = (event as CustomEvent<Launch>).detail.init()
-    epkWindow.slot = 'windows'
+    const app = (event as CustomEvent<Launch>).detail.init()
+    const toolbarItems = app.getToolbarItems()
+
+    toolbarItems.forEach(item => {
+      item.slot = 'toolbar'
+      item.classList.add('toolbar-item')
+    })
+
+    const statusBarItems = app.getStatusBarItems()
+
+    statusBarItems.forEach(item => {
+      item.slot = 'status-bar'
+      item.classList.add('status-bar-field')
+    })
+
+    const minimumDimensions = app.getMinimumDimensions()
+
+    const epkWindow = new EpkWindow()
+    epkWindow.title = app.windowTitle
+    epkWindow.thumbnail = app.windowIcon
+    epkWindow.append(...toolbarItems, ...app.getWindowContents(), ...statusBarItems)
+    epkWindow.slot = 'windows';
+
+    [epkWindow.width, epkWindow.height] = minimumDimensions
+
     this.appendChild(epkWindow)
   }
 

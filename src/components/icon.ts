@@ -1,12 +1,21 @@
-import {customElement, property, state} from "lit/decorators.js";
+import {property, state} from "lit/decorators.js";
 import {styleMap} from "lit/directives/style-map.js";
 import {css, type CSSResultGroup, html, LitElement} from "lit";
 import {launchEvent} from "../lib/events.ts";
-import {EpkWindow} from "./window.ts";
-import {EpkIconList} from "./icon-list.ts";
+import type {EpkApp} from "../apps/base.ts";
 
 export abstract class EpkIcon extends LitElement {
   static styles: CSSResultGroup = css`
+    .fx {
+      filter: drop-shadow(10000px 0 0 rgb(49 106 197 / 50%));
+      position: absolute;
+      transform: translateX(-10000px);
+    }
+
+    .fx-wrapper {
+      display: flex;
+    }
+
     .icon {
       -webkit-font-smoothing: none;
       align-items: center;
@@ -41,7 +50,10 @@ export abstract class EpkIcon extends LitElement {
   `
 
   @property({type: String})
-  image = ''
+  title = ''
+
+  @property({type: String})
+  icon = ''
 
   @property({type: String})
   color = '#000000'
@@ -49,14 +61,14 @@ export abstract class EpkIcon extends LitElement {
   @state()
   selected = false
 
-  abstract createWindow(): EpkWindow
+  abstract getAppInstance(): EpkApp
 
   handleClick() {
     this.selected = true
   }
 
   handleDblClick() {
-    this.dispatchEvent(launchEvent(this.createWindow))
+    this.dispatchEvent(launchEvent(this.getAppInstance))
   }
 
   render() {
@@ -70,74 +82,14 @@ export abstract class EpkIcon extends LitElement {
 
     return html`
       <div class="icon" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
-        <img src="${this.image}" alt="${this.image}" width="48" height="48"/>
+        <div class="fx-wrapper">
+          <img src="${this.icon}" alt="${this.icon}" width="48" height="48"/>
+          ${this.selected ? html`<img src="${this.icon}" class="fx" width="48" height="48"/>` : ''}
+        </div>
         <span class="${className}" style="${styleMap(textStyle)}">
-          <slot>Untitled</slot>
+          ${this.title}
         </span>
       </div>
     `
-  }
-}
-
-@customElement('my-documents-icon')
-export class MyDocumentsIcon extends EpkIcon {
-  private static ICONS = ['123.mp3', '456.mp3']
-  private static TOOLBAR_ITEMS = ['File', 'Edit', 'View', 'Help']
-
-  createWindow(): EpkWindow {
-    const epkWindow = new EpkWindow()
-    epkWindow.title = 'My Documents'
-    epkWindow.thumbnail = '/img/795.ico'
-
-    const toolbarItems = MyDocumentsIcon.TOOLBAR_ITEMS.map(item => {
-      const toolbarItem = document.createElement('li')
-      toolbarItem.innerText = item
-      toolbarItem.slot = 'toolbar'
-      toolbarItem.classList.add('toolbar-item')
-      return toolbarItem
-    })
-
-    const fileExplorer = new EpkIconList()
-
-    fileExplorer.append(...MyDocumentsIcon.ICONS.map(fileName => {
-      const icon = new MusicIcon()
-      icon.image = '/img/1135.ico'
-      icon.innerText = fileName
-      icon.classList.add('epk-icon')
-      return icon
-    }))
-
-    const itemCount = document.createElement('p')
-    itemCount.classList.add('status-bar-field')
-    itemCount.innerText = `${MyDocumentsIcon.ICONS.length} item(s)`
-    itemCount.slot = 'status-bar'
-
-    epkWindow.append(...toolbarItems, fileExplorer, itemCount)
-    return epkWindow
-  }
-}
-
-@customElement('music-icon')
-export class MusicIcon extends EpkIcon {
-  createWindow(): EpkWindow {
-    const epkWindow = new EpkWindow()
-    epkWindow.title = "Music Tape's"
-    epkWindow.thumbnail = '/img/1137.ico'
-    epkWindow.width = 312
-
-    const audioContainer = document.createElement('div')
-
-    const audio = document.createElement('audio')
-    audio.controls = true
-
-    const source = document.createElement('source')
-    source.src = '/audio/weirdcore2.wav'
-    source.type = 'audio/wav'
-
-    audio.appendChild(source)
-    audioContainer.appendChild(audio)
-    epkWindow.append(audioContainer)
-
-    return epkWindow
   }
 }

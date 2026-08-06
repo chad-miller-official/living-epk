@@ -1,3 +1,17 @@
+@font-face {
+  font-family: 'Trebuchet MS';
+  font-style: normal;
+  font-weight: normal;
+  src: local('Trebuchet MS'), url('/font/trebuc.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Trebuchet MS Italic';
+  font-style: normal;
+  font-weight: normal;
+  src: local('Trebuchet MS Italic'), url('/font/Trebuchet-MS-Italic.woff') format('woff');
+}
+
 body {
   align-items: center;
   background-color: #000000;
@@ -16,7 +30,7 @@ epk-window {
 
 li.toolbar-item {
   list-style-type: none;
-  padding: 6px;
+  padding: 4px 9px;
 
   &:hover {
     background-color: #316AC5;
