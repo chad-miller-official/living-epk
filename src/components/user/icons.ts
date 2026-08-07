@@ -4,13 +4,12 @@ import type {EpkApp} from "../../apps/base.ts";
 import {FileExplorer} from "../../apps/file-explorer.ts";
 import {AudioPlayer} from "../../apps/audio-player.ts";
 
-@customElement('my-documents-icon')
-export class MyDocumentsIcon extends EpkIcon {
-  title = 'My Documents'
+@customElement('file-explorer-icon')
+export class FileExplorerIcon extends EpkIcon {
   icon = '/img/792.ico'
 
   getAppInstance(): EpkApp {
-    return new FileExplorer()
+    return new FileExplorer(this.title)
   }
 }
 

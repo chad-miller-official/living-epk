@@ -6,8 +6,13 @@ export class FileExplorer extends EpkApp {
   private static ICONS = ['123.mp3', '456.mp3']
   private static TOOLBAR_ITEMS = ['File', 'Edit', 'View', 'Help']
 
-  windowTitle = 'My Documents'
+  windowTitle = ''
   windowIcon = '/img/795.ico'
+
+  constructor(windowTitle: string) {
+    super()
+    this.windowTitle = windowTitle
+  }
 
   getToolbarItems(): HTMLLIElement[] {
     return FileExplorer.TOOLBAR_ITEMS.map(item => {

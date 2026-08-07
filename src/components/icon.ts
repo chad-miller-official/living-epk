@@ -68,7 +68,7 @@ export abstract class EpkIcon extends LitElement {
   }
 
   handleDblClick() {
-    this.dispatchEvent(launchEvent(this.getAppInstance))
+    this.dispatchEvent(launchEvent(this.getAppInstance.bind(this)))
   }
 
   render() {

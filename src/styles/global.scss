@@ -12,6 +12,10 @@
   src: local('Trebuchet MS Italic'), url('/font/Trebuchet-MS-Italic.woff') format('woff');
 }
 
+audio {
+  width: 100%;
+}
+
 body {
   align-items: center;
   background-color: #000000;

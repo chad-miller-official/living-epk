@@ -21,6 +21,6 @@ export class AudioPlayer extends EpkApp {
   }
 
   getMinimumDimensions(): [number | null, number | null] {
-    return [null, null]
+    return [300, null]
   }
 }
