@@ -7,6 +7,7 @@ import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {activeWindowChangeEvent} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
+import type {EpkToolbar} from "./toolbar.ts";
 
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
@@ -34,15 +35,8 @@ export class EpkWindow extends LitElement {
         gap: 1ch;
       }
 
-      .toolbar {
-        border-bottom: 1px groove #D9D4BF;
-        display: flex;
-        font-family: "Pixelated MS Sans Serif", ui-sans-serif;
-        font-style: normal;
-        font-weight: 400;
+      #toolbar {
         margin: 0 3px;
-        padding: 1px 2px;
-        user-select: none;
       }
 
       .window {
@@ -55,7 +49,7 @@ export class EpkWindow extends LitElement {
           border-top-right-radius: 0;
           box-shadow: initial;
 
-          & .status-bar {
+          & #statusBar {
             margin: 0;
           }
 
@@ -65,7 +59,7 @@ export class EpkWindow extends LitElement {
             padding-right: 2px;
           }
 
-          & .toolbar {
+          & #toolbar {
             margin: 0;
           }
         }
@@ -87,6 +81,9 @@ export class EpkWindow extends LitElement {
 
   @queryAssignedElements()
   windowBody: HTMLElement[] | undefined
+
+  @queryAssignedElements({slot: 'toolbar'})
+  toolbar: EpkToolbar[] | undefined
 
   @property({type: String})
   title = "Untitled Window"
@@ -146,14 +143,6 @@ export class EpkWindow extends LitElement {
       const bodyStyle = window.getComputedStyle(this.window!)
       const computedWidth = parseInt(bodyStyle.width.replace('px$', ''))
       const computedHeight = parseInt(bodyStyle.height.replace('px$', ''))
-
-      if (!this.width) {
-        this.width = computedWidth
-      }
-
-      if (!this.height) {
-        this.height = computedHeight
-      }
 
       this.interact = interact(epkWindow)
 
@@ -297,7 +286,6 @@ export class EpkWindow extends LitElement {
       windowClass += ' fullscreen'
     }
 
-    const hasToolbar = this.querySelector('[slot="toolbar"]') != null
     const hasStatusBar = this.querySelector('[slot="status-bar"]') != null
 
     return html`
@@ -315,17 +303,15 @@ export class EpkWindow extends LitElement {
           </div>
         </div>
         <div class="window-viewport" style="${styleMap(viewportStyle)}">
-          ${hasToolbar ? html`
-            <menu class="toolbar">
-              <slot name="toolbar"></slot>
-            </menu>` : ''}
+          <div id="toolbar">
+            <slot name="toolbar"></slot>
+          </div>
           <div class="window-body">
             <slot></slot>
           </div>
-          ${hasStatusBar ? html`
-            <div class="status-bar">
-              <slot name="status-bar"></slot>
-            </div>` : ''}
+          <div id="statusBar" class="status-bar" style="${styleMap({ display: hasStatusBar ? 'initial' : 'none'})}">
+            <slot name="status-bar"></slot>
+          </div>
         </div>
       </div>
     `

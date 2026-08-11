@@ -1,11 +1,13 @@
+import {EpkToolbar} from "../components/toolbar.ts";
+
 export abstract class EpkApp {
   abstract windowTitle: string
   abstract windowIcon: string
 
   abstract getWindowContents(): HTMLElement[]
 
-  getToolbarItems(): HTMLLIElement[] {
-    return []
+  getToolbar(): EpkToolbar | null {
+    return null
   }
 
   getStatusBarItems(): HTMLParagraphElement[] {

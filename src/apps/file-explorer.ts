@@ -1,10 +1,65 @@
 import {EpkApp} from "./base.ts";
 import {EpkIconList} from "../components/icon-list.ts";
 import {MusicIcon} from "../components/user/icons.ts";
+import {type ToolbarItem, ToolbarUiElement} from "../lib/toolbar.ts";
+import {EpkToolbar} from "../components/toolbar.ts";
+import {customElement} from "lit/decorators.js";
+
+@customElement('file-explorer-toolbar')
+class FileExplorerToolbar extends EpkToolbar {
+  getToolbarSpec(): ToolbarItem[] {
+    return [
+      {
+        text: 'File',
+        items: [
+          {
+            text: 'Open',
+            shortcut: 'Ctrl+O',
+            action: () => {
+              alert('Hi lol')
+            },
+          },
+          {
+            text: 'Schwongle',
+            shortcut: 'Ctrl+Q',
+            action: () => {
+              alert('glub')
+            },
+          },
+          ToolbarUiElement.DIVIDER,
+          {
+            text: 'Exit',
+            action: () => {
+              alert('Close')
+            }
+          }
+        ],
+      },
+      {
+        text: 'Edit',
+        items: [
+          {
+            text: 'Thingy',
+            action: () => {
+              alert('fgsfds')
+            },
+          },
+        ],
+      },
+      {
+        text: 'View',
+        items: [],
+      },
+      {
+        text: 'Help',
+        items: [],
+      }
+    ]
+  }
+}
 
 export class FileExplorer extends EpkApp {
   private static ICONS = ['123.mp3', '456.mp3']
-  private static TOOLBAR_ITEMS = ['File', 'Edit', 'View', 'Help']
 
   windowTitle = ''
   windowIcon = '/img/795.ico'
@@ -14,12 +69,8 @@ export class FileExplorer extends EpkApp {
     this.windowTitle = windowTitle
   }
 
-  getToolbarItems(): HTMLLIElement[] {
-    return FileExplorer.TOOLBAR_ITEMS.map(item => {
-      const toolbarItem = document.createElement('li')
-      toolbarItem.innerText = item
-      return toolbarItem
-    })
+  getToolbar(): EpkToolbar {
+    return new FileExplorerToolbar()
   }
 
   getWindowContents(): HTMLElement[] {
