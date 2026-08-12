@@ -1,62 +1,8 @@
 import {EpkApp} from "./base.ts";
 import {EpkIconList} from "../components/icon-list.ts";
-import {type ToolbarItem, ToolbarUiElement} from "../lib/toolbar.ts";
 import {EpkToolbar} from "../components/toolbar.ts";
-import {customElement} from "lit/decorators.js";
 import type {EpkIcon} from "../components/icon.ts";
-
-@customElement('file-explorer-toolbar')
-class FileExplorerToolbar extends EpkToolbar {
-  getToolbarSpec(): ToolbarItem[] {
-    return [
-      {
-        text: 'File',
-        items: [
-          {
-            text: 'Open',
-            shortcut: 'Ctrl+O',
-            action: () => {
-              alert('Hi lol')
-            },
-          },
-          {
-            text: 'Schwongle',
-            shortcut: 'Ctrl+Q',
-            action: () => {
-              alert('glub')
-            },
-          },
-          ToolbarUiElement.DIVIDER,
-          {
-            text: 'Exit',
-            action: () => {
-              alert('Close')
-            }
-          }
-        ],
-      },
-      {
-        text: 'Edit',
-        items: [
-          {
-            text: 'Thingy',
-            action: () => {
-              alert('fgsfds')
-            },
-          },
-        ],
-      },
-      {
-        text: 'View',
-        items: [],
-      },
-      {
-        text: 'Help',
-        items: [],
-      }
-    ]
-  }
-}
+import {FileExplorerToolbar} from "../components/user/file-explorer-toolbar.ts";
 
 export class FileExplorer extends EpkApp {
   icons: EpkIcon[] = []

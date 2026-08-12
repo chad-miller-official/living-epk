@@ -7,9 +7,14 @@ import type {EpkApp} from "../apps/base.ts";
 export abstract class EpkIcon extends LitElement {
   static styles: CSSResultGroup = css`
     .fx {
+      display: none;
       filter: drop-shadow(10000px 0 0 rgb(49 106 197 / 50%));
       position: absolute;
       transform: translateX(-10000px);
+      
+      &.selected {
+        display: block;
+      }
     }
 
     .icon-wrapper {
@@ -29,6 +34,7 @@ export abstract class EpkIcon extends LitElement {
     }
 
     .icon-name {
+      border: 1px solid #ffffff00;
       line-height: 1.3;
       margin: 1px;
       max-width: 80px;
@@ -38,12 +44,16 @@ export abstract class EpkIcon extends LitElement {
       &:hover {
         cursor: default;
       }
+      
+      &.selected {
+        background-color: #316AC5;
+        border: 1px dotted #FFFF7F;
+        color: #ffffff;
+      }
     }
-
-    .selected {
-      background-color: #316AC5;
-      border: 1px dotted #FFFF7F;
-      margin: 0;
+    
+    .shadowed {
+      text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
     }
   `
 
@@ -73,25 +83,29 @@ export abstract class EpkIcon extends LitElement {
   }
 
   render() {
-    let className = 'icon-name'
-    const textStyle: any = {color: this.color};
+    let titleClassName = 'icon-name'
+    let fxClassName = 'fx'
+
+    const textStyle: any = {};
 
     if (this.selected) {
-      className += ' selected'
-      textStyle.color = '#ffffff';
+      titleClassName += ' selected'
+      fxClassName += ' selected'
+    } else {
+      textStyle.color = this.color
     }
 
     if (this.shadow) {
-      textStyle.textShadow = '2px 2px 2px rgba(0, 0, 0, 0.5)'
+      titleClassName += ' shadowed'
     }
 
     return html`
       <div class="icon" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
         <div class="icon-wrapper">
           <img src="${this.icon}" alt="${this.icon}" width="48" height="48"/>
-          ${this.selected ? html`<img src="${this.icon}" class="fx" width="48" height="48"/>` : ''}
+          <img src="${this.icon}" class="${fxClassName}" width="48" height="48"/>
         </div>
-        <p class="${className}" style="${styleMap(textStyle)}">
+        <p class="${titleClassName}" style="${styleMap(textStyle)}">
           ${this.title}
         </p>
       </div>

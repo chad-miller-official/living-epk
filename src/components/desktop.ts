@@ -18,7 +18,7 @@ export class EpkDesktop extends LitElement {
       height: 100vh;
       width: 100vw;
     }
-    
+
     .icon-container {
       align-items: center;
       display: flex;
@@ -71,8 +71,10 @@ export class EpkDesktop extends LitElement {
   }
 
   handleLaunch(event: Event) {
+    const launchData = (event as CustomEvent<Launch>).detail
+
     const epkWindow = new EpkWindow()
-    const app = (event as CustomEvent<Launch>).detail.init()
+    const app = launchData.init()
     const toolbar = app.getToolbar()
 
     if (toolbar) {
@@ -87,13 +89,30 @@ export class EpkDesktop extends LitElement {
       item.classList.add('status-bar-field')
     })
 
-    const minimumDimensions = app.getMinimumDimensions()
+    epkWindow.append(...app.getWindowContents(), ...statusBarItems)
+
+    const [minWidth, minHeight] = app.getMinimumDimensions()
+    const [eventWidth, eventHeight] = launchData.windowDimensions
+
+    let [widthToUse, heightToUse] = [eventWidth || minWidth, eventHeight || minHeight]
+
+    if (eventWidth && minWidth && eventWidth < minWidth) {
+      widthToUse = minWidth
+    }
+
+    if (eventHeight && minHeight && eventHeight < minHeight) {
+      heightToUse = minHeight
+    }
 
     epkWindow.title = app.windowTitle
     epkWindow.thumbnail = app.windowIcon
-    epkWindow.append(...app.getWindowContents(), ...statusBarItems)
     epkWindow.slot = 'windows';
-    [epkWindow.width, epkWindow.height] = minimumDimensions
+    epkWindow.minWidth = minWidth
+    epkWindow.minHeight = minHeight
+    epkWindow.width = widthToUse
+    epkWindow.height = heightToUse
+    epkWindow.x = launchData.x || 0
+    epkWindow.y = launchData.y || 0
 
     this.appendChild(epkWindow)
   }

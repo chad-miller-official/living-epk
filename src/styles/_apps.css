@@ -1,0 +1,11 @@
+textarea.notepad-app {
+  font-family: monospace;
+  font-size: 12pt;
+  height: 100%;
+  resize: none;
+  width: 100%;
+}
+
+.notepad-app.spacer {
+  width: 40%;
+}

@@ -67,6 +67,7 @@ export class EpkWindow extends LitElement {
 
       .window-body {
         flex-grow: 1;
+        margin: 0 3px;
       }
 
       .window-viewport {
@@ -91,17 +92,26 @@ export class EpkWindow extends LitElement {
   @property({type: String})
   thumbnail = ''
 
-  @state()
+  @property({type: Number})
   x = 0
 
-  @state()
+  @property({type: Number})
   y = 0
 
-  @state()
+  @property({type: Number})
   width: number | null = null
 
-  @state()
+  @property({type: Number})
   height: number | null = null
+
+  @property({type: Number})
+  minWidth: number | null = null
+
+  @property({type: Number})
+  minHeight: number | null = null
+
+  @property({type: String})
+  backgroundColor: string | undefined
 
   @state()
   active = true
@@ -141,8 +151,8 @@ export class EpkWindow extends LitElement {
 
     if (epkWindow) {
       const bodyStyle = window.getComputedStyle(this.window!)
-      const computedWidth = parseInt(bodyStyle.width.replace('px$', ''))
-      const computedHeight = parseInt(bodyStyle.height.replace('px$', ''))
+      const minWidth = this.minWidth || parseInt(bodyStyle.width.replace('px$', ''))
+      const minHeight = this.minHeight || parseInt(bodyStyle.height.replace('px$', ''))
 
       this.interact = interact(epkWindow)
 
@@ -162,8 +172,8 @@ export class EpkWindow extends LitElement {
           modifiers: [
             interact.modifiers.restrictSize({
               min: {
-                width: computedWidth,
-                height: computedHeight,
+                width: minWidth,
+                height: minHeight,
               }
             })
           ]
@@ -173,6 +183,7 @@ export class EpkWindow extends LitElement {
     this.resetDimensions()
     this.setActive()
 
+    this.style.transform = `translate(${this.x}px, ${this.y}px)`
     EpkWindow.instanceCount++
   }
 
@@ -286,6 +297,12 @@ export class EpkWindow extends LitElement {
       windowClass += ' fullscreen'
     }
 
+    const bodyStyle: any = {}
+
+    if (this.backgroundColor) {
+      bodyStyle['backgroundColor'] = this.backgroundColor
+    }
+
     const hasStatusBar = this.querySelector('[slot="status-bar"]') != null
 
     return html`
@@ -306,10 +323,10 @@ export class EpkWindow extends LitElement {
           <div id="toolbar">
             <slot name="toolbar"></slot>
           </div>
-          <div class="window-body">
+          <div class="window-body" style="${styleMap(bodyStyle)}">
             <slot></slot>
           </div>
-          <div id="statusBar" class="status-bar" style="${styleMap({ display: hasStatusBar ? 'initial' : 'none'})}">
+          <div id="statusBar" class="status-bar" style="${styleMap({ display: hasStatusBar ? 'flex' : 'none'})}">
             <slot name="status-bar"></slot>
           </div>
         </div>
