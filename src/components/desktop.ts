@@ -14,8 +14,16 @@ export class EpkDesktop extends LitElement {
       background-repeat: repeat;
       display: flex;
       flex-direction: column;
+      gap: 16px;
       height: 100vh;
       width: 100vw;
+    }
+    
+    .icon-container {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
   `
 
@@ -93,7 +101,9 @@ export class EpkDesktop extends LitElement {
   render() {
     return html`
       <main @click="${this.handleClick}">
-        <slot name="icons"></slot>
+        <div class="icon-container">
+          <slot name="icons"></slot>
+        </div>
         <slot name="windows"></slot>
       </main>
     `

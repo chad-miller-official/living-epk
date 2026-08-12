@@ -12,28 +12,26 @@ export abstract class EpkIcon extends LitElement {
       transform: translateX(-10000px);
     }
 
-    .fx-wrapper {
+    .icon-wrapper {
       display: flex;
+      margin: 0 auto 8px auto;
+      width: fit-content;
     }
 
     .icon {
       -webkit-font-smoothing: none;
-      align-items: center;
-      display: flex;
-      flex-direction: column;
       font-family: "Pixelated MS Sans Serif", Arial;
       font-size: 11px;
-      gap: 4px;
       height: fit-content;
-      justify-content: center;
       max-width: max-content;
       padding: 8px;
       user-select: none;
     }
 
     .icon-name {
+      line-height: 1.3;
       margin: 1px;
-      max-width: 64px;
+      max-width: 80px;
       padding: 1px;
       text-align: center;
 
@@ -58,6 +56,9 @@ export abstract class EpkIcon extends LitElement {
   @property({type: String})
   color = '#000000'
 
+  @property({type: Boolean})
+  shadow = false
+
   @state()
   selected = false
 
@@ -73,22 +74,26 @@ export abstract class EpkIcon extends LitElement {
 
   render() {
     let className = 'icon-name'
-    const textStyle = {color: this.color};
+    const textStyle: any = {color: this.color};
 
     if (this.selected) {
       className += ' selected'
       textStyle.color = '#ffffff';
     }
 
+    if (this.shadow) {
+      textStyle.textShadow = '2px 2px 2px rgba(0, 0, 0, 0.5)'
+    }
+
     return html`
       <div class="icon" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
-        <div class="fx-wrapper">
+        <div class="icon-wrapper">
           <img src="${this.icon}" alt="${this.icon}" width="48" height="48"/>
           ${this.selected ? html`<img src="${this.icon}" class="fx" width="48" height="48"/>` : ''}
         </div>
-        <span class="${className}" style="${styleMap(textStyle)}">
+        <p class="${className}" style="${styleMap(textStyle)}">
           ${this.title}
-        </span>
+        </p>
       </div>
     `
   }

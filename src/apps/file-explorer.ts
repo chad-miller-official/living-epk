@@ -1,9 +1,9 @@
 import {EpkApp} from "./base.ts";
 import {EpkIconList} from "../components/icon-list.ts";
-import {MusicIcon} from "../components/user/icons.ts";
 import {type ToolbarItem, ToolbarUiElement} from "../lib/toolbar.ts";
 import {EpkToolbar} from "../components/toolbar.ts";
 import {customElement} from "lit/decorators.js";
+import type {EpkIcon} from "../components/icon.ts";
 
 @customElement('file-explorer-toolbar')
 class FileExplorerToolbar extends EpkToolbar {
@@ -59,14 +59,15 @@ class FileExplorerToolbar extends EpkToolbar {
 }
 
 export class FileExplorer extends EpkApp {
-  private static ICONS = ['123.mp3', '456.mp3']
-
+  icons: EpkIcon[] = []
   windowTitle = ''
   windowIcon = '/img/795.ico'
 
-  constructor(windowTitle: string) {
+  constructor(windowTitle: string, windowIcon: string, ...icons: EpkIcon[]) {
     super()
     this.windowTitle = windowTitle
+    this.windowIcon = windowIcon
+    this.icons = icons
   }
 
   getToolbar(): EpkToolbar {
@@ -76,18 +77,15 @@ export class FileExplorer extends EpkApp {
   getWindowContents(): HTMLElement[] {
     const fileExplorer = new EpkIconList()
 
-    fileExplorer.append(...FileExplorer.ICONS.map(fileName => {
-      const icon = new MusicIcon(fileName)
-      icon.classList.add('epk-icon')
-      return icon
-    }))
+    this.icons.forEach(icon => icon.classList.add('epk-icon'))
+    fileExplorer.append(...this.icons)
 
     return [fileExplorer]
   }
 
   getStatusBarItems(): HTMLParagraphElement[] {
     const itemCount = document.createElement('p')
-    itemCount.innerText = `${FileExplorer.ICONS.length} item(s)`
+    itemCount.innerText = `${this.icons.length} item(s)`
     return [itemCount]
   }
 }
