@@ -3,7 +3,6 @@ import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
 import {type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
-import {EpkIconList} from "./icon-list.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
@@ -49,9 +48,9 @@ export class EpkDesktop extends LitElement {
       }
 
       w.windowBody?.forEach(wb => {
-        if (wb instanceof EpkIconList) {
-          (wb as EpkIconList).icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
-        }
+        Array.from(wb.querySelectorAll('.epk-icon'))
+          .filter(elem => elem !== event.target)
+          .forEach(elem => (elem as EpkIcon).selected = false)
       })
 
       if (event.target !== w.toolbar?.[0]) {

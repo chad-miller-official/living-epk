@@ -1,5 +1,4 @@
 import {EpkApp} from "./base.ts";
-import {EpkIconList} from "../components/icon-list.ts";
 import {EpkToolbar} from "../components/toolbar.ts";
 import type {EpkIcon} from "../components/icon.ts";
 import {FileExplorerToolbar} from "../components/user/file-explorer-toolbar.ts";
@@ -21,7 +20,8 @@ export class FileExplorer extends EpkApp {
   }
 
   getWindowContents(): HTMLElement[] {
-    const fileExplorer = new EpkIconList()
+    const fileExplorer = document.createElement('section')
+    fileExplorer.classList.add('file-explorer', 'icon-list')
 
     this.icons.forEach(icon => icon.classList.add('epk-icon'))
     fileExplorer.append(...this.icons)

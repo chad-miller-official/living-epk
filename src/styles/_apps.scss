@@ -1,3 +1,11 @@
+.file-explorer.icon-list {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  overflow: auto;
+  padding: 4px;
+}
+
 textarea.notepad-app {
   font-family: monospace;
   font-size: 12pt;
