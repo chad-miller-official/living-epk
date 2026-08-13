@@ -15,7 +15,7 @@ import {Notepad} from "./apps/notepad.ts";
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('#desktop')!.dispatchEvent(
     launchEvent(
-      () => new Notepad('Hello, world!'),
+      () => new Promise(resolve => resolve(new Notepad('Hello, world!'))),
       400,
       300,
       80,

@@ -12,7 +12,7 @@ export class MusicIcon extends EpkIcon {
     this.title = title
   }
 
-  getAppInstance(): EpkApp {
-    return new AudioPlayer()
+  getAppInstance(): Promise<EpkApp> {
+    return new Promise<AudioPlayer>(resolve => resolve(new AudioPlayer()))
   }
 }

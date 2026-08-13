@@ -1,14 +1,14 @@
 import type {EpkApp} from "../apps/base.ts";
 
 export type Launch = {
-  init: () => EpkApp,
+  init: () => Promise<EpkApp>,
   windowDimensions: [number | null, number | null],
   x: number | null,
   y: number | null,
 }
 
 export function launchEvent(
-  appInit: () => EpkApp,
+  appInit: () => Promise<EpkApp>,
   width: number | null = null,
   height: number | null = null,
   x: number | null = null,

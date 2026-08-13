@@ -73,47 +73,52 @@ export class EpkDesktop extends LitElement {
     const launchData = (event as CustomEvent<Launch>).detail
 
     const epkWindow = new EpkWindow()
-    const app = launchData.init()
-    const toolbar = app.getToolbar()
-
-    if (toolbar) {
-      toolbar.slot = 'toolbar'
-      epkWindow.append(toolbar)
-    }
-
-    const statusBarItems = app.getStatusBarItems()
-
-    statusBarItems.forEach(item => {
-      item.slot = 'status-bar'
-      item.classList.add('status-bar-field')
-    })
-
-    epkWindow.append(...app.getWindowContents(), ...statusBarItems)
-
-    const [minWidth, minHeight] = app.getMinimumDimensions()
-    const [eventWidth, eventHeight] = launchData.windowDimensions
-
-    let [widthToUse, heightToUse] = [eventWidth || minWidth, eventHeight || minHeight]
-
-    if (eventWidth && minWidth && eventWidth < minWidth) {
-      widthToUse = minWidth
-    }
-
-    if (eventHeight && minHeight && eventHeight < minHeight) {
-      heightToUse = minHeight
-    }
-
-    epkWindow.title = app.windowTitle
-    epkWindow.thumbnail = app.windowIcon
-    epkWindow.slot = 'windows';
-    epkWindow.minWidth = minWidth
-    epkWindow.minHeight = minHeight
-    epkWindow.width = widthToUse
-    epkWindow.height = heightToUse
+    epkWindow.slot = 'windows'
     epkWindow.x = launchData.x || 0
     epkWindow.y = launchData.y || 0
 
-    this.appendChild(epkWindow)
+    launchData.init().then(app => {
+      epkWindow.title = app.windowTitle
+      epkWindow.thumbnail = app.windowIcon
+
+      const [minWidth, minHeight] = app.getMinimumDimensions()
+      const [eventWidth, eventHeight] = launchData.windowDimensions
+
+      let [widthToUse, heightToUse] = [eventWidth || minWidth, eventHeight || minHeight]
+
+      if (eventWidth && minWidth && eventWidth < minWidth) {
+        widthToUse = minWidth
+      }
+
+      if (eventHeight && minHeight && eventHeight < minHeight) {
+        heightToUse = minHeight
+      }
+
+      epkWindow.minWidth = minWidth
+      epkWindow.minHeight = minHeight
+      epkWindow.width = widthToUse
+      epkWindow.height = heightToUse
+
+      const toolbar = app.getToolbar()
+
+      if (toolbar) {
+        toolbar.slot = 'toolbar'
+        epkWindow.append(toolbar)
+      }
+
+      epkWindow.append(...app.getWindowContents())
+
+      const statusBarItems = app.getStatusBarItems()
+
+      statusBarItems.forEach(item => {
+        item.slot = 'status-bar'
+        item.classList.add('status-bar-field')
+      })
+
+      epkWindow.append(...statusBarItems)
+
+      this.appendChild(epkWindow)
+    })
   }
 
   render() {

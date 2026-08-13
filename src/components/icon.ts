@@ -72,7 +72,7 @@ export abstract class EpkIcon extends LitElement {
   @state()
   selected = false
 
-  abstract getAppInstance(): EpkApp
+  abstract getAppInstance(): Promise<EpkApp>
 
   handleClick() {
     this.selected = true
