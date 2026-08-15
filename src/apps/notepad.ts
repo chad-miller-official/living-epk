@@ -3,14 +3,15 @@ import {EpkToolbar} from "../components/toolbar.ts";
 import {NotepadToolbar} from "../components/user/notepad-toolbar.ts";
 
 export class Notepad extends EpkApp {
-  windowTitle = 'Untitled'
   windowIcon = '/img/513.ico';
+  windowTitle = ''
 
   textContent: string = ''
 
-  constructor(initialText: string) {
+  constructor(initialText: string, initialTitle: string = 'Untitled') {
     super()
     this.textContent = initialText
+    this.windowTitle = initialTitle
   }
 
   getToolbar(): EpkToolbar {

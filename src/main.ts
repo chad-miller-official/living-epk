@@ -8,6 +8,7 @@ import './components/user/file-explorer-icon.ts'
 import './components/user/file-explorer-toolbar.ts'
 import './components/user/music-icon.ts'
 import './components/user/notepad-toolbar.ts'
+import './components/user/plaintext-icon.ts'
 
 import {launchEvent} from "./lib/events.ts";
 import {Notepad} from "./apps/notepad.ts";
