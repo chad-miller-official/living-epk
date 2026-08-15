@@ -16,11 +16,15 @@ import {Notepad} from "./apps/notepad.ts";
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('#desktop')!.dispatchEvent(
     launchEvent(
-      () => new Promise(resolve => resolve(new Notepad('Hello, world!'))),
-      400,
-      300,
-      80,
-      80
+      async () => {
+        const response = await fetch('/fs/plaintext/Welcome to my zone.txt')
+        const text = await response.text()
+        return new Notepad(text, 'Welcome to my zone.txt')
+      },
+      550,
+      450,
+      260,
+      60
     ),
   )
 })

@@ -4,7 +4,7 @@ import {EpkIcon} from "../icon.ts";
 import {Notepad} from "../../apps/notepad.ts";
 
 @customElement('plaintext-icon')
-class PlainTextIconElement extends EpkIcon {
+export class PlainTextIconElement extends EpkIcon {
   icon = '/img/511.ico'
 
   @property({type: String})

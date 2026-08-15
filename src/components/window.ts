@@ -244,18 +244,21 @@ export class EpkWindow extends LitElement {
   }
 
   toggleFullscreen() {
-    this.fullscreen = !this.fullscreen
-    this.minimized = false
+    if (!this.minimized) {
+      this.fullscreen = !this.fullscreen
 
-    if (this.fullscreen) {
-      this.resetCoordinates('0', '0')
-      this.resetDimensions('100vh', '100vw')
-      this.maximizeWindow()
-    } else {
-      this.resetCoordinates()
-      this.resetDimensions()
-      this.restoreWindow()
+      if (this.fullscreen) {
+        this.resetCoordinates('0', '0')
+        this.resetDimensions('100vh', '100vw')
+        this.maximizeWindow()
+      } else {
+        this.resetCoordinates()
+        this.resetDimensions()
+        this.restoreWindow()
+      }
     }
+
+    this.minimized = false
   }
 
   toggleMinimized() {

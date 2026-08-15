@@ -21,7 +21,7 @@ export class Notepad extends EpkApp {
   getWindowContents(): HTMLElement[] {
     const textarea = document.createElement("textarea")
     textarea.classList.add("notepad-app")
-    textarea.innerText = this.textContent
+    textarea.value = this.textContent
     textarea.wrap = "off"
     return [textarea]
   }
