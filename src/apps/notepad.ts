@@ -7,6 +7,7 @@ export class Notepad extends EpkApp {
   windowTitle = ''
 
   textContent: string = ''
+  toolbar: EpkToolbar | undefined
 
   constructor(initialText: string, initialTitle: string = 'Untitled') {
     super()
@@ -15,7 +16,11 @@ export class Notepad extends EpkApp {
   }
 
   getToolbar(): EpkToolbar {
-    return new NotepadToolbar()
+    if (!this.toolbar) {
+      this.toolbar = new NotepadToolbar()
+    }
+    
+    return this.toolbar
   }
 
   getWindowContents(): HTMLElement[] {
@@ -33,16 +38,7 @@ export class Notepad extends EpkApp {
     const position = document.createElement('p')
     position.innerText = 'Ln 1, Col 1'
 
-    const zoom = document.createElement('p')
-    zoom.innerText = '100%'
-
-    const lineFeed = document.createElement('p')
-    lineFeed.innerText = 'Windows (CRLF)'
-
-    const characterSet = document.createElement('p')
-    characterSet.innerText = 'UTF-8'
-
-    return [spacer, position, zoom, lineFeed, characterSet]
+    return [spacer, position]
   }
 
   getMinimumDimensions(): [number | null, number | null] {

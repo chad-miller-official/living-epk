@@ -1,9 +1,13 @@
-.file-explorer.icon-list {
-  align-items: flex-start;
-  display: flex;
-  gap: 16px;
-  overflow: auto;
-  padding: 4px;
+.file-explorer {
+  background-color: #ffffff;
+  height: 100%;
+
+  &.icon-list {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    overflow: auto;
+  }
 }
 
 textarea.notepad-app {
@@ -12,8 +16,8 @@ textarea.notepad-app {
   height: 100%;
   resize: none;
   width: 100%;
-}
 
-.notepad-app.spacer {
-  width: 40%;
+  &.spacer {
+    width: 40%;
+  }
 }

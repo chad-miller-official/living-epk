@@ -3,6 +3,7 @@ import {EpkIcon} from "../icon.ts";
 import type {EpkApp} from "../../apps/base.ts";
 import {FileExplorer} from "../../apps/file-explorer.ts";
 import {MusicIcon} from "./music-icon.ts";
+import {HtmlIcon} from "./html-icon.ts";
 
 type FsPath = {
   path: string,
@@ -41,6 +42,9 @@ export class FileExplorerIcon extends EpkIcon {
       switch (extension) {
         case 'wav':
           icon = new MusicIcon(path.displayPath)
+          break
+        case 'html':
+          icon = new HtmlIcon(path.path)
           break
         default:
           throw new Error(`Unhandled extension: ${extension}`)

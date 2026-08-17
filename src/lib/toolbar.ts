@@ -8,7 +8,7 @@ export type ToolbarMenuItem = {
   action: () => void,
 }
 
-export type ToolbarItem = {
+export type ToolbarMenu = {
   text: string,
   items: (ToolbarMenuItem | ToolbarUiElement)[],
 }

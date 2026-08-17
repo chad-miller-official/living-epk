@@ -1,50 +1,29 @@
 import {customElement} from "lit/decorators.js";
 import {EpkToolbar} from "../toolbar.ts";
-import {type ToolbarItem, ToolbarUiElement} from "../../lib/toolbar.ts";
+import {type ToolbarMenu} from "../../lib/toolbar.ts";
 
 @customElement('file-explorer-toolbar')
 export class FileExplorerToolbar extends EpkToolbar {
-  getToolbarSpec(): ToolbarItem[] {
+  getToolbarSpec(): ToolbarMenu[] {
     return [
       {
         text: 'File',
-        items: [
-          {
-            text: 'Open',
-            shortcut: 'Ctrl+O',
-            action: () => {
-              alert('Hi lol')
-            },
-          },
-          {
-            text: 'Schwongle',
-            shortcut: 'Ctrl+Q',
-            action: () => {
-              alert('glub')
-            },
-          },
-          ToolbarUiElement.DIVIDER,
-          {
-            text: 'Exit',
-            action: () => {
-              alert('Close')
-            }
-          }
-        ],
+        items: [],
       },
       {
         text: 'Edit',
-        items: [
-          {
-            text: 'Thingy',
-            action: () => {
-              alert('fgsfds')
-            },
-          },
-        ],
+        items: [],
       },
       {
         text: 'View',
+        items: [],
+      },
+      {
+        text: 'Favorites',
+        items: [],
+      },
+      {
+        text: 'Tools',
         items: [],
       },
       {

@@ -1,6 +1,6 @@
-import {css, html, LitElement} from "lit";
+import {css, html, LitElement, nothing} from "lit";
 import {customElement, queryAll} from "lit/decorators.js";
-import {type ToolbarItem, ToolbarUiElement} from "../lib/toolbar.ts";
+import {type ToolbarMenu, ToolbarUiElement} from "../lib/toolbar.ts";
 
 @customElement('epk-toolbar')
 export abstract class EpkToolbar extends LitElement {
@@ -16,7 +16,7 @@ export abstract class EpkToolbar extends LitElement {
       user-select: none;
     }
 
-    .toolbar-item {
+    .toolbar-menu {
       list-style-type: none;
       padding: 4px 9px;
 
@@ -29,16 +29,17 @@ export abstract class EpkToolbar extends LitElement {
         background-color: #316AC5;
         color: #ffffff;
 
-        & > .toolbar-menu {
+        & > .toolbar-menu-items {
           display: block;
         }
       }
 
-      & > .toolbar-menu {
+      & > .toolbar-menu-items {
         background-color: #ffffff;
         border: 1px solid #808080;
         color: #000000;
         display: none;
+        filter: drop-shadow(3px 2px 2px #00000070);
         margin-left: -9px;
         margin-top: 4px;
         padding: 0;
@@ -55,14 +56,14 @@ export abstract class EpkToolbar extends LitElement {
           gap: 4ch;
           list-style-type: none;
           margin: 1px;
-          padding: 5px 20px;
+          padding: 4px 24px;
 
           &:hover {
             background-color: #316AC5;
             color: #ffffff;
           }
-
-          &::after {
+          
+          &[data-command]::after {
             content: attr(data-command);
           }
         }
@@ -70,10 +71,10 @@ export abstract class EpkToolbar extends LitElement {
     }
   `
 
-  @queryAll('li.toolbar-item')
+  @queryAll('li.toolbar-menu')
   toolbarItems: NodeListOf<HTMLLIElement> | undefined
 
-  abstract getToolbarSpec(): ToolbarItem[]
+  abstract getToolbarSpec(): ToolbarMenu[]
 
   handleClick(event: Event) {
     const targetLi = event.target as HTMLLIElement
@@ -117,16 +118,16 @@ export abstract class EpkToolbar extends LitElement {
     return html`
       <menu class="toolbar">
         ${this.getToolbarSpec().map(item => html`
-          <li class="toolbar-item" @click="${this.handleClick}" @mouseenter="${this.handleMouseEnter}">
+          <li class="toolbar-menu" @click="${this.handleClick}" @mouseenter="${this.handleMouseEnter}">
             ${item.text}
-            <ul class="toolbar-menu">
+            <ul class="toolbar-menu-items">
               ${item.items.map(subItem => {
                 if (subItem === ToolbarUiElement.DIVIDER) {
                   return html`
                     <hr/>`
                 } else {
                   return html`
-                    <li class="toolbar-menu-item" data-command="${subItem.shortcut}" @click="${subItem.action}">
+                    <li class="toolbar-menu-item" data-command="${subItem.shortcut || nothing}" @click="${subItem.action}">
                       ${subItem.text}
                     </li>
                   `
