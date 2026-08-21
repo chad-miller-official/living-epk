@@ -1,19 +1,19 @@
 import type {EpkApp} from "../../apps/base.ts";
 import {EpkIcon} from "../icon.ts";
-import {customElement, property} from "lit/decorators.js";
+import {customElement} from "lit/decorators.js";
 import {WebBrowser} from "../../apps/web-browser.ts";
+import type {LaunchOptions} from "../../lib/events.ts";
 
 @customElement('html-icon')
 export class HtmlIcon extends EpkIcon {
-  @property({type: String})
-  filePath = ''
-
-  constructor(filePath: string) {
-    super()
-    this.filePath = filePath
+  getLaunchOptions(): LaunchOptions {
+    return {
+      width: 600,
+      height: 400,
+    }
   }
 
-  async getAppInstance(): Promise<EpkApp> {
-    return new Promise<WebBrowser>(resolve => resolve(new WebBrowser(this.filePath)))
+  getAppInstance(): Promise<EpkApp> {
+    return new Promise<WebBrowser>(resolve => resolve(new WebBrowser(this.filePath!!)))
   }
 }

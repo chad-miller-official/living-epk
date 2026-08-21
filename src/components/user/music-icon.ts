@@ -7,12 +7,11 @@ import {EpkIcon} from "../icon.ts";
 export class MusicIcon extends EpkIcon {
   icon = '/img/1135.ico'
 
-  constructor(title: string) {
-    super()
-    this.title = title
-  }
-
   getAppInstance(): Promise<EpkApp> {
-    return new Promise<AudioPlayer>(resolve => resolve(new AudioPlayer()))
+    return new Promise<AudioPlayer>(resolve => {
+      const audioPlayer = new AudioPlayer()
+      audioPlayer.filePath = this.filePath
+      return resolve(audioPlayer)
+    })
   }
 }

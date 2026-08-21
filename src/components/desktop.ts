@@ -3,6 +3,7 @@ import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
 import {type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
+import {EpkApp} from "../apps/base.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
@@ -47,14 +48,16 @@ export class EpkDesktop extends LitElement {
         w.active = false
       }
 
-      w.windowBody?.forEach(wb => {
-        Array.from(wb.querySelectorAll('.epk-icon'))
+      const windowContent = w.content?.[0] as EpkApp
+
+      windowContent.content?.forEach(wc => {
+        Array.from(wc.querySelectorAll('.epk-icon'))
           .filter(elem => elem !== event.target)
           .forEach(elem => (elem as EpkIcon).selected = false)
       })
 
-      if (event.target !== w.toolbar?.[0]) {
-        w.toolbar?.[0]?.closeAll()
+      if (event.target !== windowContent) {
+        windowContent.toolbar?.closeAll()
       }
     });
   }
@@ -99,25 +102,8 @@ export class EpkDesktop extends LitElement {
       epkWindow.width = widthToUse
       epkWindow.height = heightToUse
 
-      const toolbar = app.getToolbar()
-
-      if (toolbar) {
-        toolbar.slot = 'toolbar'
-        epkWindow.append(toolbar)
-      }
-
-      epkWindow.append(...app.getWindowContents())
-
-      const statusBarItems = app.getStatusBarItems()
-
-      statusBarItems.forEach(item => {
-        item.slot = 'status-bar'
-        item.classList.add('status-bar-field')
-      })
-
-      epkWindow.append(...statusBarItems)
-
-      this.appendChild(epkWindow)
+      epkWindow.append(app)
+      this.append(epkWindow)
     })
   }
 

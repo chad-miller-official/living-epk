@@ -1,5 +1,12 @@
 import type {EpkApp} from "../apps/base.ts";
 
+export type LaunchOptions = {
+  width?: number,
+  height?: number,
+  x?: number,
+  y?: number,
+}
+
 export type Launch = {
   init: () => Promise<EpkApp>,
   windowDimensions: [number | null, number | null],
@@ -9,17 +16,14 @@ export type Launch = {
 
 export function launchEvent(
   appInit: () => Promise<EpkApp>,
-  width: number | null = null,
-  height: number | null = null,
-  x: number | null = null,
-  y: number | null = null,
+  launchOptions: LaunchOptions = {}
 ): CustomEvent<Launch> {
   return new CustomEvent<Launch>('launch', {
     detail: {
       init: appInit,
-      windowDimensions: [width, height],
-      x,
-      y
+      windowDimensions: [launchOptions.width || null, launchOptions.height || null],
+      x: launchOptions.x || null,
+      y: launchOptions.y || null,
     },
     bubbles: true,
     composed: true,
@@ -28,6 +32,14 @@ export function launchEvent(
 
 export function activeWindowChangeEvent(): CustomEvent {
   return new CustomEvent('active-window-change', {
+    bubbles: true,
+    composed: true,
+  })
+}
+
+export function windowTitleChangeEvent(title: string): CustomEvent<{ title: string }> {
+  return new CustomEvent('window-title-change', {
+    detail: {title},
     bubbles: true,
     composed: true,
   })

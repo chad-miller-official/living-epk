@@ -1,7 +1,7 @@
 import {property, state} from "lit/decorators.js";
 import {styleMap} from "lit/directives/style-map.js";
 import {css, type CSSResultGroup, html, LitElement} from "lit";
-import {launchEvent} from "../lib/events.ts";
+import {launchEvent, type LaunchOptions} from "../lib/events.ts";
 import type {EpkApp} from "../apps/base.ts";
 
 export abstract class EpkIcon extends LitElement {
@@ -11,7 +11,7 @@ export abstract class EpkIcon extends LitElement {
       filter: drop-shadow(10000px 0 0 rgb(49 106 197 / 50%));
       position: absolute;
       transform: translateX(-10000px);
-      
+
       &.selected {
         display: block;
       }
@@ -44,14 +44,14 @@ export abstract class EpkIcon extends LitElement {
       &:hover {
         cursor: default;
       }
-      
+
       &.selected {
         background-color: #316AC5;
         border: 1px dotted #FFFF7F;
         color: #ffffff;
       }
     }
-    
+
     .shadowed {
       text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
     }
@@ -69,17 +69,24 @@ export abstract class EpkIcon extends LitElement {
   @property({type: Boolean})
   shadow = false
 
+  @property({type: String})
+  filePath: string | undefined
+
   @state()
   selected = false
 
   abstract getAppInstance(): Promise<EpkApp>
+
+  getLaunchOptions(): LaunchOptions {
+    return {}
+  }
 
   handleClick() {
     this.selected = true
   }
 
   handleDblClick() {
-    this.dispatchEvent(launchEvent(this.getAppInstance.bind(this)))
+    this.dispatchEvent(launchEvent(this.getAppInstance.bind(this), this.getLaunchOptions()))
   }
 
   render() {

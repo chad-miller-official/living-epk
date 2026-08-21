@@ -7,7 +7,6 @@ import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {activeWindowChangeEvent} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
-import type {EpkToolbar} from "./toolbar.ts";
 
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
@@ -35,10 +34,6 @@ export class EpkWindow extends LitElement {
         gap: 1ch;
       }
 
-      #toolbar {
-        margin: 0 3px;
-      }
-
       .window {
         display: flex;
         flex-direction: column;
@@ -49,30 +44,19 @@ export class EpkWindow extends LitElement {
           border-top-right-radius: 0;
           box-shadow: initial;
 
-          & #statusBar {
-            margin: 0;
-          }
-
           & .title-bar {
             border-top-left-radius: 0;
             border-top-right-radius: 0;
             padding-right: 2px;
           }
 
-          & #toolbar {
-            margin: 0;
+          & .window-viewport {
+            margin: 0 -3px;
           }
         }
       }
 
-      .window-body {
-        flex-grow: 1;
-        margin: 0 3px;
-      }
-
       .window-viewport {
-        display: flex;
-        flex-direction: column;
         flex-grow: 1;
       }
     `]
@@ -81,10 +65,7 @@ export class EpkWindow extends LitElement {
   window: HTMLElement | undefined
 
   @queryAssignedElements()
-  windowBody: HTMLElement[] | undefined
-
-  @queryAssignedElements({slot: 'toolbar'})
-  toolbar: EpkToolbar[] | undefined
+  content: HTMLElement[] | undefined
 
   @property({type: String})
   title = "Untitled Window"
@@ -109,9 +90,6 @@ export class EpkWindow extends LitElement {
 
   @property({type: Number})
   minHeight: number | null = null
-
-  @property({type: String})
-  backgroundColor: string | undefined
 
   @state()
   active = true
@@ -147,6 +125,8 @@ export class EpkWindow extends LitElement {
   }
 
   firstUpdated() {
+    this.addEventListener('window-title-change', this.handleWindowTitleChange)
+
     const epkWindow = this.shadowRoot?.querySelector('.window') as HTMLDivElement
 
     if (epkWindow) {
@@ -201,6 +181,10 @@ export class EpkWindow extends LitElement {
     this.active = true
     this.style.zIndex = EpkWindow.instanceCount.toString()
     this.dispatchEvent(activeWindowChangeEvent())
+  }
+
+  handleWindowTitleChange(event: Event) {
+    this.title = (event as CustomEvent).detail.title
   }
 
   handleClick() {
@@ -300,14 +284,6 @@ export class EpkWindow extends LitElement {
       windowClass += ' fullscreen'
     }
 
-    const bodyStyle: any = {}
-
-    if (this.backgroundColor) {
-      bodyStyle['backgroundColor'] = this.backgroundColor
-    }
-
-    const hasStatusBar = this.querySelector('[slot="status-bar"]') != null
-
     return html`
       <div class="${windowClass}" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
         <div class="title-bar" @dblclick="${this.handleDblClick}">
@@ -323,15 +299,7 @@ export class EpkWindow extends LitElement {
           </div>
         </div>
         <div class="window-viewport" style="${styleMap(viewportStyle)}">
-          <div id="toolbar">
-            <slot name="toolbar"></slot>
-          </div>
-          <div class="window-body" style="${styleMap(bodyStyle)}">
-            <slot></slot>
-          </div>
-          <div id="statusBar" class="status-bar" style="${styleMap({ display: hasStatusBar ? 'flex' : 'none'})}">
-            <slot name="status-bar"></slot>
-          </div>
+          <slot></slot>
         </div>
       </div>
     `
