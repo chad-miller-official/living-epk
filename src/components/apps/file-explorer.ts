@@ -1,12 +1,12 @@
-import {EpkApp} from "./base.ts";
-import {EpkStatusBar, EpkToolbar} from "../components/ui.ts";
-import type {EpkIcon} from "../components/icon.ts";
+import {EpkApp} from "../app.ts";
+import {EpkStatusBar, EpkToolbar} from "../ui.ts";
+import type {EpkIcon} from "../icon.ts";
 import {customElement, property, state} from "lit/decorators.js";
-import type {ToolbarMenu} from "../lib/toolbar.ts";
+import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html, LitElement, unsafeCSS} from "lit";
-import {getFileExtension} from "../lib/fs.ts";
-import {MusicIcon} from "../components/user/music-icon.ts";
-import {HtmlIcon} from "../components/user/html-icon.ts";
+import {getFileExtension} from "../../lib/fs.ts";
+import {MusicIcon} from "../icons/music-icon.ts";
+import {MarkdownIcon} from "../icons/markdown-icon.ts";
 import xpStyle from "xp.css/dist/XP.css?inline";
 
 type FsPath = {
@@ -69,6 +69,7 @@ export class FileExplorerList extends LitElement {
       }
     `
   ]
+
   @state()
   icons: EpkIcon[] = []
 
@@ -137,8 +138,8 @@ export class FileExplorer extends EpkApp {
             case 'wav':
               icon = new MusicIcon()
               break
-            case 'html':
-              icon = new HtmlIcon()
+            case 'md':
+              icon = new MarkdownIcon()
               break
             default:
               // TODO this should raise an alert box

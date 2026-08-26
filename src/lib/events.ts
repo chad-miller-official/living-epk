@@ -1,4 +1,4 @@
-import type {EpkApp} from "../apps/base.ts";
+import type {EpkApp} from "../components/app.ts";
 
 export type LaunchOptions = {
   width?: number,

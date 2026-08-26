@@ -1,6 +1,6 @@
 import {css, html, LitElement, unsafeCSS} from "lit"
 import xpStyle from 'xp.css/dist/XP.css?inline'
-import {EpkStatusBar, type EpkToolbar} from "../components/ui.ts";
+import {EpkStatusBar, type EpkToolbar} from "./ui.ts";
 import {query, queryAll} from "lit/decorators.js";
 
 export abstract class EpkApp extends LitElement {

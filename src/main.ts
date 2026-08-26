@@ -5,14 +5,14 @@ import './components/icon.ts'
 import './components/ui.ts'
 import './components/window.ts'
 
-import './components/user/file-explorer-icon.ts'
-import './components/user/html-icon.ts'
-import './components/user/music-icon.ts'
-import './components/user/plaintext-icon.ts'
+import './components/icons/file-explorer-icon.ts'
+import './components/icons/markdown-icon.ts'
+import './components/icons/music-icon.ts'
+import './components/icons/plaintext-icon.ts'
 
 import {launchEvent} from "./lib/events.ts";
 
-import {Notepad} from "./apps/notepad.ts";
+import {Notepad} from "./components/apps/notepad.ts";
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('#desktop')!.dispatchEvent(

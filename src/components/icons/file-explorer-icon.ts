@@ -1,7 +1,7 @@
 import {customElement, property} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
-import type {EpkApp} from "../../apps/base.ts";
-import {FileExplorer} from "../../apps/file-explorer.ts";
+import type {EpkApp} from "../app.ts";
+import {FileExplorer} from "../apps/file-explorer.ts";
 
 @customElement('file-explorer-icon')
 export class FileExplorerIcon extends EpkIcon {

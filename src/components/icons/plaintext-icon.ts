@@ -1,7 +1,7 @@
 import {customElement} from "lit/decorators.js";
-import type {EpkApp} from "../../apps/base.ts";
+import type {EpkApp} from "../app.ts";
 import {EpkIcon} from "../icon.ts";
-import {Notepad} from "../../apps/notepad.ts";
+import {Notepad} from "../apps/notepad.ts";
 
 @customElement('plaintext-icon')
 export class PlainTextIconElement extends EpkIcon {

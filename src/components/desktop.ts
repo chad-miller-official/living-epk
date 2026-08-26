@@ -3,7 +3,7 @@ import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
 import {type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
-import {EpkApp} from "../apps/base.ts";
+import {EpkApp} from "./app.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {

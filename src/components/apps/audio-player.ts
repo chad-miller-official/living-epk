@@ -1,6 +1,6 @@
-import {EpkApp} from "./base.ts";
-import {getFileExtension} from "../lib/fs.ts";
-import {EpkStatusBar, type EpkToolbar} from "../components/ui.ts";
+import {EpkApp} from "../app.ts";
+import {getFileExtension} from "../../lib/fs.ts";
+import {EpkStatusBar, type EpkToolbar} from "../ui.ts";
 import {customElement, property, state} from "lit/decorators.js";
 import {css, html, LitElement, unsafeCSS} from "lit";
 import xpStyle from "xp.css/dist/XP.css?inline";

@@ -1,11 +1,12 @@
-import {EpkApp} from "./base.ts";
+import {EpkApp} from "../app.ts";
 import {customElement, property, state} from "lit/decorators.js";
 import {css, html, LitElement, unsafeCSS} from "lit";
-import {EpkStatusBar, EpkToolbar} from "../components/ui.ts";
+import {EpkStatusBar, EpkToolbar} from "../ui.ts";
 import xpStyle from "xp.css/dist/XP.css?inline";
-import {type ToolbarMenu, ToolbarUiElement} from "../lib/toolbar.ts";
-import {windowTitleChangeEvent} from "../lib/events.ts";
-import {getFileName} from "../lib/fs.ts";
+import {type ToolbarMenu, ToolbarUiElement} from "../../lib/toolbar.ts";
+import {windowTitleChangeEvent} from "../../lib/events.ts";
+import {getFileName} from "../../lib/fs.ts";
+import {Task} from "@lit/task";
 
 @customElement('notepad-toolbar')
 export class NotepadToolbar extends EpkToolbar {
@@ -194,12 +195,30 @@ export class NotepadEditor extends LitElement {
   ]
 
   @property({type: String})
-  value = ''
+  filePath = ''
+
+  private noteTask = new Task(this, {
+    task: async ([path], {signal}) => {
+      const response = await fetch(path, {signal})
+
+      if (!response.ok) {
+        alert('Error') // TODO XXX FIXME
+      }
+
+      return await response.text()
+    },
+    args: () => [this.filePath],
+  })
 
   render() {
-    return html`
-      <textarea id="content" class="notepad-app" wrap="off" .value="${this.value}"></textarea>
-    `
+    return this.noteTask.render({
+      pending: () => html`
+        <textarea id="content" class="notepad-app"></textarea>`,
+      complete: (textValue) => html`
+        <textarea id="content" class="notepad-app" wrap="off" .value="${textValue}"></textarea>`,
+      error: () => html`
+        <div>Error</div>`,
+    })
   }
 }
 
@@ -249,16 +268,11 @@ export class Notepad extends EpkApp {
     super.connectedCallback()
 
     this._toolbar = new NotepadToolbar()
-    this._editor = new NotepadEditor()
-    this._statusBar = new NotepadStatusBar()
 
-    if (this.filePath) {
-      fetch(this.filePath).then(response => {
-        response.text().then(text => {
-          this._editor!.value = text
-        })
-      })
-    }
+    this._editor = new NotepadEditor()
+    this._editor.filePath = this.filePath!!
+
+    this._statusBar = new NotepadStatusBar()
   }
 
   firstUpdated() {

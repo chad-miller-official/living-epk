@@ -1,11 +1,11 @@
-import type {EpkApp} from "../../apps/base.ts";
+import type {EpkApp} from "../app.ts";
 import {EpkIcon} from "../icon.ts";
 import {customElement} from "lit/decorators.js";
-import {WebBrowser} from "../../apps/web-browser.ts";
+import {MarkdownReader} from "../apps/markdown-reader.ts";
 import type {LaunchOptions} from "../../lib/events.ts";
 
-@customElement('html-icon')
-export class HtmlIcon extends EpkIcon {
+@customElement('markdown-icon')
+export class MarkdownIcon extends EpkIcon {
   getLaunchOptions(): LaunchOptions {
     return {
       width: 600,
@@ -14,6 +14,6 @@ export class HtmlIcon extends EpkIcon {
   }
 
   getAppInstance(): Promise<EpkApp> {
-    return new Promise<WebBrowser>(resolve => resolve(new WebBrowser(this.filePath!!)))
+    return new Promise<MarkdownReader>(resolve => resolve(new MarkdownReader(this.filePath!!)))
   }
 }

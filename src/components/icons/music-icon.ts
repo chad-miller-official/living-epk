@@ -1,5 +1,5 @@
-import {AudioPlayer} from "../../apps/audio-player.ts";
-import type {EpkApp} from "../../apps/base.ts";
+import {AudioPlayer} from "../apps/audio-player.ts";
+import type {EpkApp} from "../app.ts";
 import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 
