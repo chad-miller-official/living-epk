@@ -3,7 +3,7 @@ import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
 import {type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
-import {EpkApp} from "./app.ts";
+import {EpkToolbar} from "./ui.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
@@ -44,21 +44,28 @@ export class EpkDesktop extends LitElement {
     this.windows?.forEach(w => {
       if ((w === event.target || (event.target instanceof Node && w.contains(event.target)))) {
         w.setActive()
+        return
       } else {
         w.active = false
       }
 
-      const windowContent = w.content?.[0] as EpkApp
+      w.content.forEach(wc => {
+        const children = wc.querySelectorAll('.epk-icon')
+        const shadowChildren = wc.shadowRoot?.querySelectorAll('.epk-icon')
+        let allChildren = Array.from(children)
 
-      windowContent.content?.forEach(wc => {
-        Array.from(wc.querySelectorAll('.epk-icon'))
+        if (shadowChildren) {
+          allChildren = allChildren.concat(Array.from(shadowChildren))
+        }
+
+        allChildren
           .filter(elem => elem !== event.target)
           .forEach(elem => (elem as EpkIcon).selected = false)
-      })
 
-      if (event.target !== windowContent) {
-        windowContent.toolbar?.closeAll()
-      }
+        if (event.target !== wc) {
+          (wc.shadowRoot?.querySelector('epk-toolbar') as EpkToolbar).closeAll()
+        }
+      })
     });
   }
 
@@ -81,10 +88,12 @@ export class EpkDesktop extends LitElement {
     epkWindow.y = launchData.y || 0
 
     launchData.init().then(app => {
+      // @ts-ignore
       epkWindow.title = app.windowTitle
+      // @ts-ignore
       epkWindow.thumbnail = app.windowIcon
 
-      const [minWidth, minHeight] = app.getMinimumDimensions()
+      const [minWidth, minHeight] = [256, 256]
       const [eventWidth, eventHeight] = launchData.windowDimensions
 
       let [widthToUse, heightToUse] = [eventWidth || minWidth, eventHeight || minHeight]

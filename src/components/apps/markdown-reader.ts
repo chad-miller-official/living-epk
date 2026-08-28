@@ -1,33 +1,32 @@
-import {EpkApp} from "../app.ts";
 import {customElement, property} from "lit/decorators.js";
-import {css, html, LitElement, unsafeCSS} from "lit";
-import xpStyle from "xp.css/dist/XP.css?inline";
+import {css, html, LitElement} from "lit";
 import {Task} from "@lit/task";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {marked} from "marked";
+import {appStyles} from "../ui.ts";
 
-@customElement('markdown-viewer')
-export class MarkdownViewer extends LitElement {
+@customElement('markdown-reader')
+export class MarkdownReader extends LitElement {
   static styles = [
-    unsafeCSS(xpStyle),
+    ...appStyles,
     css`
-      .container {
-        border: none;
-        height: 100%;
-        width: 100%;
-      }
-
       .markdown {
         height: calc(100% - 16px);
         overflow-y: scroll;
         padding: 8px;
-        
+
         & > :first-child {
           margin-top: 0;
         }
       }
     `
   ]
+
+  @property({type: String})
+  windowTitle = 'Document Viewer'
+
+  @property({type: String})
+  windowIcon = '/img/1483.ico'
 
   @property({type: String})
   srcDocument: string = ''
@@ -48,46 +47,15 @@ export class MarkdownViewer extends LitElement {
   render() {
     return this.documentTask.render({
       pending: () => html`
-        <div class="markdown"></div>`,
+        <div class="app markdown"></div>`,
       complete: (documentBody) => html`
-        <div class="markdown">
-          ${unsafeHTML(marked.parse(documentBody) as string)}
+        <div class="content">
+          <div class="app markdown">
+            ${unsafeHTML(marked.parse(documentBody) as string)}
+          </div>
         </div>`,
       error: () => html`
-        <div class="markdown">Error</div>`
+        <div class="app markdown">Error</div>`
     })
-  }
-}
-
-@customElement('markdown-reader')
-export class MarkdownReader extends EpkApp {
-  windowIcon = '/img/1489.ico'
-  windowTitle = 'ICOT? Document Reader'
-
-  srcDocument: string = ''
-  markdownViewer: MarkdownViewer | undefined
-
-  constructor(srcDocument: string) {
-    super()
-    this.srcDocument = srcDocument
-  }
-
-  connectedCallback() {
-    super.connectedCallback()
-
-    this.markdownViewer = new MarkdownViewer()
-    this.markdownViewer.srcDocument = this.srcDocument
-  }
-
-  getToolbar() {
-    return null
-  }
-
-  getWindowContents(): LitElement {
-    return this.markdownViewer!
-  }
-
-  getStatusBar() {
-    return null
   }
 }

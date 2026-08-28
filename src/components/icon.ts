@@ -2,7 +2,6 @@ import {property, state} from "lit/decorators.js";
 import {styleMap} from "lit/directives/style-map.js";
 import {css, type CSSResultGroup, html, LitElement} from "lit";
 import {launchEvent, type LaunchOptions} from "../lib/events.ts";
-import type {EpkApp} from "./app.ts";
 
 export abstract class EpkIcon extends LitElement {
   static styles: CSSResultGroup = css`
@@ -75,7 +74,7 @@ export abstract class EpkIcon extends LitElement {
   @state()
   selected = false
 
-  abstract getAppInstance(): Promise<EpkApp>
+  abstract getAppInstance(): Promise<LitElement>
 
   getLaunchOptions(): LaunchOptions {
     return {}

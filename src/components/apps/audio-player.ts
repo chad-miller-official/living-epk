@@ -1,20 +1,24 @@
-import {EpkApp} from "../app.ts";
 import {getFileExtension} from "../../lib/fs.ts";
-import {EpkStatusBar, type EpkToolbar} from "../ui.ts";
+import {appStyles} from "../ui.ts";
 import {customElement, property, state} from "lit/decorators.js";
-import {css, html, LitElement, unsafeCSS} from "lit";
-import xpStyle from "xp.css/dist/XP.css?inline";
+import {css, html, LitElement} from "lit";
 
-@customElement('audio-renderer')
-export class AudioRenderer extends LitElement {
+@customElement('audio-player')
+export class AudioPlayer extends LitElement {
   static styles = [
-    unsafeCSS(xpStyle),
+    ...appStyles,
     css`
       audio {
         width: 100%;
       }
     `
   ]
+
+  @property({type: String})
+  windowTitle = 'Windows Media Player'
+
+  @property({type: String})
+  windowIcon = '/img/1137.ico'
 
   @property({type: String})
   filePath: string | undefined
@@ -32,45 +36,10 @@ export class AudioRenderer extends LitElement {
 
   render() {
     return html`
-      <div>
-        <audio controls>
+      <div class="app">
+        <audio class="content" controls>
           <source src="${this.filePath}" type="${this.mimeType}"/>
         </audio>
-      </div>
-    `
-  }
-}
-
-@customElement('audio-player')
-export class AudioPlayer extends EpkApp {
-  windowTitle = "ICOT? Media Player"
-  windowIcon = '/img/1137.ico'
-
-  @property({type: String})
-  filePath: string | undefined
-
-  player: AudioRenderer | undefined
-
-  connectedCallback() {
-    super.connectedCallback()
-
-    this.player = new AudioRenderer()
-    this.player.filePath = this.filePath
-  }
-
-  getToolbar(): EpkToolbar | null {
-    return null
-  }
-
-  getWindowContents(): LitElement {
-    return this.player!
-  }
-
-  getStatusBar(): EpkStatusBar | null {
-    return null
-  }
-
-  getMinimumDimensions(): [number | null, number | null] {
-    return [300, null]
+      </div>`
   }
 }

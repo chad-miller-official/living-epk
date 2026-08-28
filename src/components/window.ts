@@ -62,10 +62,10 @@ export class EpkWindow extends LitElement {
     `]
 
   @query('.window')
-  window: HTMLElement | undefined
+  window!: HTMLElement
 
   @queryAssignedElements()
-  content: HTMLElement[] | undefined
+  content!: HTMLElement[]
 
   @property({type: String})
   title = "Untitled Window"
@@ -228,7 +228,9 @@ export class EpkWindow extends LitElement {
   }
 
   toggleFullscreen() {
-    if (!this.minimized) {
+    if (this.minimized) {
+      this.resetDimensions(`${this.height}px`)
+    } else {
       this.fullscreen = !this.fullscreen
 
       if (this.fullscreen) {
@@ -251,10 +253,10 @@ export class EpkWindow extends LitElement {
 
     if (this.minimized) {
       this.resetCoordinates()
-      this.resetDimensions()
+      this.resetDimensions('28px')
       this.restoreWindow()
     } else {
-      this.resetDimensions()
+      this.resetDimensions(`${this.height}px`)
     }
   }
 

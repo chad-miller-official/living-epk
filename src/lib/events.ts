@@ -1,4 +1,4 @@
-import type {EpkApp} from "../components/app.ts";
+import type {LitElement} from "lit";
 
 export type LaunchOptions = {
   width?: number,
@@ -8,14 +8,14 @@ export type LaunchOptions = {
 }
 
 export type Launch = {
-  init: () => Promise<EpkApp>,
+  init: () => Promise<LitElement>,
   windowDimensions: [number | null, number | null],
   x: number | null,
   y: number | null,
 }
 
 export function launchEvent(
-  appInit: () => Promise<EpkApp>,
+  appInit: () => Promise<LitElement>,
   launchOptions: LaunchOptions = {}
 ): CustomEvent<Launch> {
   return new CustomEvent<Launch>('launch', {
@@ -40,6 +40,14 @@ export function activeWindowChangeEvent(): CustomEvent {
 export function windowTitleChangeEvent(title: string): CustomEvent<{ title: string }> {
   return new CustomEvent('window-title-change', {
     detail: {title},
+    bubbles: true,
+    composed: true,
+  })
+}
+
+export function userAlertEvent(message: string): CustomEvent<{ message: string }> {
+  return new CustomEvent('user-alert', {
+    detail: {message},
     bubbles: true,
     composed: true,
   })

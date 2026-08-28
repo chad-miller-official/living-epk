@@ -1,13 +1,12 @@
-import {EpkApp} from "../app.ts";
-import {EpkStatusBar, EpkToolbar} from "../ui.ts";
+import {appStyles, EpkToolbar} from "../ui.ts";
 import type {EpkIcon} from "../icon.ts";
-import {customElement, property, state} from "lit/decorators.js";
+import {customElement, property, query} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
-import {css, html, LitElement, unsafeCSS} from "lit";
+import {css, html, LitElement} from "lit";
 import {getFileExtension} from "../../lib/fs.ts";
 import {MusicIcon} from "../icons/music-icon.ts";
 import {MarkdownIcon} from "../icons/markdown-icon.ts";
-import xpStyle from "xp.css/dist/XP.css?inline";
+import {Task} from "@lit/task";
 
 type FsPath = {
   path: string,
@@ -19,151 +18,120 @@ type FsSpec = {
   paths: FsPath[],
 }
 
-@customElement('file-explorer-toolbar')
-export class FileExplorerToolbar extends EpkToolbar {
-  getToolbarSpec(): ToolbarMenu[] {
-    return [
-      {
-        text: 'File',
-        items: [],
-      },
-      {
-        text: 'Edit',
-        items: [],
-      },
-      {
-        text: 'View',
-        items: [],
-      },
-      {
-        text: 'Favorites',
-        items: [],
-      },
-      {
-        text: 'Tools',
-        items: [],
-      },
-      {
-        text: 'Help',
-        items: [],
-      }
-    ]
-  }
-}
-
-@customElement('file-explorer-list')
-export class FileExplorerList extends LitElement {
+@customElement('file-explorer')
+export class FileExplorer extends LitElement {
   static styles = [
-    unsafeCSS(xpStyle),
+    ...appStyles,
     css`
       .file-explorer {
+        align-items: flex-start;
         background-color: #ffffff;
+        display: flex;
+        gap: 16px;
         height: 100%;
-
-        &.icon-list {
-          align-items: flex-start;
-          display: flex;
-          gap: 16px;
-          overflow: auto;
-        }
+        overflow: auto;
       }
     `
   ]
 
-  @state()
-  icons: EpkIcon[] = []
+  @property({type: String})
+  windowTitle = 'File Explorer'
 
-  render() {
-    this.icons.forEach(icon => icon.classList.add('epk-icon'))
-
-    return html`
-      <section class="file-explorer icon-list">
-        ${this.icons}
-      </section>
-    `
-  }
-}
-
-@customElement('file-explorer-status-bar')
-export class FileExplorerStatusBar extends EpkStatusBar {
-  @property({type: Number})
-  fileCount = 0
-
-  render() {
-    return html`
-      <div class="status-bar">
-        <p class="status-bar-field">${this.fileCount} item(s)</p>
-      </div>
-    `
-  }
-}
-
-@customElement('file-explorer')
-export class FileExplorer extends EpkApp {
+  @property({type: String})
   windowIcon = '/img/795.ico'
-  windowTitle = ''
 
-  filePath: string | undefined
+  @property({type: String})
+  filePath = '/data/my-documents.json'
 
-  private _toolbar: FileExplorerToolbar | null = null
-  private _fileList: FileExplorerList | undefined
-  private _statusBar: FileExplorerStatusBar | null = null
+  @query('#toolbar')
+  toolbar!: EpkToolbar
 
-  constructor(filePath?: string) {
-    super()
-    this.filePath = filePath
-  }
+  private toolbarSpec: ToolbarMenu[] = [
+    {
+      text: 'File',
+      items: [],
+    },
+    {
+      text: 'Edit',
+      items: [],
+    },
+    {
+      text: 'View',
+      items: [],
+    },
+    {
+      text: 'Favorites',
+      items: [],
+    },
+    {
+      text: 'Tools',
+      items: [],
+    },
+    {
+      text: 'Help',
+      items: [],
+    }
+  ]
 
-  connectedCallback() {
-    super.connectedCallback()
+  private iconLoaderTask = new Task(this, {
+    task: async ([src], {signal}) => {
+      const response = await fetch(src, {signal})
 
-    this._toolbar = new FileExplorerToolbar()
-    this._fileList = new FileExplorerList()
-    this._statusBar = new FileExplorerStatusBar()
-
-    const filePath = this.filePath || '/data/my-documents.json'
-
-    fetch(filePath).then(response => {
       if (!response.ok) {
         // TODO this should bring up a Windows XP-style alert
-        alert(`Failed to get file system data (tried loading "${filePath}")`)
+        alert(`Failed to get file system data (tried loading "${src}")`)
       }
 
-      response.json().then((fsData: FsSpec) => {
-        this._fileList!.icons = fsData.paths.map(path => {
-          const extension = getFileExtension(path.path)
-          let icon: EpkIcon
+      return await response.json() as FsSpec
+    },
+    args: () => [this.filePath]
+  })
 
-          switch (extension) {
-            case 'wav':
-              icon = new MusicIcon()
-              break
-            case 'md':
-              icon = new MarkdownIcon()
-              break
-            default:
-              // TODO this should raise an alert box
-              throw new Error(`Unhandled extension: ${extension}`)
-          }
+  private buildIcon(path: FsPath) {
+    const extension = getFileExtension(path.path)
+    let icon: EpkIcon
 
-          icon.title = path.displayPath
-          icon.filePath = path.path
+    switch (extension) {
+      case 'wav':
+        icon = new MusicIcon()
+        break
+      case 'md':
+        icon = new MarkdownIcon()
+        break
+      default:
+        // TODO this should raise an alert box
+        throw new Error(`Unhandled extension: ${extension}`)
+    }
 
-          return icon
-        })
-      })
+    icon.title = path.displayPath
+    icon.filePath = path.path
+    icon.classList.add('epk-icon')
+
+    return icon
+  }
+
+  handleClick(event: Event) {
+    if (event.target !== this.toolbar) {
+      this.toolbar.closeAll()
+    }
+  }
+
+  render() {
+    return this.iconLoaderTask.render({
+      pending: () => html`
+        <section class="content file-explorer"></section>`,
+      complete: (spec: FsSpec) => html`
+        <div class="app" @click="${this.handleClick}">
+          <epk-toolbar id="toolbar" class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+          <section class="content file-explorer">
+            ${spec.paths.map(this.buildIcon)}
+          </section>
+          <div class="status-bar">
+            <p class="status-bar-field">${spec.paths.length} item(s)</p>
+          </div>
+        </div>`,
+      error: () => html`
+        <section class="content file-explorer">Error</section>`
     })
-  }
-
-  getToolbar(): EpkToolbar | null {
-    return this._toolbar
-  }
-
-  getWindowContents(): LitElement {
-    return this._fileList!
-  }
-
-  getStatusBar(): EpkStatusBar | null {
-    return this._statusBar
   }
 }

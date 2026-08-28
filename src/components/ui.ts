@@ -1,11 +1,36 @@
 import {css, html, LitElement, nothing, unsafeCSS} from "lit";
-import {customElement, queryAll} from "lit/decorators.js";
+import {customElement, property, queryAll} from "lit/decorators.js";
 import {type ToolbarMenu, ToolbarUiElement} from "../lib/toolbar.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 
+export const appStyles = [
+  unsafeCSS(xpStyle),
+  css`
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    
+    .content {
+      flex-grow: 1;
+      height: 100%;
+    }
+
+    .content, .toolbar {
+      margin: 0 auto;
+      width: calc(100% - 6px);
+    }
+
+    .status-bar-field.spacer {
+      width: 40%;
+    }
+  `
+]
+
 @customElement('epk-toolbar')
-export abstract class EpkToolbar extends LitElement {
+export class EpkToolbar extends LitElement {
   static styles = [
     unsafeCSS(xpStyle),
     css`
@@ -76,10 +101,11 @@ export abstract class EpkToolbar extends LitElement {
     `
   ]
 
+  @property()
+  toolbarSpec!: ToolbarMenu[]
+
   @queryAll('li.toolbar-menu')
   toolbarItems: NodeListOf<HTMLLIElement> | undefined
-
-  abstract getToolbarSpec(): ToolbarMenu[]
 
   handleClick(event: Event) {
     if (event.target instanceof HTMLMenuElement) {
@@ -127,7 +153,7 @@ export abstract class EpkToolbar extends LitElement {
   render() {
     return html`
       <menu class="toolbar" @click="${this.handleClick}">
-        ${this.getToolbarSpec().map(item => html`
+        ${this.toolbarSpec.map(item => html`
           <li class="toolbar-menu" @mouseenter="${this.handleMouseEnter}">
             ${item.text}
             <ul class="toolbar-menu-items">
@@ -148,25 +174,6 @@ export abstract class EpkToolbar extends LitElement {
           </li>
         `)}
       </menu>
-    `
-  }
-}
-
-export abstract class EpkStatusBar extends LitElement {
-  static styles = [
-    unsafeCSS(xpStyle),
-    css`
-      .status-bar-field {
-        user-select: none;
-      }
-    `
-  ]
-
-  render() {
-    return html`
-      <div class="status-bar">
-        <p class="status-bar-field"></p>
-      </div>
     `
   }
 }
