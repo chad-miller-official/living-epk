@@ -1,23 +1,18 @@
 import {customElement, property} from "lit/decorators.js";
-import {css, html, LitElement} from "lit";
+import {css, html} from "lit";
 import {Task} from "@lit/task";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {marked} from "marked";
-import {appStyles} from "../ui.ts";
+import {EpkApp} from "../app.ts";
 
 @customElement('markdown-reader')
-export class MarkdownReader extends LitElement {
+export class MarkdownReader extends EpkApp {
   static styles = [
-    ...appStyles,
+    ...EpkApp.styles,
     css`
       .markdown {
-        height: calc(100% - 16px);
+        height: 100%;
         overflow-y: scroll;
-        padding: 8px;
-
-        & > :first-child {
-          margin-top: 0;
-        }
       }
     `
   ]
@@ -47,15 +42,17 @@ export class MarkdownReader extends LitElement {
   render() {
     return this.documentTask.render({
       pending: () => html`
-        <div class="app markdown"></div>`,
+        <div class="app content"></div>`,
       complete: (documentBody) => html`
-        <div class="content">
-          <div class="app markdown">
-            ${unsafeHTML(marked.parse(documentBody) as string)}
+        <div class="app">
+          <div class="content">
+            <div class="markdown">
+              ${unsafeHTML(marked.parse(documentBody) as string)}
+            </div>
           </div>
         </div>`,
       error: () => html`
-        <div class="app markdown">Error</div>`
+        <div class="app content">Error</div>`
     })
   }
 }

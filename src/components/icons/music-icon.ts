@@ -1,14 +1,14 @@
 import {AudioPlayer} from "../apps/audio-player.ts";
 import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
-import type {LitElement} from "lit";
 import {getFileName} from "../../lib/fs.ts";
+import type {EpkApp} from "../app.ts";
 
 @customElement('music-icon')
 export class MusicIcon extends EpkIcon {
   icon = '/img/1135.ico'
 
-  getAppInstance(): Promise<LitElement> {
+  getAppInstance(): Promise<EpkApp> {
     return new Promise<AudioPlayer>(resolve => {
       const audioPlayer = new AudioPlayer()
 

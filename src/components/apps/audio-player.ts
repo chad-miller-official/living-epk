@@ -1,12 +1,12 @@
 import {getFileExtension} from "../../lib/fs.ts";
-import {appStyles} from "../ui.ts";
 import {customElement, property, state} from "lit/decorators.js";
-import {css, html, LitElement} from "lit";
+import {css, html} from "lit";
+import {EpkApp} from "../app.ts";
 
 @customElement('audio-player')
-export class AudioPlayer extends LitElement {
+export class AudioPlayer extends EpkApp {
   static styles = [
-    ...appStyles,
+    ...EpkApp.styles,
     css`
       audio {
         width: 100%;

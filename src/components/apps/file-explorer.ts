@@ -1,12 +1,13 @@
-import {appStyles, EpkToolbar} from "../ui.ts";
+import {EpkToolbar} from "../ui.ts";
 import type {EpkIcon} from "../icon.ts";
 import {customElement, property, query} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
-import {css, html, LitElement} from "lit";
+import {css, html} from "lit";
 import {getFileExtension} from "../../lib/fs.ts";
 import {MusicIcon} from "../icons/music-icon.ts";
 import {MarkdownIcon} from "../icons/markdown-icon.ts";
 import {Task} from "@lit/task";
+import {EpkApp} from "../app.ts";
 
 type FsPath = {
   path: string,
@@ -19,9 +20,9 @@ type FsSpec = {
 }
 
 @customElement('file-explorer')
-export class FileExplorer extends LitElement {
+export class FileExplorer extends EpkApp {
   static styles = [
-    ...appStyles,
+    ...EpkApp.styles,
     css`
       .file-explorer {
         align-items: flex-start;
@@ -119,7 +120,9 @@ export class FileExplorer extends LitElement {
   render() {
     return this.iconLoaderTask.render({
       pending: () => html`
-        <section class="content file-explorer"></section>`,
+        <div class="app">
+          <div class="content"></div>
+        </div>`,
       complete: (spec: FsSpec) => html`
         <div class="app" @click="${this.handleClick}">
           <epk-toolbar id="toolbar" class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
@@ -131,7 +134,9 @@ export class FileExplorer extends LitElement {
           </div>
         </div>`,
       error: () => html`
-        <section class="content file-explorer">Error</section>`
+        <div class="app">
+          <div class="content">Error</div>
+        </div>`
     })
   }
 }

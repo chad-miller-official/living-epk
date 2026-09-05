@@ -88,9 +88,7 @@ export class EpkDesktop extends LitElement {
     epkWindow.y = launchData.y || 0
 
     launchData.init().then(app => {
-      // @ts-ignore
       epkWindow.title = app.windowTitle
-      // @ts-ignore
       epkWindow.thumbnail = app.windowIcon
 
       const [minWidth, minHeight] = [256, 256]

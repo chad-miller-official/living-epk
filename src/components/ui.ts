@@ -4,31 +4,6 @@ import {type ToolbarMenu, ToolbarUiElement} from "../lib/toolbar.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 
-export const appStyles = [
-  unsafeCSS(xpStyle),
-  css`
-    .app {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-    
-    .content {
-      flex-grow: 1;
-      height: 100%;
-    }
-
-    .content, .toolbar {
-      margin: 0 auto;
-      width: calc(100% - 6px);
-    }
-
-    .status-bar-field.spacer {
-      width: 40%;
-    }
-  `
-]
-
 @customElement('epk-toolbar')
 export class EpkToolbar extends LitElement {
   static styles = [

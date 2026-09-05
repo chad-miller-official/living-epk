@@ -2,8 +2,8 @@ import {EpkIcon} from "../icon.ts";
 import {customElement} from "lit/decorators.js";
 import {MarkdownReader} from "../apps/markdown-reader.ts";
 import type {LaunchOptions} from "../../lib/events.ts";
-import type {LitElement} from "lit";
 import {getFileName} from "../../lib/fs.ts";
+import type {EpkApp} from "../app.ts";
 
 @customElement('markdown-icon')
 export class MarkdownIcon extends EpkIcon {
@@ -14,7 +14,7 @@ export class MarkdownIcon extends EpkIcon {
     }
   }
 
-  getAppInstance(): Promise<LitElement> {
+  getAppInstance(): Promise<EpkApp> {
     return new Promise<MarkdownReader>(resolve => {
       const markdownReader = new MarkdownReader()
 

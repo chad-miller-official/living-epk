@@ -1,4 +1,4 @@
-import type {LitElement} from "lit";
+import type {EpkApp} from "../components/ui.ts";
 
 export type LaunchOptions = {
   width?: number,
@@ -8,14 +8,14 @@ export type LaunchOptions = {
 }
 
 export type Launch = {
-  init: () => Promise<LitElement>,
+  init: () => Promise<EpkApp>,
   windowDimensions: [number | null, number | null],
   x: number | null,
   y: number | null,
 }
 
 export function launchEvent(
-  appInit: () => Promise<LitElement>,
+  appInit: () => Promise<EpkApp>,
   launchOptions: LaunchOptions = {}
 ): CustomEvent<Launch> {
   return new CustomEvent<Launch>('launch', {

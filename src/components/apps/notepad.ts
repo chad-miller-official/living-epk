@@ -1,13 +1,14 @@
 import {customElement, property, query} from "lit/decorators.js";
-import {css, html, LitElement} from "lit";
-import {appStyles, EpkToolbar} from "../ui.ts";
+import {css, html} from "lit";
+import {EpkToolbar} from "../ui.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../../lib/toolbar.ts";
 import {Task} from "@lit/task";
+import {EpkApp} from "../app.ts";
 
 @customElement('notepad-app')
-export class Notepad extends LitElement {
+export class Notepad extends EpkApp {
   static styles = [
-    ...appStyles,
+    ...EpkApp.styles,
     css`
       #notepad {
         font-family: monospace;
@@ -202,7 +203,9 @@ export class Notepad extends LitElement {
   render() {
     return this.noteTask.render({
       pending: () => html`
-        <div></div>`,
+        <div class="app">
+          <div class="content"></div>
+        </div>`,
       complete: (textValue) => html`
         <div class="app" @click="${this.handleClick}">
           <epk-toolbar id="toolbar" class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
@@ -214,7 +217,9 @@ export class Notepad extends LitElement {
           </div>
         </div>`,
       error: () => html`
-        <div>Error</div>`,
+        <div class="app">
+          <div class="content">Error</div>
+        </div>`,
     })
   }
 }
