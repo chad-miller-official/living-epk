@@ -21,7 +21,7 @@ export class MarkdownReader extends EpkApp {
   windowTitle = 'Document Viewer'
 
   @property({type: String})
-  windowIcon = '/img/1483.ico'
+  windowIcon = '/img/markdown-reader-small.ico'
 
   @property({type: String})
   srcDocument: string = ''

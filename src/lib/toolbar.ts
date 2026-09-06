@@ -5,7 +5,8 @@ export enum ToolbarUiElement {
 export type ToolbarMenuItem = {
   text: string,
   shortcut?: string,
-  action: () => void,
+  selected?: () => boolean,
+  action?: (event: Event) => void,
 }
 
 export type ToolbarMenu = {

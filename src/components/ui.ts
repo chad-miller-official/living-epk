@@ -57,18 +57,38 @@ export class EpkToolbar extends LitElement {
           & > .toolbar-menu-item {
             display: flex;
             justify-content: space-between;
-            gap: 4ch;
             list-style-type: none;
             margin: 1px;
-            padding: 4px 24px;
+            padding: 4px 24px 4px 1ch;
+
+            & > span {
+              display: flex;
+              gap: 4ch;
+              justify-content: space-between;
+              margin: 0 1ch;
+              width: 100%;
+
+              &[data-command]::after {
+                content: attr(data-command);
+              }
+            }
+
+            &.disabled {
+              color: #808080;
+            }
+
+            &.selected::before {
+              content: url('/img/check.png');
+            }
+
+            &:not(.selected)::before {
+              content: url('/img/check.png');
+              opacity: 0;
+            }
 
             &:hover {
               background-color: #316AC5;
               color: #ffffff;
-            }
-
-            &[data-command]::after {
-              content: attr(data-command);
             }
           }
         }
@@ -76,13 +96,13 @@ export class EpkToolbar extends LitElement {
     `
   ]
 
-  @property()
+  @property({attribute: false})
   toolbarSpec!: ToolbarMenu[]
 
   @queryAll('li.toolbar-menu')
   toolbarItems: NodeListOf<HTMLLIElement> | undefined
 
-  handleClick(event: Event) {
+  handleToolbarClick(event: Event) {
     if (event.target instanceof HTMLMenuElement) {
       this.closeAll()
       return
@@ -125,9 +145,14 @@ export class EpkToolbar extends LitElement {
     }
   }
 
+  handleToolbarMenuItemClick(event: Event, func: (event: Event) => void) {
+    func(event)
+    this.requestUpdate()
+  }
+
   render() {
     return html`
-      <menu class="toolbar" @click="${this.handleClick}">
+      <menu class="toolbar" @click="${this.handleToolbarClick}">
         ${this.toolbarSpec.map(item => html`
           <li class="toolbar-menu" @mouseenter="${this.handleMouseEnter}">
             ${item.text}
@@ -138,9 +163,11 @@ export class EpkToolbar extends LitElement {
                     <hr/>`
                 } else {
                   return html`
-                    <li class="toolbar-menu-item" data-command="${subItem.shortcut || nothing}"
-                        @click="${subItem.action}">
-                      ${subItem.text}
+                    <li class="toolbar-menu-item ${!subItem.action ? 'disabled' : ''} ${(subItem.selected && subItem.selected()) ? 'selected' : ''}"
+                        @click="${(event: Event) => {
+                          if (subItem.action) this.handleToolbarMenuItemClick(event, subItem.action)
+                        }}">
+                      <span data-command="${subItem.shortcut || nothing}">${subItem.text}</span>
                     </li>
                   `
                 }

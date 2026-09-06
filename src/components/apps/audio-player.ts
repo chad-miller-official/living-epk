@@ -18,7 +18,7 @@ export class AudioPlayer extends EpkApp {
   windowTitle = 'Windows Media Player'
 
   @property({type: String})
-  windowIcon = '/img/1137.ico'
+  windowIcon = '/img/audio-player-small.ico'
 
   @property({type: String})
   filePath: string | undefined

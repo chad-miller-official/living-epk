@@ -1,5 +1,5 @@
 import {customElement, property, query, queryAssignedElements, state} from "lit/decorators.js";
-import {css, html, LitElement, unsafeCSS} from "lit";
+import {css, html, LitElement, nothing, unsafeCSS} from "lit";
 import interact from "interactjs";
 import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
@@ -7,6 +7,7 @@ import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {activeWindowChangeEvent} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
+import type {EpkApp} from "./app.ts";
 
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
@@ -91,6 +92,15 @@ export class EpkWindow extends LitElement {
   @property({type: Number})
   minHeight: number | null = null
 
+  @property({type: Boolean})
+  noResize = false
+
+  @property({type: Boolean})
+  noMinimize = false
+
+  @property({type: Boolean})
+  noFullscreen = false
+
   @state()
   active = true
 
@@ -126,6 +136,7 @@ export class EpkWindow extends LitElement {
 
   firstUpdated() {
     this.addEventListener('window-title-change', this.handleWindowTitleChange)
+    this.addEventListener('close-window', this.handleCloseWindow)
 
     const epkWindow = this.shadowRoot?.querySelector('.window') as HTMLDivElement
 
@@ -136,12 +147,13 @@ export class EpkWindow extends LitElement {
 
       this.interact = interact(epkWindow)
 
-      this.interact
-        .draggable({
-          allowFrom: '.title-bar',
-          listeners: {move: this.handleDrag.bind(this)},
-        })
-        .resizable({
+      this.interact.draggable({
+        allowFrom: '.title-bar',
+        listeners: {move: this.handleDrag.bind(this)},
+      })
+
+      if (!this.noResize) {
+        this.interact.resizable({
           edges: {
             top: false,
             right: true,
@@ -158,6 +170,8 @@ export class EpkWindow extends LitElement {
             })
           ]
         })
+      }
+
     }
 
     this.resetDimensions()
@@ -185,6 +199,14 @@ export class EpkWindow extends LitElement {
 
   handleWindowTitleChange(event: Event) {
     this.title = (event as CustomEvent).detail.title
+  }
+
+  handleCloseWindow(event: Event) {
+    const detail = (event as CustomEvent<{ requestingApp: EpkApp }>).detail
+
+    if (this.content[0] === detail.requestingApp) {
+      this.handleClose()
+    }
   }
 
   handleClick() {
@@ -228,6 +250,10 @@ export class EpkWindow extends LitElement {
   }
 
   toggleFullscreen() {
+    if (this.noFullscreen) {
+      return
+    }
+
     if (this.minimized) {
       this.resetDimensions(`${this.height}px`)
     } else {
@@ -248,6 +274,10 @@ export class EpkWindow extends LitElement {
   }
 
   toggleMinimized() {
+    if (this.noMinimize) {
+      return
+    }
+
     this.minimized = !this.minimized
     this.fullscreen = false
 
@@ -278,8 +308,7 @@ export class EpkWindow extends LitElement {
       viewportStyle.display = 'none'
     }
 
-    const iconStyle = {backgroundImage: `url(${this.thumbnail})`}
-
+    const iconStyle = {'backgroundImage': `url(${this.thumbnail})`}
     let windowClass = 'window'
 
     if (this.fullscreen) {
@@ -290,13 +319,16 @@ export class EpkWindow extends LitElement {
       <div class="${windowClass}" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
         <div class="title-bar" @dblclick="${this.handleDblClick}">
           <div class="title-bar-text">
-            <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>
+            ${this.thumbnail ? html`
+              <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>` : nothing}
             ${this.title}
           </div>
           <div class="title-bar-controls">
-            <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>
-            <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}"
-                    @click="${this.toggleFullscreen}"></button>
+            ${this.noMinimize ? nothing : html`
+              <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>`}
+            ${this.noFullscreen ? nothing : html`
+              <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}"
+                      @click="${this.toggleFullscreen}"></button>`}
             <button aria-label="Close" @click="${this.handleClose}"></button>
           </div>
         </div>

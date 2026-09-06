@@ -28,5 +28,5 @@ export abstract class EpkApp extends LitElement {
   ]
 
   abstract windowTitle: string
-  abstract windowIcon: string
+  abstract windowIcon: string | null
 }

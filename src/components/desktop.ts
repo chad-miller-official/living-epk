@@ -1,7 +1,7 @@
 import {customElement, queryAssignedElements} from "lit/decorators.js";
 import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
-import {type Launch} from "../lib/events.ts";
+import {DisallowFlags, type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
 import {EpkToolbar} from "./ui.ts";
 
@@ -43,7 +43,6 @@ export class EpkDesktop extends LitElement {
 
     this.windows?.forEach(w => {
       if ((w === event.target || (event.target instanceof Node && w.contains(event.target)))) {
-        w.setActive()
         return
       } else {
         w.active = false
@@ -63,7 +62,7 @@ export class EpkDesktop extends LitElement {
           .forEach(elem => (elem as EpkIcon).selected = false)
 
         if (event.target !== wc) {
-          (wc.shadowRoot?.querySelector('epk-toolbar') as EpkToolbar).closeAll()
+          (wc.shadowRoot?.querySelector('epk-toolbar') as EpkToolbar)?.closeAll()
         }
       })
     });
@@ -89,7 +88,22 @@ export class EpkDesktop extends LitElement {
 
     launchData.init().then(app => {
       epkWindow.title = app.windowTitle
-      epkWindow.thumbnail = app.windowIcon
+
+      if (app.windowIcon) {
+        epkWindow.thumbnail = app.windowIcon
+      }
+
+      if (launchData.disallowFlags & DisallowFlags.DisallowResize) {
+        epkWindow.noResize = true
+      }
+
+      if (launchData.disallowFlags & DisallowFlags.DisallowFullscreen) {
+        epkWindow.noFullscreen = true
+      }
+
+      if (launchData.disallowFlags & DisallowFlags.DisallowMinimize) {
+        epkWindow.noMinimize = true
+      }
 
       const [minWidth, minHeight] = [256, 256]
       const [eventWidth, eventHeight] = launchData.windowDimensions

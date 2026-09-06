@@ -39,7 +39,7 @@ export class FileExplorer extends EpkApp {
   windowTitle = 'File Explorer'
 
   @property({type: String})
-  windowIcon = '/img/795.ico'
+  windowIcon = '/img/file-explorer-small.ico'
 
   @property({type: String})
   filePath = '/data/my-documents.json'

@@ -7,6 +7,8 @@ import type {EpkApp} from "../app.ts";
 
 @customElement('markdown-icon')
 export class MarkdownIcon extends EpkIcon {
+  icon = '/img/markdown-reader.ico'
+
   getLaunchOptions(): LaunchOptions {
     return {
       width: 600,

@@ -6,7 +6,7 @@ import type {EpkApp} from "../app.ts";
 
 @customElement('plaintext-icon')
 export class PlainTextIconElement extends EpkIcon {
-  icon = '/img/511.ico'
+  icon = '/img/notepad.ico'
 
   async getAppInstance(): Promise<EpkApp> {
     return new Promise(resolve => {

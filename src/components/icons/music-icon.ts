@@ -6,7 +6,7 @@ import type {EpkApp} from "../app.ts";
 
 @customElement('music-icon')
 export class MusicIcon extends EpkIcon {
-  icon = '/img/1135.ico'
+  icon = '/img/audio-player.ico'
 
   getAppInstance(): Promise<EpkApp> {
     return new Promise<AudioPlayer>(resolve => {
