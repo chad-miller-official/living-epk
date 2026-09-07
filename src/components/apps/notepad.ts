@@ -5,7 +5,7 @@ import {type ToolbarMenu, ToolbarUiElement} from "../../lib/toolbar.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import dayjs from "dayjs";
-import {closeEvent, DISALLOW_ALL, launchEvent} from "../../lib/events.ts";
+import {closeWindowEvent, DISALLOW_ALL, launchEvent} from "../../lib/events.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
@@ -66,7 +66,7 @@ export class Notepad extends EpkApp {
         },
         ToolbarUiElement.DIVIDER,
         {
-          text: 'Exit', action: () => this.dispatchEvent(closeEvent(this)),
+          text: 'Exit', action: () => this.dispatchEvent(closeWindowEvent()),
         },
       ]
     },
@@ -151,7 +151,7 @@ export class Notepad extends EpkApp {
 
             this.dispatchEvent(launchEvent(() => new Promise<NotepadAbout>(resolve => resolve(new NotepadAbout())), {
               width: 419,
-              height: 400,
+              height: 350,
               disallowFlags: DISALLOW_ALL,
             }))
           },
@@ -305,7 +305,7 @@ export class NotepadAbout extends EpkApp {
   }
 
   requestClose() {
-    this.dispatchEvent(closeEvent(this))
+    this.dispatchEvent(closeWindowEvent())
   }
 
   render() {

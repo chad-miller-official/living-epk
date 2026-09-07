@@ -36,6 +36,7 @@ export class EpkDesktop extends LitElement {
   firstUpdated() {
     this.addEventListener('launch', this.handleLaunch)
     this.addEventListener('active-window-change', this.handleActiveWindowChange)
+    this.addEventListener('close-window', this.handleCloseWindow)
   }
 
   handleClick(event: Event) {
@@ -68,14 +69,24 @@ export class EpkDesktop extends LitElement {
     });
   }
 
-  handleActiveWindowChange(event: Event) {
-    this.windows
+  private getSortedWindows(event: Event) {
+    return this.windows
       ?.filter(w => w !== event.target)
       .toSorted((a, b) => parseInt(a.style.zIndex) - parseInt(b.style.zIndex))
-      .forEach((w, index) => {
+  }
+
+  handleActiveWindowChange(event: Event) {
+    this.getSortedWindows(event)
+      ?.forEach((w, index) => {
         w.active = false
         w.style.zIndex = index.toString()
-      });
+      })
+  }
+
+  handleCloseWindow(event: Event) {
+    this.getSortedWindows(event)
+      ?.pop()
+      ?.setActive()
   }
 
   handleLaunch(event: Event) {

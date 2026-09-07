@@ -4,10 +4,9 @@ import interact from "interactjs";
 import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
-import {activeWindowChangeEvent} from "../lib/events.ts";
+import {activeWindowChangeEvent, closeWindowEvent} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
-import type {EpkApp} from "./app.ts";
 
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
@@ -38,12 +37,21 @@ export class EpkWindow extends LitElement {
       .window {
         display: flex;
         flex-direction: column;
+        opacity: 0.7;
         position: fixed;
+
+        &.active {
+          opacity: 1;
+        }
 
         &.fullscreen {
           border-top-left-radius: 0;
           border-top-right-radius: 0;
           box-shadow: initial;
+          height: 100vh;
+          left: 0;
+          top: 0;
+          width: 100vw;
 
           & .title-bar {
             border-top-left-radius: 0;
@@ -55,10 +63,18 @@ export class EpkWindow extends LitElement {
             margin: 0 -3px;
           }
         }
+
+        &.minimized {
+          height: auto;
+        }
       }
 
       .window-viewport {
         flex-grow: 1;
+
+        &.minimized {
+          display: none;
+        }
       }
     `]
 
@@ -110,7 +126,23 @@ export class EpkWindow extends LitElement {
   @state()
   minimized = false
 
-  private interact: Interactable | null = null;
+  private interact: Interactable | null = null
+
+  /*
+   * When closing a Window, two events are triggered:
+   *
+   * 1. click (which itself triggers an active-window-change event)
+   * 2. close-window
+   *
+   * However, the click (i.e., active-window-change) event is handled AFTER the close-window event.
+   * So we run into a problem: the Desktop handles the active-window-change and tries to make the
+   * window that we just closed "active".
+   *
+   * So this flag mitigates this: when a Window is closed, `isClosing` is set to true, and then in
+   * the click handler, we can stop the click event's propagation, preventing the event from reaching
+   * the Desktop's click handler and messing up our active window ordering.
+   */
+  private isClosing = false
 
   private maximizeWindow() {
     this.style.top = '0'
@@ -135,9 +167,7 @@ export class EpkWindow extends LitElement {
   }
 
   firstUpdated() {
-    this.addEventListener('window-title-change', this.handleWindowTitleChange)
     this.addEventListener('close-window', this.handleCloseWindow)
-
     const epkWindow = this.shadowRoot?.querySelector('.window') as HTMLDivElement
 
     if (epkWindow) {
@@ -191,26 +221,23 @@ export class EpkWindow extends LitElement {
     EpkWindow.instanceCount--
   }
 
+  handleCloseWindow() {
+    this.remove()
+    this.isClosing = true
+  }
+
   setActive() {
     this.active = true
     this.style.zIndex = EpkWindow.instanceCount.toString()
     this.dispatchEvent(activeWindowChangeEvent())
   }
 
-  handleWindowTitleChange(event: Event) {
-    this.title = (event as CustomEvent).detail.title
-  }
-
-  handleCloseWindow(event: Event) {
-    const detail = (event as CustomEvent<{ requestingApp: EpkApp }>).detail
-
-    if (this.content[0] === detail.requestingApp) {
-      this.handleClose()
+  handleClick(event: Event) {
+    if (this.isClosing) {
+      event.stopPropagation()
+    } else {
+      this.setActive()
     }
-  }
-
-  handleClick() {
-    this.setActive()
   }
 
   handleDblClick() {
@@ -243,10 +270,6 @@ export class EpkWindow extends LitElement {
     this.resetCoordinates()
     this.resetDimensions()
     this.setActive()
-  }
-
-  handleClose() {
-    this.remove()
   }
 
   toggleFullscreen() {
@@ -291,29 +314,29 @@ export class EpkWindow extends LitElement {
   }
 
   render() {
-    const windowStyle: any = {
-      height: this.fullscreen ? '100vh' : this.minimized ? 'auto' : `${this.height}px`,
-      width: this.fullscreen ? '100vw' : `${this.width}px`,
-      opacity: this.active ? 1 : 0.7,
-    }
-
-    if (this.fullscreen) {
-      windowStyle.top = 0
-      windowStyle.left = 0
-    }
-
-    const viewportStyle: any = {}
-
-    if (this.minimized) {
-      viewportStyle.display = 'none'
-    }
-
-    const iconStyle = {'backgroundImage': `url(${this.thumbnail})`}
     let windowClass = 'window'
+
+    if (this.active) {
+      windowClass += ' active'
+    }
+
+    let viewportClass = 'window-viewport'
+    const windowStyle: any = {}
 
     if (this.fullscreen) {
       windowClass += ' fullscreen'
+    } else {
+      if (this.minimized) {
+        windowClass += ' minimized'
+        viewportClass += ' minimized'
+      } else {
+        windowStyle['height'] = `${this.height}px`
+      }
+
+      windowStyle['width'] = `${this.width}px`
     }
+
+    const iconStyle = {'backgroundImage': `url(${this.thumbnail})`}
 
     return html`
       <div class="${windowClass}" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
@@ -329,10 +352,11 @@ export class EpkWindow extends LitElement {
             ${this.noFullscreen ? nothing : html`
               <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}"
                       @click="${this.toggleFullscreen}"></button>`}
-            <button aria-label="Close" @click="${this.handleClose}"></button>
+            <button aria-label="Close"
+                    @click="${() => this.dispatchEvent(closeWindowEvent())}"></button>
           </div>
         </div>
-        <div class="window-viewport" style="${styleMap(viewportStyle)}">
+        <div class="${viewportClass}">
           <slot></slot>
         </div>
       </div>

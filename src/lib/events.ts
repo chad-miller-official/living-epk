@@ -48,25 +48,8 @@ export function activeWindowChangeEvent(): CustomEvent {
   })
 }
 
-export function closeEvent(requestingApp: EpkApp): CustomEvent<{ requestingApp: EpkApp }> {
+export function closeWindowEvent(): CustomEvent {
   return new CustomEvent('close-window', {
-    detail: {requestingApp},
-    bubbles: true,
-    composed: true,
-  })
-}
-
-export function windowTitleChangeEvent(title: string): CustomEvent<{ title: string }> {
-  return new CustomEvent('window-title-change', {
-    detail: {title},
-    bubbles: true,
-    composed: true,
-  })
-}
-
-export function userAlertEvent(message: string): CustomEvent<{ message: string }> {
-  return new CustomEvent('user-alert', {
-    detail: {message},
     bubbles: true,
     composed: true,
   })
