@@ -34,6 +34,13 @@ export class EpkWindow extends LitElement {
         gap: 1ch;
       }
 
+      .window-wrapper {
+        box-sizing: border-box;
+        height: calc(100% + 12px);
+        padding: 4px;
+        width: calc(100% + 9px);
+      }
+
       .window {
         display: flex;
         flex-direction: column;
@@ -134,13 +141,13 @@ export class EpkWindow extends LitElement {
    * 1. click (which itself triggers an active-window-change event)
    * 2. close-window
    *
-   * However, the click (i.e., active-window-change) event is handled AFTER the close-window event.
-   * So we run into a problem: the Desktop handles the active-window-change and tries to make the
-   * window that we just closed "active".
+   * However, the click event is handled AFTER the close-window event. So we run into a problem: the
+   * Desktop handles the click and tries to make the window that we just closed "active".
    *
    * So this flag mitigates this: when a Window is closed, `isClosing` is set to true, and then in
-   * the click handler, we can stop the click event's propagation, preventing the event from reaching
-   * the Desktop's click handler and messing up our active window ordering.
+   * the click handler, we can check `isClosing` to conditionally stop the click event's
+   * propagation, preventing the event from reaching the Desktop's click handler and messing up our
+   * active window ordering.
    */
   private isClosing = false
 
@@ -168,7 +175,7 @@ export class EpkWindow extends LitElement {
 
   firstUpdated() {
     this.addEventListener('close-window', this.handleCloseWindow)
-    const epkWindow = this.shadowRoot?.querySelector('.window') as HTMLDivElement
+    const epkWindow = this.shadowRoot?.querySelector('.window-wrapper') as HTMLDivElement
 
     if (epkWindow) {
       const bodyStyle = window.getComputedStyle(this.window!)
@@ -339,25 +346,27 @@ export class EpkWindow extends LitElement {
     const iconStyle = {'backgroundImage': `url(${this.thumbnail})`}
 
     return html`
-      <div class="${windowClass}" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
-        <div class="title-bar" @dblclick="${this.handleDblClick}">
-          <div class="title-bar-text">
-            ${this.thumbnail ? html`
-              <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>` : nothing}
-            ${this.title}
+      <div class="window-wrapper">
+        <div class="${windowClass}" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
+          <div class="title-bar" @dblclick="${this.handleDblClick}">
+            <div class="title-bar-text">
+              ${this.thumbnail ? html`
+                <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>` : nothing}
+              ${this.title}
+            </div>
+            <div class="title-bar-controls">
+              ${this.noMinimize ? nothing : html`
+                <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>`}
+              ${this.noFullscreen ? nothing : html`
+                <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}"
+                        @click="${this.toggleFullscreen}"></button>`}
+              <button aria-label="Close"
+                      @click="${() => this.dispatchEvent(closeWindowEvent())}"></button>
+            </div>
           </div>
-          <div class="title-bar-controls">
-            ${this.noMinimize ? nothing : html`
-              <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>`}
-            ${this.noFullscreen ? nothing : html`
-              <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}"
-                      @click="${this.toggleFullscreen}"></button>`}
-            <button aria-label="Close"
-                    @click="${() => this.dispatchEvent(closeWindowEvent())}"></button>
+          <div class="${viewportClass}">
+            <slot></slot>
           </div>
-        </div>
-        <div class="${viewportClass}">
-          <slot></slot>
         </div>
       </div>
     `

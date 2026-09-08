@@ -1,6 +1,6 @@
 import {EpkToolbar} from "../ui.ts";
 import type {EpkIcon} from "../icon.ts";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, query, queryAll} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html} from "lit";
 import {getFileExtension} from "../../lib/fs.ts";
@@ -46,6 +46,9 @@ export class FileExplorer extends EpkApp {
 
   @query('#toolbar')
   toolbar!: EpkToolbar
+
+  @queryAll('.epk-icon')
+  icons!: EpkIcon[]
 
   private toolbarSpec: ToolbarMenu[] = [
     {
@@ -115,6 +118,9 @@ export class FileExplorer extends EpkApp {
     if (event.target !== this.toolbar) {
       this.toolbar.closeAll()
     }
+
+
+    Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
   }
 
   render() {
@@ -125,7 +131,8 @@ export class FileExplorer extends EpkApp {
         </div>`,
       complete: (spec: FsSpec) => html`
         <div class="app" @click="${this.handleClick}">
-          <epk-toolbar id="toolbar" class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+          <epk-toolbar id="toolbar" class="toolbar"
+                       .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
           <section class="content file-explorer">
             ${spec.paths.map(this.buildIcon)}
           </section>
