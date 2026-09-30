@@ -1,6 +1,6 @@
 import {EpkToolbar} from "../ui.ts";
-import type {EpkIcon} from "../icon.ts";
-import {customElement, property, query, queryAll} from "lit/decorators.js";
+import {type EpkIcon, IconViewMode} from "../icon.ts";
+import {customElement, property, query, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html} from "lit";
 import {getFileExtension} from "../../lib/fs.ts";
@@ -12,6 +12,7 @@ import {EpkApp} from "../app.ts";
 type FsPath = {
   path: string,
   displayPath: string,
+  timestamp: number,
 }
 
 type FsSpec = {
@@ -24,13 +25,36 @@ export class FileExplorer extends EpkApp {
   static styles = [
     ...EpkApp.styles,
     css`
+      #pathInput {
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        width: 100%;
+      }
+
       .file-explorer {
-        align-items: flex-start;
+        display: flex;
+        overflow: auto;
+
+        &.icon {
+          align-items: flex-start;
+        }
+        
+        &.list {
+          flex-direction: column;
+          width: 100%;
+        }
+      }
+
+      .navigation {
+        display: flex;
+      }
+      
+      .viewport {
         background-color: #ffffff;
         display: flex;
-        gap: 16px;
+        flex-direction: column;
         height: 100%;
-        overflow: auto;
       }
     `
   ]
@@ -50,6 +74,9 @@ export class FileExplorer extends EpkApp {
   @queryAll('.epk-icon')
   icons!: EpkIcon[]
 
+  @state()
+  viewMode = IconViewMode.IconView
+
   private toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
@@ -61,7 +88,18 @@ export class FileExplorer extends EpkApp {
     },
     {
       text: 'View',
-      items: [],
+      items: [
+        {
+          text: 'Icon View',
+          action: () => this.viewMode = IconViewMode.IconView,
+          selected: () => this.viewMode === IconViewMode.IconView
+        },
+        {
+          text: 'List View',
+          action: () => this.viewMode = IconViewMode.ListView,
+          selected: () => this.viewMode === IconViewMode.ListView,
+        }
+      ],
     },
     {
       text: 'Favorites',
@@ -109,7 +147,14 @@ export class FileExplorer extends EpkApp {
 
     icon.title = path.displayPath
     icon.filePath = path.path
+    icon.timestamp = path.timestamp
     icon.classList.add('epk-icon')
+    icon.viewMode = this.viewMode
+
+    if (this.viewMode === IconViewMode.ListView) {
+      icon.style.flexGrow = '1'
+      icon.style.padding = '0 4px'
+    }
 
     return icon
   }
@@ -118,7 +163,6 @@ export class FileExplorer extends EpkApp {
     if (event.target !== this.toolbar) {
       this.toolbar.closeAll()
     }
-
 
     Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
   }
@@ -129,17 +173,26 @@ export class FileExplorer extends EpkApp {
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: (spec: FsSpec) => html`
-        <div class="app" @click="${this.handleClick}">
-          <epk-toolbar id="toolbar" class="toolbar"
-                       .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
-          <section class="content file-explorer">
-            ${spec.paths.map(this.buildIcon)}
-          </section>
-          <div class="status-bar">
-            <p class="status-bar-field">${spec.paths.length} item(s)</p>
-          </div>
-        </div>`,
+      complete: (spec: FsSpec) => {
+        return html`
+          <div class="app" @click="${this.handleClick}">
+            <epk-toolbar id="toolbar" class="toolbar"
+                         .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+            <section class="content">
+              <div class="viewport">
+                <div class="navigation">
+                  <input type="text" value="${spec.displayRoot}" id="pathInput"/>
+                </div>
+                <div class="file-explorer ${this.viewMode}">
+                  ${spec.paths.map(this.buildIcon.bind(this))}
+                </div>
+              </div>
+            </section>
+            <div class="status-bar">
+              <p class="status-bar-field">${spec.paths.length} item(s)</p>
+            </div>
+          </div>`
+      },
       error: () => html`
         <div class="app">
           <div class="content">Error</div>

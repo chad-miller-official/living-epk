@@ -4,52 +4,88 @@ import {css, type CSSResultGroup, html, LitElement} from "lit";
 import {launchEvent, type LaunchOptions} from "../lib/events.ts";
 import type {EpkApp} from "./app.ts";
 
+const LIST_VIEW_DATE_FORMAT_OPTIONS = {
+  dateStyle: 'full',
+  timeStyle: 'short',
+} as const
+
+export enum IconViewMode {
+  IconView = 'icon',
+  ListView = 'list',
+}
+
 export abstract class EpkIcon extends LitElement {
   static styles: CSSResultGroup = css`
+    .container {
+      -webkit-font-smoothing: none;
+      align-items: center;
+      display: flex;
+      font-family: "Pixelated MS Sans Serif", Arial;
+      font-size: 11px;
+      height: fit-content;
+      max-width: max-content;
+      user-select: none;
+      
+      &.icon {
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px;
+
+        .icon-name {
+          max-width: 80px;
+        }
+      }
+      
+      &.list {
+        flex-direction: row;
+        min-width: 100%;
+        
+        .fx-wrapper {
+          margin: 0;
+        }
+      }
+      
+      &.selected {
+        .fx {
+          display: block;
+        }
+        
+        .icon-name {
+          background-color: #316AC5;
+          border: 1px dotted #FFFF7F;
+          color: #ffffff;
+        }
+      }
+    }
+
     .fx {
       display: none;
       filter: drop-shadow(10000px 0 0 rgb(49 106 197 / 50%));
       position: absolute;
       transform: translateX(-10000px);
-
-      &.selected {
-        display: block;
-      }
     }
 
-    .icon-wrapper {
+    .fx-wrapper {
       display: flex;
-      margin: 0 auto 8px auto;
+      margin: 0 auto;
       width: fit-content;
-    }
-
-    .icon {
-      -webkit-font-smoothing: none;
-      font-family: "Pixelated MS Sans Serif", Arial;
-      font-size: 11px;
-      height: fit-content;
-      max-width: max-content;
-      padding: 8px;
-      user-select: none;
     }
 
     .icon-name {
       border: 1px solid #ffffff00;
       line-height: 1.3;
       margin: 1px;
-      max-width: 80px;
       padding: 1px;
       text-align: center;
 
       &:hover {
         cursor: default;
       }
-
-      &.selected {
-        background-color: #316AC5;
-        border: 1px dotted #FFFF7F;
-        color: #ffffff;
-      }
+    }
+    
+    .metadata {
+      flex-grow: 1;
+      text-align: right;
     }
 
     .shadowed {
@@ -72,6 +108,12 @@ export abstract class EpkIcon extends LitElement {
   @property({type: String})
   filePath: string | undefined
 
+  @property({type: Number})
+  timestamp = 0
+
+  @property()
+  viewMode = IconViewMode.IconView
+
   @state()
   selected = false
 
@@ -90,31 +132,43 @@ export abstract class EpkIcon extends LitElement {
   }
 
   render() {
-    let titleClassName = 'icon-name'
-    let fxClassName = 'fx'
-
+    let iconClassName = `container ${this.viewMode}`
     const textStyle: any = {};
 
     if (this.selected) {
-      titleClassName += ' selected'
-      fxClassName += ' selected'
+      iconClassName += ' selected'
     } else {
       textStyle.color = this.color
     }
+
+    let titleClassName = 'icon-name'
 
     if (this.shadow) {
       titleClassName += ' shadowed'
     }
 
+    let iconSize = 48
+    let additionalColumns = null
+
+    if (this.viewMode === IconViewMode.ListView) {
+      iconSize = 16
+
+      additionalColumns = html`
+        <span class="metadata">
+          ${new Intl.DateTimeFormat('en-US', LIST_VIEW_DATE_FORMAT_OPTIONS).format(this.timestamp)}
+        </span>`
+    }
+
     return html`
-      <div class="icon" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
-        <div class="icon-wrapper">
-          <img src="${this.icon}" alt="${this.icon}" width="48" height="48"/>
-          <img src="${this.icon}" class="${fxClassName}" width="48" height="48"/>
+      <div class="${iconClassName}" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
+        <div class="fx-wrapper">
+          <img src="${this.icon}" alt="${this.icon}" width="${iconSize}" height="${iconSize}"/>
+          <img src="${this.icon}" class="fx" width="${iconSize}" height="${iconSize}"/>
         </div>
-        <p class="${titleClassName}" style="${styleMap(textStyle)}">
+        <span class="${titleClassName}" style="${styleMap(textStyle)}">
           ${this.title}
-        </p>
+        </span>
+        ${additionalColumns}
       </div>
     `
   }
