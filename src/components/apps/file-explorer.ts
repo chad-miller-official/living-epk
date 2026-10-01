@@ -40,16 +40,9 @@ export class FileExplorer extends EpkApp {
 
       .file-explorer {
         display: flex;
+        flex-direction: column;
         overflow: auto;
-
-        &.icon {
-          align-items: flex-start;
-        }
-
-        &.list {
-          flex-direction: column;
-          width: 100%;
-        }
+        width: 100%;
       }
 
       .navigation {
@@ -71,9 +64,14 @@ export class FileExplorer extends EpkApp {
         border-collapse: collapse;
         table-layout: fixed;
       }
-      
-      td:not(.divider) {
-        padding: 0 4px;
+
+      td {
+        white-space: nowrap;
+
+        &:not(.divider) {
+          padding: 0 4px;
+
+        }
       }
 
       th {
@@ -151,9 +149,6 @@ export class FileExplorer extends EpkApp {
   fsSpec!: FsSpec
 
   @state()
-  viewMode = IconViewMode.IconView
-
-  @state()
   sortColumn = SortColumn.Filename
 
   @state()
@@ -170,18 +165,7 @@ export class FileExplorer extends EpkApp {
     },
     {
       text: 'View',
-      items: [
-        {
-          text: 'Icon View',
-          action: () => this.viewMode = IconViewMode.IconView,
-          selected: () => this.viewMode === IconViewMode.IconView
-        },
-        {
-          text: 'List View',
-          action: () => this.viewMode = IconViewMode.ListView,
-          selected: () => this.viewMode === IconViewMode.ListView,
-        }
-      ],
+      items: [],
     },
     {
       text: 'Favorites',
@@ -231,8 +215,7 @@ export class FileExplorer extends EpkApp {
     icon.title = path.displayPath
     icon.filePath = path.path
     icon.timestamp = path.timestamp
-    icon.viewMode = this.viewMode
-
+    icon.viewMode = IconViewMode.ListView
     icon.classList.add('epk-icon')
 
     return icon
@@ -319,49 +302,12 @@ export class FileExplorer extends EpkApp {
           <div class="content"></div>
         </div>`,
       complete: (spec: FsSpec) => {
-        let fileExplorerContents
+        const LIST_VIEW_DATE_FORMAT_OPTIONS = {
+          dateStyle: 'full',
+          timeStyle: 'short',
+        } as const
 
-        if (this.viewMode === IconViewMode.IconView) {
-          fileExplorerContents = spec.paths.map(this.buildIcon.bind(this))
-        } else {
-          const LIST_VIEW_DATE_FORMAT_OPTIONS = {
-            dateStyle: 'full',
-            timeStyle: 'short',
-          } as const
-
-          const colStyle = styleMap({backgroundColor: '#f7f7f7'})
-
-          fileExplorerContents = html`
-            <table>
-              <colgroup>
-                <col style="${this.sortColumn === SortColumn.Filename ? colStyle : ''}" />
-                <col />
-                <col style="${this.sortColumn === SortColumn.Modified ? colStyle : ''}" />
-              </colgroup>
-              <thead>
-              <tr>
-                <th class="sort asc" data-column="${SortColumn.Filename}" @click="${this.sortFiles}">
-                  File Name
-                </th>
-                <th class="divider" @mousedown="${this.handleDividerDrag}">
-                  <div></div>
-                </th>
-                <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
-                  Last Modified
-                </th>
-              </tr>
-              </thead>
-              <tbody>
-              ${spec.paths.map(path => html`
-                <tr>
-                  <td>${this.buildIcon(path)}</td>
-                  <td class="divider"></td>
-                  <td>${new Intl.DateTimeFormat('en-US', LIST_VIEW_DATE_FORMAT_OPTIONS).format(path.timestamp)}</td>
-                </tr>
-              `)}
-              </tbody>
-            </table>`
-        }
+        const colStyle = styleMap({backgroundColor: '#f7f7f7'})
 
         return html`
           <div class="app" @click="${this.handleClick}">
@@ -372,8 +318,37 @@ export class FileExplorer extends EpkApp {
                 <div class="navigation">
                   <input type="text" value="${spec.displayRoot}" id="pathInput"/>
                 </div>
-                <div class="file-explorer ${this.viewMode}">
-                  ${fileExplorerContents}
+                <div class="file-explorer">
+                  <table>
+                    <colgroup>
+                      <col style="${this.sortColumn === SortColumn.Filename ? colStyle : ''}"/>
+                      <col/>
+                      <col style="${this.sortColumn === SortColumn.Modified ? colStyle : ''}"/>
+                    </colgroup>
+                    <thead>
+                    <tr>
+                      <th class="sort asc" data-column="${SortColumn.Filename}" @click="${this.sortFiles}">
+                        File Name
+                      </th>
+                      <th class="divider" @mousedown="${this.handleDividerDrag}">
+                        <div></div>
+                      </th>
+                      <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
+                        Last Modified
+                      </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${spec.paths.map(path => html`
+                      <tr>
+                        <td>${this.buildIcon(path)}</td>
+                        <td class="divider"></td>
+                        <td>${new Intl.DateTimeFormat('en-US', LIST_VIEW_DATE_FORMAT_OPTIONS).format(path.timestamp)}
+                        </td>
+                      </tr>
+                    `)}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </section>
