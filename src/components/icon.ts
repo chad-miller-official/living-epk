@@ -4,11 +4,6 @@ import {css, type CSSResultGroup, html, LitElement} from "lit";
 import {launchEvent, type LaunchOptions} from "../lib/events.ts";
 import type {EpkApp} from "./app.ts";
 
-const LIST_VIEW_DATE_FORMAT_OPTIONS = {
-  dateStyle: 'full',
-  timeStyle: 'short',
-} as const
-
 export enum IconViewMode {
   IconView = 'icon',
   ListView = 'list',
@@ -25,7 +20,7 @@ export abstract class EpkIcon extends LitElement {
       height: fit-content;
       max-width: max-content;
       user-select: none;
-      
+
       &.icon {
         flex-direction: column;
         gap: 6px;
@@ -35,21 +30,20 @@ export abstract class EpkIcon extends LitElement {
           max-width: 80px;
         }
       }
-      
+
       &.list {
         flex-direction: row;
-        min-width: 100%;
-        
+
         .fx-wrapper {
           margin: 0;
         }
       }
-      
+
       &.selected {
         .fx {
           display: block;
         }
-        
+
         .icon-name {
           background-color: #316AC5;
           border: 1px dotted #FFFF7F;
@@ -81,11 +75,6 @@ export abstract class EpkIcon extends LitElement {
       &:hover {
         cursor: default;
       }
-    }
-    
-    .metadata {
-      flex-grow: 1;
-      text-align: right;
     }
 
     .shadowed {
@@ -147,17 +136,7 @@ export abstract class EpkIcon extends LitElement {
       titleClassName += ' shadowed'
     }
 
-    let iconSize = 48
-    let additionalColumns = null
-
-    if (this.viewMode === IconViewMode.ListView) {
-      iconSize = 16
-
-      additionalColumns = html`
-        <span class="metadata">
-          ${new Intl.DateTimeFormat('en-US', LIST_VIEW_DATE_FORMAT_OPTIONS).format(this.timestamp)}
-        </span>`
-    }
+    let iconSize = this.viewMode === IconViewMode.ListView ? 16 : 48
 
     return html`
       <div class="${iconClassName}" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
@@ -168,7 +147,6 @@ export abstract class EpkIcon extends LitElement {
         <span class="${titleClassName}" style="${styleMap(textStyle)}">
           ${this.title}
         </span>
-        ${additionalColumns}
       </div>
     `
   }

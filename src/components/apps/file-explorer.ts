@@ -9,6 +9,11 @@ import {MarkdownIcon} from "../icons/markdown-icon.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 
+enum SortColumn {
+  Filename = 'filename',
+  Modified = 'modified'
+}
+
 type FsPath = {
   path: string,
   displayPath: string,
@@ -39,7 +44,7 @@ export class FileExplorer extends EpkApp {
         &.icon {
           align-items: flex-start;
         }
-        
+
         &.list {
           flex-direction: column;
           width: 100%;
@@ -49,12 +54,71 @@ export class FileExplorer extends EpkApp {
       .navigation {
         display: flex;
       }
-      
+
       .viewport {
+        -webkit-font-smoothing: none;
         background-color: #ffffff;
         display: flex;
         flex-direction: column;
+        font-family: "Pixelated MS Sans Serif", Arial;
+        font-size: 11px;
         height: 100%;
+        user-select: none;
+      }
+
+      table {
+        border-collapse: collapse;
+      }
+
+      th {
+        border-bottom: 3px solid #cfc9bb;
+        font-weight: normal;
+        text-align: start;
+
+        &:not(.divider) {
+          padding: 5px 5px 5px 10px;
+
+          &:hover {
+            background-color: #f9f8f2;
+            border-bottom-color: #f9ae13;
+          }
+
+          &:active {
+            background-color: #dedfda;
+          }
+        }
+
+        &.divider {
+          div {
+            background-color: #ccc8b6;
+            height: 14px;
+            margin: auto;
+            width: 1px;
+          }
+
+          &:hover {
+            cursor: col-resize;
+          }
+        }
+
+        &.sort {
+          &::after {
+            color: #aca797;
+            white-space: pre;
+          }
+
+          &.asc::after {
+            content: "    \\25BC";
+          }
+
+          &.desc::after {
+            content: "    \\25B2";
+          }
+        }
+      }
+
+      th, thead {
+        background-color: #eceadb;
       }
     `
   ]
@@ -74,8 +138,20 @@ export class FileExplorer extends EpkApp {
   @queryAll('.epk-icon')
   icons!: EpkIcon[]
 
+  @queryAll('th')
+  headers!: HTMLTableCellElement[]
+
+  @state()
+  fsSpec!: FsSpec
+
   @state()
   viewMode = IconViewMode.IconView
+
+  @state()
+  sortColumn = SortColumn.Filename
+
+  @state()
+  sortAsc = true
 
   private toolbarSpec: ToolbarMenu[] = [
     {
@@ -124,7 +200,8 @@ export class FileExplorer extends EpkApp {
         alert(`Failed to get file system data (tried loading "${src}")`)
       }
 
-      return await response.json() as FsSpec
+      this.fsSpec = await response.json() as FsSpec
+      return this.fsSpec
     },
     args: () => [this.filePath]
   })
@@ -148,13 +225,9 @@ export class FileExplorer extends EpkApp {
     icon.title = path.displayPath
     icon.filePath = path.path
     icon.timestamp = path.timestamp
-    icon.classList.add('epk-icon')
     icon.viewMode = this.viewMode
 
-    if (this.viewMode === IconViewMode.ListView) {
-      icon.style.flexGrow = '1'
-      icon.style.padding = '0 4px'
-    }
+    icon.classList.add('epk-icon')
 
     return icon
   }
@@ -167,6 +240,49 @@ export class FileExplorer extends EpkApp {
     Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
   }
 
+  sortFiles(event: Event) {
+    const target = event.target as HTMLTableCellElement
+
+    if (target.classList.contains('sort')) {
+      if (target.classList.contains('asc')) {
+        target.classList.remove('asc')
+        target.classList.add('desc')
+      } else {
+        target.classList.remove('desc')
+        target.classList.add('asc')
+      }
+
+      this.sortAsc = !this.sortAsc
+    } else {
+      this.headers.forEach(th => th.classList.remove('sort'))
+
+      target.classList.add('sort')
+      target.classList.add('asc')
+
+      this.sortColumn = target.dataset['column'] as SortColumn
+      this.sortAsc = true
+    }
+
+    switch (this.sortColumn) {
+      case SortColumn.Filename:
+        this.fsSpec.paths.sort(
+          this.sortAsc
+            ? (a, b) => a.displayPath.localeCompare(b.displayPath)
+            : (a, b) => b.displayPath.localeCompare(a.displayPath)
+        )
+
+        break
+      case SortColumn.Modified:
+        this.fsSpec.paths.sort(
+          this.sortAsc
+            ? (a, b) => a.timestamp - b.timestamp
+            : (a, b) => b.timestamp - a.timestamp
+        )
+
+        break
+    }
+  }
+
   render() {
     return this.iconLoaderTask.render({
       pending: () => html`
@@ -174,6 +290,43 @@ export class FileExplorer extends EpkApp {
           <div class="content"></div>
         </div>`,
       complete: (spec: FsSpec) => {
+        let fileExplorerContents
+
+        if (this.viewMode === IconViewMode.IconView) {
+          fileExplorerContents = spec.paths.map(this.buildIcon.bind(this))
+        } else {
+          const LIST_VIEW_DATE_FORMAT_OPTIONS = {
+            dateStyle: 'full',
+            timeStyle: 'short',
+          } as const
+
+          fileExplorerContents = html`
+            <table>
+              <thead>
+              <tr>
+                <th class="sort asc" data-column="${SortColumn.Filename}" @click="${this.sortFiles}">
+                  File Name
+                </th>
+                <th class="divider">
+                  <div></div>
+                </th>
+                <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
+                  Last Modified
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              ${spec.paths.map(path => html`
+                <tr>
+                  <td>${this.buildIcon(path)}</td>
+                  <td><!-- spacer --></td>
+                  <td>${new Intl.DateTimeFormat('en-US', LIST_VIEW_DATE_FORMAT_OPTIONS).format(path.timestamp)}</td>
+                </tr>
+              `)}
+              </tbody>
+            </table>`
+        }
+
         return html`
           <div class="app" @click="${this.handleClick}">
             <epk-toolbar id="toolbar" class="toolbar"
@@ -184,7 +337,7 @@ export class FileExplorer extends EpkApp {
                   <input type="text" value="${spec.displayRoot}" id="pathInput"/>
                 </div>
                 <div class="file-explorer ${this.viewMode}">
-                  ${spec.paths.map(this.buildIcon.bind(this))}
+                  ${fileExplorerContents}
                 </div>
               </div>
             </section>
