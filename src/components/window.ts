@@ -264,7 +264,7 @@ export class EpkWindow extends LitElement {
   }
 
   handleResize(event: ResizeEvent) {
-    if (this.fullscreen) {
+    if (this.fullscreen || this.minimized) {
       return
     }
 

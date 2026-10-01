@@ -8,6 +8,7 @@ import {MusicIcon} from "../icons/music-icon.ts";
 import {MarkdownIcon} from "../icons/markdown-icon.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
+import {styleMap} from "lit/directives/style-map.js";
 
 enum SortColumn {
   Filename = 'filename',
@@ -68,6 +69,11 @@ export class FileExplorer extends EpkApp {
 
       table {
         border-collapse: collapse;
+        table-layout: fixed;
+      }
+      
+      td:not(.divider) {
+        padding: 0 4px;
       }
 
       th {
@@ -283,6 +289,29 @@ export class FileExplorer extends EpkApp {
     }
   }
 
+  handleDividerDrag(mouseDownEvent: MouseEvent) {
+    const divider = mouseDownEvent.target as HTMLTableCellElement
+    const precedingHeader = divider.previousElementSibling as HTMLTableCellElement
+
+    const startX = mouseDownEvent.clientX
+    const startWidth = precedingHeader.offsetWidth
+
+    const handleMouseMove = (mouseMoveEvent: MouseEvent) => {
+      const deltaX = mouseMoveEvent.clientX - startX
+
+      // Subtract 15 to account for padding within the <th> element
+      precedingHeader.style.width = `${startWidth + deltaX - 15}px`
+    }
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
   render() {
     return this.iconLoaderTask.render({
       pending: () => html`
@@ -300,14 +329,21 @@ export class FileExplorer extends EpkApp {
             timeStyle: 'short',
           } as const
 
+          const colStyle = styleMap({backgroundColor: '#f7f7f7'})
+
           fileExplorerContents = html`
             <table>
+              <colgroup>
+                <col style="${this.sortColumn === SortColumn.Filename ? colStyle : ''}" />
+                <col />
+                <col style="${this.sortColumn === SortColumn.Modified ? colStyle : ''}" />
+              </colgroup>
               <thead>
               <tr>
                 <th class="sort asc" data-column="${SortColumn.Filename}" @click="${this.sortFiles}">
                   File Name
                 </th>
-                <th class="divider">
+                <th class="divider" @mousedown="${this.handleDividerDrag}">
                   <div></div>
                 </th>
                 <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
@@ -319,7 +355,7 @@ export class FileExplorer extends EpkApp {
               ${spec.paths.map(path => html`
                 <tr>
                   <td>${this.buildIcon(path)}</td>
-                  <td><!-- spacer --></td>
+                  <td class="divider"></td>
                   <td>${new Intl.DateTimeFormat('en-US', LIST_VIEW_DATE_FORMAT_OPTIONS).format(path.timestamp)}</td>
                 </tr>
               `)}
