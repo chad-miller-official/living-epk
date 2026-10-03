@@ -1,4 +1,25 @@
 @font-face {
+  font-family: 'Franklin Gothic Medium';
+  font-style: normal;
+  font-weight: normal;
+  src: local('Franklin Gothic Medium'), url('/font/OPTIFranklinGothic-Medium.otf') format('otf');
+}
+
+@font-face {
+  font-family: 'Franklin Gothic Medium Italic';
+  font-style: italic;
+  font-weight: normal;
+  src: local('Franklin Gothic Medium'), url('/font/OPTIFranklinGothic-MediumIt.otf') format('otf');
+}
+
+@font-face {
+  font-family: 'Tahoma';
+  font-style: normal;
+  font-weight: normal;
+  src: local('Tahoma'), url('/font/Tahoma V1.woff') format('woff');
+}
+
+@font-face {
   font-family: 'Trebuchet MS';
   font-style: normal;
   font-weight: normal;
@@ -7,7 +28,14 @@
 
 @font-face {
   font-family: 'Trebuchet MS Italic';
-  font-style: normal;
+  font-style: italic;
   font-weight: normal;
-  src: local('Trebuchet MS Italic'), url('/font/Trebuchet-MS-Italic.woff') format('woff');
+  src: local('Trebuchet MS'), url('/font/Trebuchet-MS-Italic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Verdana Bold';
+  font-style: normal;
+  font-weight: bold;
+  src: local('Verdana'), url('/font/Verdana-Bold.ttf') format('ttf');
 }

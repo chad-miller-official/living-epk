@@ -13,7 +13,9 @@
 
 Hello!
 
-This is my website. Take a look around!
+This is my website. This is a perpetual work-in-
+progress and is updated regularly. Take a look
+around!
 
 Cheers,
 - Chad

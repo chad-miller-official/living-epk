@@ -11,8 +11,18 @@ export class MarkdownReader extends EpkApp {
     ...EpkApp.styles,
     css`
       .markdown {
+        font-family: 'Tahoma';
+        padding: 8px;
+      }
+      
+      .markdown-container {
+        background-color: #ffffff;
         height: 100%;
         overflow-y: scroll;
+        
+        h1, h2, h3, h4, h5, h6 {
+          font-size: revert;
+        }
       }
     `
   ]
@@ -46,8 +56,10 @@ export class MarkdownReader extends EpkApp {
       complete: (documentBody) => html`
         <div class="app">
           <div class="content">
-            <div class="markdown">
-              ${unsafeHTML(marked.parse(documentBody) as string)}
+            <div class="markdown-container">
+              <div class="markdown">
+                ${unsafeHTML(marked.parse(documentBody) as string)}
+              </div>
             </div>
           </div>
         </div>`,

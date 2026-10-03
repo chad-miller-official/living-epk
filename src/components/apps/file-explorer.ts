@@ -3,27 +3,17 @@ import {type EpkIcon, IconViewMode} from "../icon.ts";
 import {customElement, property, query, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html} from "lit";
-import {getFileExtension} from "../../lib/fs.ts";
+import {type FsPath, type FsSpec, getFileExtension, loadFsSpec} from "../../lib/fs.ts";
 import {MusicIcon} from "../icons/music-icon.ts";
 import {MarkdownIcon} from "../icons/markdown-icon.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
+import {GalleryIcon} from "../icons/gallery-icon.ts";
 
 enum SortColumn {
   Filename = 'filename',
   Modified = 'modified'
-}
-
-type FsPath = {
-  path: string,
-  displayPath: string,
-  timestamp: number,
-}
-
-type FsSpec = {
-  displayRoot: string,
-  paths: FsPath[],
 }
 
 @customElement('file-explorer')
@@ -41,6 +31,7 @@ export class FileExplorer extends EpkApp {
       .file-explorer {
         display: flex;
         flex-direction: column;
+        height: 100%;
         overflow: auto;
         width: 100%;
       }
@@ -65,12 +56,11 @@ export class FileExplorer extends EpkApp {
         table-layout: fixed;
       }
 
-      td {
+      td, th {
         white-space: nowrap;
 
         &:not(.divider) {
           padding: 0 4px;
-
         }
       }
 
@@ -183,14 +173,14 @@ export class FileExplorer extends EpkApp {
 
   private iconLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
-      const response = await fetch(src, {signal})
-
-      if (!response.ok) {
+      try {
+        this.fsSpec = await loadFsSpec(src, signal)
+      } catch (ex: unknown) {
         // TODO this should bring up a Windows XP-style alert
-        alert(`Failed to get file system data (tried loading "${src}")`)
+        alert(ex instanceof Error ? ex.message : String(ex))
+        this.fsSpec = {} as FsSpec
       }
 
-      this.fsSpec = await response.json() as FsSpec
       return this.fsSpec
     },
     args: () => [this.filePath]
@@ -206,6 +196,10 @@ export class FileExplorer extends EpkApp {
         break
       case 'md':
         icon = new MarkdownIcon()
+        break
+      case 'jpg':
+        icon = new GalleryIcon();
+        (icon as GalleryIcon).fsSpecPath = this.filePath
         break
       default:
         // TODO this should raise an alert box
@@ -311,8 +305,7 @@ export class FileExplorer extends EpkApp {
 
         return html`
           <div class="app" @click="${this.handleClick}">
-            <epk-toolbar id="toolbar" class="toolbar"
-                         .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+            <epk-toolbar id="toolbar" class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
             <section class="content">
               <div class="viewport">
                 <div class="navigation">
