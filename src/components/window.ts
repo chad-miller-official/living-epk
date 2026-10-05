@@ -15,6 +15,12 @@ export class EpkWindow extends LitElement {
   static styles = [
     unsafeCSS(xpStyle),
     css`
+      .title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      
       .title-bar {
         user-select: none;
 
@@ -24,6 +30,7 @@ export class EpkWindow extends LitElement {
       }
 
       .title-bar-icon {
+        flex-shrink: 0;
         height: 16px;
         width: 16px;
       }
@@ -32,6 +39,7 @@ export class EpkWindow extends LitElement {
         align-items: center;
         display: flex;
         gap: 1ch;
+        min-width: 0;
       }
 
       .window-wrapper {
@@ -44,7 +52,7 @@ export class EpkWindow extends LitElement {
       .window {
         display: flex;
         flex-direction: column;
-        opacity: 0.7;
+        opacity: 0.9;
         position: fixed;
 
         &.active {
@@ -352,7 +360,7 @@ export class EpkWindow extends LitElement {
             <div class="title-bar-text">
               ${this.thumbnail ? html`
                 <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>` : nothing}
-              ${this.title}
+              <div class="title">${this.title}</div>
             </div>
             <div class="title-bar-controls">
               ${this.noMinimize ? nothing : html`

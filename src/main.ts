@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }),
       {
         width: 550,
-        height: 450,
+        height: 500,
         x: 260,
         y: 60
       },

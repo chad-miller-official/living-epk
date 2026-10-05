@@ -1,7 +1,8 @@
 import {customElement, property} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 import type {EpkApp} from "../app.ts";
-import {ImageGallery} from "../apps/image-gallery.ts";
+import ImageGallery from "../apps/image-gallery.ts";
+import type {LaunchOptions} from "../../lib/events.ts";
 
 @customElement('gallery-icon')
 export class GalleryIcon extends EpkIcon {
@@ -16,5 +17,12 @@ export class GalleryIcon extends EpkIcon {
       imageGallery.fsSpecPath = this.fsSpecPath
       return resolve(imageGallery)
     })
+  }
+
+  getLaunchOptions(): LaunchOptions {
+    return {
+      height: 600,
+      width: 800,
+    }
   }
 }
