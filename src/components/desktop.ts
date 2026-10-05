@@ -38,7 +38,7 @@ export class EpkDesktop extends LitElement {
     this.addEventListener('active-window-change', this.handleActiveWindowChange)
     this.addEventListener('close-window', this.handleCloseWindow)
 
-    window.addEventListener('keyup', this.handleKeyUp)
+    window.addEventListener('keyup', this.handleKeyUp.bind(this))
   }
 
   handleKeyUp(event: KeyboardEvent) {

@@ -18,7 +18,7 @@ export class ImageGallery extends EpkApp {
         display: flex;
         justify-content: center;
         gap: 5px;
-        margin: 8px 0;
+        margin: 8px 8px;
 
         button {
           align-items: center;
@@ -116,7 +116,7 @@ export class ImageGallery extends EpkApp {
 
   connectedCallback() {
     super.connectedCallback()
-    window.addEventListener('keyup', this.handleKeyUp.bind(this))
+    this.tabIndex = 0
   }
 
   updated() {
@@ -140,19 +140,6 @@ export class ImageGallery extends EpkApp {
       }), {
         fullscreen: true
       }))
-    }
-  }
-
-  handleKeyUp(event: KeyboardEvent) {
-    if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
-      switch (event.key) {
-        case 'ArrowLeft':
-          this.goToPrevious()
-          break
-        case 'ArrowRight':
-          this.goToNext()
-          break
-      }
     }
   }
 
