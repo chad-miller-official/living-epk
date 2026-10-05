@@ -5,9 +5,12 @@ import {type FsSpec, loadFsSpec} from "../../lib/fs.ts";
 import {Task, TaskStatus} from "@lit/task";
 import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
+import {launchEvent} from "../../lib/events.ts";
+
+let imageGalleryFullscreen: ImageGalleryFullscreen | undefined
 
 @customElement('image-gallery')
-class ImageGallery extends EpkApp {
+export class ImageGallery extends EpkApp {
   static styles = [
     ...EpkApp.styles,
     css`
@@ -26,7 +29,7 @@ class ImageGallery extends EpkApp {
           min-height: 0;
           min-width: 0;
           padding: 1px 4px;
-          
+
           &:focus {
             outline: none;
           }
@@ -82,6 +85,9 @@ class ImageGallery extends EpkApp {
   windowIcon = '/img/gallery-small.ico'
 
   @property({type: String})
+  filePath: string | undefined
+
+  @property({type: String})
   fsSpecPath!: string
 
   @state()
@@ -92,7 +98,13 @@ class ImageGallery extends EpkApp {
   private pathLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
       try {
-        return loadFsSpec(src, signal)
+        return loadFsSpec(src, signal).then((data) => {
+          if (this.filePath) {
+            this.currentIndex = data.paths.map(path => path.path).indexOf(this.filePath)
+          }
+
+          return data
+        })
       } catch (ex: unknown) {
         // TODO this should bring up a Windows XP-style alert
         alert(ex instanceof Error ? ex.message : String(ex))
@@ -102,6 +114,11 @@ class ImageGallery extends EpkApp {
     args: () => [this.fsSpecPath]
   })
 
+  connectedCallback() {
+    super.connectedCallback()
+    window.addEventListener('keyup', this.handleKeyUp.bind(this))
+  }
+
   updated() {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
       this.panzoom = Panzoom(this.image, {
@@ -109,6 +126,64 @@ class ImageGallery extends EpkApp {
         contain: 'outside',
       })
     }
+  }
+
+  handleSlideshowClick() {
+    if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
+      const goToNext = this.goToNext.bind(this)
+
+      this.dispatchEvent(launchEvent(() => new Promise<ImageGalleryFullscreen>(resolve => {
+        const fullscreen = new ImageGalleryFullscreen()
+        fullscreen.backgroundImageUrl = this.pathLoaderTask.value!.paths[this.currentIndex].path
+        fullscreen.addEventListener('click', goToNext)
+        return resolve(fullscreen)
+      }), {
+        fullscreen: true
+      }))
+    }
+  }
+
+  handleKeyUp(event: KeyboardEvent) {
+    if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
+      switch (event.key) {
+        case 'ArrowLeft':
+          this.goToPrevious()
+          break
+        case 'ArrowRight':
+          this.goToNext()
+          break
+      }
+    }
+  }
+
+  setFullscreenBackgroundImageUrl() {
+    if (imageGalleryFullscreen) {
+      imageGalleryFullscreen.backgroundImageUrl = this.pathLoaderTask.value!.paths[this.currentIndex].path
+    }
+  }
+
+  goToPrevious() {
+    if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
+      this.currentIndex--
+
+      if (this.currentIndex < 0) {
+        this.currentIndex = this.pathLoaderTask.value!.paths.length - 1
+      }
+    }
+
+    this.setFullscreenBackgroundImageUrl()
+  }
+
+  goToNext() {
+    if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
+      this.currentIndex++
+
+      if (this.currentIndex >= this.pathLoaderTask.value!.paths.length) {
+        this.currentIndex = 0
+      }
+    }
+
+    this.setFullscreenBackgroundImageUrl()
   }
 
   render() {
@@ -129,17 +204,33 @@ class ImageGallery extends EpkApp {
                   <div id="image" style="${styleMap(wrapperStyle)}"></div>
                 </div>
                 <div class="buttons">
-                  <button><img src="/img/image-viewer/previous.png"/></button>
-                  <button><img src="/img/image-viewer/next.png"/></button>
+                  <button @click="${this.goToPrevious}">
+                    <img src="/img/image-viewer/previous.png"/>
+                  </button>
+                  <button @click="${this.goToNext}">
+                    <img src="/img/image-viewer/next.png"/>
+                  </button>
                   <div class="divider"></div>
-                  <button><img src="/img/image-viewer/best-fit.png"/></button>
-                  <button><img src="/img/image-viewer/actual-size.png"/></button>
-                  <button><img src="/img/image-viewer/slideshow.png"/></button>
+                  <button @click="${() => this.panzoom?.zoom(1)}">
+                    <img src="/img/image-viewer/best-fit.png"/>
+                  </button>
+                  <button @click="${() => this.panzoom?.zoom(4)}">
+                    <img src="/img/image-viewer/actual-size.png"/>
+                  </button>
+                  <button @click="${this.handleSlideshowClick}">
+                    <img src="/img/image-viewer/slideshow.png"/>
+                  </button>
                   <div class="divider"></div>
-                  <button><img src="/img/image-viewer/zoom-in.png"/></button>
-                  <button><img src="/img/image-viewer/zoom-out.png"/></button>
+                  <button @click="${() => this.panzoom?.zoomIn()}">
+                    <img src="/img/image-viewer/zoom-in.png"/>
+                  </button>
+                  <button @click="${() => this.panzoom?.zoomOut()}">
+                    <img src="/img/image-viewer/zoom-out.png"/>
+                  </button>
                   <div class="divider"></div>
-                  <button><img src="/img/image-viewer/print.png"/></button>
+                  <button @click="${() => window.print()}">
+                    <img src="/img/image-viewer/print.png"/>
+                  </button>
                 </div>
               </div>
             </div>
@@ -149,4 +240,41 @@ class ImageGallery extends EpkApp {
   }
 }
 
-export default ImageGallery
+@customElement('image-gallery-fullscreen')
+export class ImageGalleryFullscreen extends EpkApp {
+  static styles = [
+    ...EpkApp.styles,
+    css`
+      #image {
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        width: 100%;
+        height: 100%;
+      }
+    `
+  ]
+
+  @property({type: String})
+  backgroundImageUrl!: string
+
+  windowTitle = 'Image Gallery'
+  windowIcon = null
+
+  connectedCallback() {
+    super.connectedCallback()
+    imageGalleryFullscreen = this
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    imageGalleryFullscreen = undefined
+  }
+
+  render() {
+    const wrapperStyle = {backgroundImage: `url('${this.backgroundImageUrl}')`}
+
+    return html`
+      <div id="image" style="${styleMap(wrapperStyle)}"></div>`
+  }
+}

@@ -28,15 +28,29 @@ export class EpkDesktop extends LitElement {
   `
 
   @queryAssignedElements({slot: 'icons'})
-  icons: EpkIcon[] | undefined
+  icons!: EpkIcon[]
 
   @queryAssignedElements({slot: 'windows'})
-  windows: EpkWindow[] | undefined
+  windows!: EpkWindow[]
 
   firstUpdated() {
     this.addEventListener('launch', this.handleLaunch)
     this.addEventListener('active-window-change', this.handleActiveWindowChange)
     this.addEventListener('close-window', this.handleCloseWindow)
+
+    window.addEventListener('keyup', this.handleKeyUp)
+  }
+
+  handleKeyUp(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      document.querySelectorAll('[slot=fullscreen]')?.forEach(element => {
+        element.remove()
+      })
+
+      this.getSortedWindows(event)
+        ?.pop()
+        ?.setActive()
+    }
   }
 
   handleClick(event: Event) {
@@ -92,50 +106,58 @@ export class EpkDesktop extends LitElement {
   handleLaunch(event: Event) {
     const launchData = (event as CustomEvent<Launch>).detail
 
-    const epkWindow = new EpkWindow()
-    epkWindow.slot = 'windows'
-    epkWindow.x = launchData.x || 0
-    epkWindow.y = launchData.y || 0
-
     launchData.init().then(app => {
-      epkWindow.title = app.windowTitle
+      if (launchData.windowDimensions === 'fullscreen') {
+        const container = document.createElement('div')
+        container.slot = 'fullscreen'
+        container.classList.add('fullscreen-container')
+        container.append(app)
+        this.append(container)
+      } else {
+        const epkWindow = new EpkWindow()
 
-      if (app.windowIcon) {
-        epkWindow.thumbnail = app.windowIcon
+        epkWindow.slot = 'windows'
+        epkWindow.x = launchData.x || 0
+        epkWindow.y = launchData.y || 0
+        epkWindow.title = app.windowTitle
+
+        if (app.windowIcon) {
+          epkWindow.thumbnail = app.windowIcon
+        }
+
+        if (launchData.disallowFlags & DisallowFlags.DisallowResize) {
+          epkWindow.noResize = true
+        }
+
+        if (launchData.disallowFlags & DisallowFlags.DisallowMaximize) {
+          epkWindow.noFullscreen = true
+        }
+
+        if (launchData.disallowFlags & DisallowFlags.DisallowMinimize) {
+          epkWindow.noMinimize = true
+        }
+
+        const [minWidth, minHeight] = [256, 256]
+        const [eventWidth, eventHeight] = launchData.windowDimensions
+
+        let [widthToUse, heightToUse] = [eventWidth || minWidth, eventHeight || minHeight]
+
+        if (eventWidth && minWidth && eventWidth < minWidth) {
+          widthToUse = minWidth
+        }
+
+        if (eventHeight && minHeight && eventHeight < minHeight) {
+          heightToUse = minHeight
+        }
+
+        epkWindow.minWidth = minWidth
+        epkWindow.minHeight = minHeight
+        epkWindow.width = widthToUse
+        epkWindow.height = heightToUse
+
+        epkWindow.append(app)
+        this.append(epkWindow)
       }
-
-      if (launchData.disallowFlags & DisallowFlags.DisallowResize) {
-        epkWindow.noResize = true
-      }
-
-      if (launchData.disallowFlags & DisallowFlags.DisallowFullscreen) {
-        epkWindow.noFullscreen = true
-      }
-
-      if (launchData.disallowFlags & DisallowFlags.DisallowMinimize) {
-        epkWindow.noMinimize = true
-      }
-
-      const [minWidth, minHeight] = [256, 256]
-      const [eventWidth, eventHeight] = launchData.windowDimensions
-
-      let [widthToUse, heightToUse] = [eventWidth || minWidth, eventHeight || minHeight]
-
-      if (eventWidth && minWidth && eventWidth < minWidth) {
-        widthToUse = minWidth
-      }
-
-      if (eventHeight && minHeight && eventHeight < minHeight) {
-        heightToUse = minHeight
-      }
-
-      epkWindow.minWidth = minWidth
-      epkWindow.minHeight = minHeight
-      epkWindow.width = widthToUse
-      epkWindow.height = heightToUse
-
-      epkWindow.append(app)
-      this.append(epkWindow)
     })
   }
 
@@ -146,6 +168,7 @@ export class EpkDesktop extends LitElement {
           <slot name="icons"></slot>
         </div>
         <slot name="windows"></slot>
+        <slot name="fullscreen"></slot>
       </main>
     `
   }

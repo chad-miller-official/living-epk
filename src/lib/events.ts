@@ -2,7 +2,7 @@ import type {EpkApp} from "../components/app.ts";
 
 export enum DisallowFlags {
   DisallowResize = 0b001,
-  DisallowFullscreen = 0b010,
+  DisallowMaximize = 0b010,
   DisallowMinimize = 0b100,
 }
 
@@ -14,11 +14,12 @@ export type LaunchOptions = {
   x?: number,
   y?: number,
   disallowFlags?: number,
+  fullscreen?: boolean,
 }
 
 export type Launch = {
   init: () => Promise<EpkApp>,
-  windowDimensions: [number | null, number | null],
+  windowDimensions: [number | null, number | null] | 'fullscreen',
   x: number | null,
   y: number | null,
   disallowFlags: number,
@@ -31,7 +32,7 @@ export function launchEvent(
   return new CustomEvent<Launch>('launch', {
     detail: {
       init: appInit,
-      windowDimensions: [launchOptions.width || null, launchOptions.height || null],
+      windowDimensions: launchOptions.fullscreen ? 'fullscreen' : [launchOptions.width || null, launchOptions.height || null],
       x: launchOptions.x || null,
       y: launchOptions.y || null,
       disallowFlags: launchOptions.disallowFlags || 0,
