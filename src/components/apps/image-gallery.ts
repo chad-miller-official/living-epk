@@ -5,7 +5,7 @@ import {type FsSpec, loadFsSpec} from "../../lib/fs.ts";
 import {Task, TaskStatus} from "@lit/task";
 import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
-import {launchEvent} from "../../lib/events.ts";
+import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
 
 let imageGalleryFullscreen: ImageGalleryFullscreen | undefined
 
@@ -135,7 +135,7 @@ export class ImageGallery extends EpkApp {
       this.dispatchEvent(launchEvent(() => new Promise<ImageGalleryFullscreen>(resolve => {
         const fullscreen = new ImageGalleryFullscreen()
         fullscreen.backgroundImageUrl = this.pathLoaderTask.value!.paths[this.currentIndex].path
-        fullscreen.addEventListener('click', goToNext)
+        fullscreen.advanceFunc = goToNext
         return resolve(fullscreen)
       }), {
         fullscreen: true
@@ -239,11 +239,23 @@ export class ImageGalleryFullscreen extends EpkApp {
         width: 100%;
         height: 100%;
       }
+
+      .controls {
+        float: right;
+        opacity: 0;
+
+        &:hover {
+          opacity: 100%;
+        }
+      }
     `
   ]
 
   @property({type: String})
   backgroundImageUrl!: string
+
+  @property({type: Function})
+  advanceFunc!: () => void
 
   windowTitle = 'Image Gallery'
   windowIcon = null
@@ -258,10 +270,21 @@ export class ImageGalleryFullscreen extends EpkApp {
     imageGalleryFullscreen = undefined
   }
 
+  handleCloseClick(event: PointerEvent) {
+    event.stopPropagation()
+
+    this.dispatchEvent(closeWindowEvent())
+    this.parentElement!.remove()
+  }
+
   render() {
     const wrapperStyle = {backgroundImage: `url('${this.backgroundImageUrl}')`}
 
     return html`
-      <div id="image" style="${styleMap(wrapperStyle)}"></div>`
+      <div id="image" style="${styleMap(wrapperStyle)}" @click="${this.advanceFunc}">
+        <div class="controls">
+          <button @click="${this.handleCloseClick}">X</button>
+        </div>
+      </div>`
   }
 }
