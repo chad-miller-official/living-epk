@@ -37,20 +37,6 @@ export class EpkDesktop extends LitElement {
     this.addEventListener('launch', this.handleLaunch)
     this.addEventListener('active-window-change', this.handleActiveWindowChange)
     this.addEventListener('close-window', this.handleCloseWindow)
-
-    window.addEventListener('keyup', this.handleKeyUp.bind(this))
-  }
-
-  handleKeyUp(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      document.querySelectorAll('[slot=fullscreen]')?.forEach(element => {
-        element.remove()
-      })
-
-      this.getSortedWindows(event)
-        ?.pop()
-        ?.setActive()
-    }
   }
 
   handleClick(event: Event) {

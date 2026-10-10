@@ -7,8 +7,6 @@ import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
 import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
 
-let imageGalleryFullscreen: ImageGalleryFullscreen | undefined
-
 @customElement('image-gallery')
 export class ImageGallery extends EpkApp {
   static styles = [
@@ -93,7 +91,8 @@ export class ImageGallery extends EpkApp {
   @state()
   currentIndex = 0
 
-  private panzoom: PanzoomObject | undefined
+  panzoom: PanzoomObject | undefined
+  fullscreen: ImageGalleryFullscreen | undefined
 
   private pathLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
@@ -119,6 +118,14 @@ export class ImageGallery extends EpkApp {
     this.tabIndex = 0
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback()
+
+    if (this.fullscreen) {
+      this.fullscreen.dispatchEvent(closeWindowEvent())
+    }
+  }
+
   updated() {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
       this.panzoom = Panzoom(this.image, {
@@ -128,24 +135,21 @@ export class ImageGallery extends EpkApp {
     }
   }
 
+  getCurrentImage() {
+    return this.pathLoaderTask.value!.paths[this.currentIndex].path
+  }
+
   handleSlideshowClick() {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
-      const goToNext = this.goToNext.bind(this)
+      const thisRef = this
 
       this.dispatchEvent(launchEvent(() => new Promise<ImageGalleryFullscreen>(resolve => {
-        const fullscreen = new ImageGalleryFullscreen()
-        fullscreen.backgroundImageUrl = this.pathLoaderTask.value!.paths[this.currentIndex].path
-        fullscreen.advanceFunc = goToNext
-        return resolve(fullscreen)
+        this.fullscreen = new ImageGalleryFullscreen()
+        this.fullscreen.associatedWindow = thisRef
+        return resolve(this.fullscreen)
       }), {
         fullscreen: true
       }))
-    }
-  }
-
-  setFullscreenBackgroundImageUrl() {
-    if (imageGalleryFullscreen) {
-      imageGalleryFullscreen.backgroundImageUrl = this.pathLoaderTask.value!.paths[this.currentIndex].path
     }
   }
 
@@ -157,8 +161,6 @@ export class ImageGallery extends EpkApp {
         this.currentIndex = this.pathLoaderTask.value!.paths.length - 1
       }
     }
-
-    this.setFullscreenBackgroundImageUrl()
   }
 
   goToNext() {
@@ -169,8 +171,6 @@ export class ImageGallery extends EpkApp {
         this.currentIndex = 0
       }
     }
-
-    this.setFullscreenBackgroundImageUrl()
   }
 
   render() {
@@ -251,37 +251,42 @@ export class ImageGalleryFullscreen extends EpkApp {
     `
   ]
 
-  @property({type: String})
-  backgroundImageUrl!: string
-
-  @property({type: Function})
-  advanceFunc!: () => void
-
   windowTitle = 'Image Gallery'
   windowIcon = null
 
-  connectedCallback() {
-    super.connectedCallback()
-    imageGalleryFullscreen = this
+  associatedWindow!: ImageGallery
+
+  firstUpdated() {
+    this.addEventListener('close-window', this.handleCloseWindow)
+    window.addEventListener('keyup', this.handleKeyUp.bind(this))
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback()
-    imageGalleryFullscreen = undefined
+  handleCloseWindow() {
+    this.associatedWindow.fullscreen = undefined
+    this.parentElement!.remove()
+  }
+
+  handleKeyUp(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      this.close()
+    }
   }
 
   handleCloseClick(event: PointerEvent) {
     event.stopPropagation()
+    this.close()
+  }
 
+  close() {
     this.dispatchEvent(closeWindowEvent())
-    this.parentElement!.remove()
+    window.removeEventListener('keyup', this.handleKeyUp.bind(this))
   }
 
   render() {
-    const wrapperStyle = {backgroundImage: `url('${this.backgroundImageUrl}')`}
+    const wrapperStyle = {backgroundImage: `url('${this.associatedWindow.getCurrentImage()}')`}
 
     return html`
-      <div id="image" style="${styleMap(wrapperStyle)}" @click="${this.advanceFunc}">
+      <div id="image" style="${styleMap(wrapperStyle)}" @click="${this.associatedWindow.goToNext}">
         <div class="controls">
           <button @click="${this.handleCloseClick}">X</button>
         </div>
