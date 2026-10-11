@@ -4,7 +4,7 @@ import interact from "interactjs";
 import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
-import {activeWindowChangeEvent, closeWindowEvent} from "../lib/events.ts";
+import {activeWindowChangeEvent, closeWindowEvent, type WindowProperties} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 
@@ -20,7 +20,7 @@ export class EpkWindow extends LitElement {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      
+
       .title-bar {
         user-select: none;
 
@@ -43,10 +43,9 @@ export class EpkWindow extends LitElement {
       }
 
       .window-wrapper {
-        box-sizing: border-box;
-        height: calc(100% + 12px);
-        padding: 4px;
-        width: calc(100% + 9px);
+        height: 100%;
+        padding: 6px 6px 9px 6px;
+        width: 100%;
       }
 
       .window {
@@ -54,9 +53,11 @@ export class EpkWindow extends LitElement {
         flex-direction: column;
         opacity: 0.9;
         position: fixed;
+        user-select: none;
 
         &.active {
           opacity: 1;
+          user-select: revert;
         }
 
         &.fullscreen {
@@ -124,7 +125,10 @@ export class EpkWindow extends LitElement {
   minHeight: number | null = null
 
   @property({type: Boolean})
-  noResize = false
+  noHorizontalResize = false
+
+  @property({type: Boolean})
+  noVerticalResize = false
 
   @property({type: Boolean})
   noMinimize = false
@@ -183,12 +187,14 @@ export class EpkWindow extends LitElement {
 
   firstUpdated() {
     this.addEventListener('close-window', this.handleCloseWindow)
+    this.addEventListener('window-property-change', this.handleWindowPropertyChange)
+
     const epkWindow = this.shadowRoot?.querySelector('.window-wrapper') as HTMLDivElement
 
     if (epkWindow) {
       const bodyStyle = window.getComputedStyle(this.window!)
-      const minWidth = this.minWidth || parseInt(bodyStyle.width.replace('px$', ''))
-      const minHeight = this.minHeight || parseInt(bodyStyle.height.replace('px$', ''))
+      const minWidth = this.minWidth || parseInt(bodyStyle.width.replace(/px$/, ''))
+      const minHeight = this.minHeight || parseInt(bodyStyle.height.replace(/px$/, ''))
 
       this.interact = interact(epkWindow)
 
@@ -197,13 +203,13 @@ export class EpkWindow extends LitElement {
         listeners: {move: this.handleDrag.bind(this)},
       })
 
-      if (!this.noResize) {
+      if (!(this.noHorizontalResize && this.noVerticalResize)) {
         this.interact.resizable({
           edges: {
             top: false,
-            right: true,
-            bottom: true,
-            left: true,
+            right: !this.noVerticalResize,
+            bottom: !this.noHorizontalResize,
+            left: !this.noVerticalResize,
           },
           listeners: {move: this.handleResize.bind(this)},
           modifiers: [
@@ -216,7 +222,6 @@ export class EpkWindow extends LitElement {
           ]
         })
       }
-
     }
 
     this.resetDimensions()
@@ -239,6 +244,14 @@ export class EpkWindow extends LitElement {
   handleCloseWindow() {
     this.remove()
     this.isClosing = true
+  }
+
+  handleWindowPropertyChange(event: Event) {
+    const detail = (event as CustomEvent<WindowProperties>).detail
+
+    if (detail.title) {
+      this.title = detail.title
+    }
   }
 
   setActive() {
@@ -276,11 +289,15 @@ export class EpkWindow extends LitElement {
       return
     }
 
-    this.x += event.deltaRect!.left
-    this.y += event.deltaRect!.top
+    if (event.axes?.includes('x')) {
+      this.x += event.deltaRect!.left
+      this.width = event.rect.width - 12
+    }
 
-    this.width = event.rect.width
-    this.height = event.rect.height
+    if (event.axes?.includes('y')) {
+      this.y += event.deltaRect!.top
+      this.height = event.rect.height - 15
+    }
 
     this.resetCoordinates()
     this.resetDimensions()

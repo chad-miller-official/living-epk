@@ -108,19 +108,13 @@ export class EpkDesktop extends LitElement {
           epkWindow.thumbnail = app.windowIcon
         }
 
-        if (launchData.disallowFlags & DisallowFlags.DisallowResize) {
-          epkWindow.noResize = true
-        }
+        epkWindow.noHorizontalResize = (launchData.disallowFlags & DisallowFlags.DisallowHorizontalResize) > 0
+        epkWindow.noVerticalResize = (launchData.disallowFlags & DisallowFlags.DisallowVerticalResize) > 0
+        epkWindow.noFullscreen = (launchData.disallowFlags & DisallowFlags.DisallowMaximize) > 0
+        epkWindow.noMinimize = (launchData.disallowFlags & DisallowFlags.DisallowMinimize) > 0
 
-        if (launchData.disallowFlags & DisallowFlags.DisallowMaximize) {
-          epkWindow.noFullscreen = true
-        }
 
-        if (launchData.disallowFlags & DisallowFlags.DisallowMinimize) {
-          epkWindow.noMinimize = true
-        }
-
-        const [minWidth, minHeight] = [256, 256]
+        const [minWidth, minHeight] = app.getMinimumDimensions()
         const [eventWidth, eventHeight] = launchData.windowDimensions
 
         let [widthToUse, heightToUse] = [eventWidth || minWidth, eventHeight || minHeight]

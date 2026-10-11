@@ -1,12 +1,13 @@
 import type {EpkApp} from "../components/app.ts";
 
 export enum DisallowFlags {
-  DisallowResize = 0b001,
-  DisallowMaximize = 0b010,
-  DisallowMinimize = 0b100,
+  DisallowMaximize = 0b0001,
+  DisallowMinimize = 0b0010,
+  DisallowVerticalResize = 0b0100,
+  DisallowHorizontalResize = 0b1000,
+  DisallowResize = DisallowVerticalResize | DisallowHorizontalResize,
+  DisallowAll = DisallowMaximize | DisallowMinimize | DisallowResize,
 }
-
-export const DISALLOW_ALL = 0b111
 
 export type LaunchOptions = {
   width?: number,
@@ -23,6 +24,10 @@ export type Launch = {
   x: number | null,
   y: number | null,
   disallowFlags: number,
+}
+
+export type WindowProperties = {
+  title?: string,
 }
 
 export function launchEvent(
@@ -51,6 +56,14 @@ export function activeWindowChangeEvent(): CustomEvent {
 
 export function closeWindowEvent(): CustomEvent {
   return new CustomEvent('close-window', {
+    bubbles: true,
+    composed: true,
+  })
+}
+
+export function windowPropertyChangeEvent(props: WindowProperties): CustomEvent<WindowProperties> {
+  return new CustomEvent('window-property-change', {
+    detail: props,
     bubbles: true,
     composed: true,
   })

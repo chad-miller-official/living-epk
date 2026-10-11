@@ -57,4 +57,8 @@ export abstract class EpkApp extends LitElement {
 
   abstract windowTitle: string
   abstract windowIcon: string | null
+
+  getMinimumDimensions() {
+    return [256, 256]
+  }
 }

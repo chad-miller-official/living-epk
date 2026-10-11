@@ -1,17 +1,50 @@
-import {getFileExtension} from "../../lib/fs.ts";
+import {getFileExtension, getFileName} from "../../lib/fs.ts";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {EpkApp} from "../app.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../../lib/toolbar.ts";
-import {closeWindowEvent, DISALLOW_ALL, launchEvent} from "../../lib/events.ts";
+import {
+  closeWindowEvent,
+  DisallowFlags,
+  launchEvent,
+  windowPropertyChangeEvent
+} from "../../lib/events.ts";
 import {EpkToolbar} from "../ui.ts";
 import {Notepad} from "./notepad.ts";
+import {styleMap} from "lit/directives/style-map.js";
+import interact from "interactjs";
+import type {Interactable} from "@interactjs/types";
+import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 
 @customElement('audio-player')
 export class AudioPlayer extends EpkApp {
   static styles = [
     ...EpkApp.styles,
     css`
+      #slider {
+        background-image: url("/img/media-player/slider.png");
+        cursor: default !important;
+        height: 24px;
+        position: absolute;
+        top: -4px;
+        width: 11px;
+      }
+
+      #toolbar {
+        z-index: 1;
+      }
+
+      #progressBar {
+        background-color: white;
+        border-bottom: 2px solid #f1efe2;
+        border-left: 2px solid #716f64;
+        border-right: 2px solid #f1efe2;
+        border-top: 2px solid #716f64;
+        height: 16px;
+        position: relative;
+        width: 100%;
+      }
+
       .buttons {
         padding: 2px;
         border-right: 1px solid black;
@@ -20,6 +53,7 @@ export class AudioPlayer extends EpkApp {
       }
 
       .button-group {
+        align-items: center;
         display: flex;
 
         &:last-of-type {
@@ -27,17 +61,36 @@ export class AudioPlayer extends EpkApp {
         }
 
         button {
+          align-items: center;
           background: #ece9d8;
           border-bottom: 2px solid #716f64;
           border-left: 2px solid #ffffff;
           border-right: 2px solid #716f64;
           border-top: 2px solid #ffffff;
           border-radius: 0;
+          display: flex;
           height: 24px;
+          justify-content: center;
           min-height: 0;
           min-width: 0;
           padding: 0;
           width: 24px;
+
+          &.small {
+            height: fit-content;
+            padding: 3px;
+            width: fit-content;
+
+            &:not([disabled]):active * {
+              padding: 0;
+            }
+          }
+
+          &[disabled] {
+            img {
+              opacity: 0.3;
+            }
+          }
 
           &:focus {
             border-bottom: 2px solid #716f64;
@@ -52,7 +105,7 @@ export class AudioPlayer extends EpkApp {
             box-shadow: none;
           }
 
-          &:active {
+          &:not([disabled]):active {
             border-bottom: 2px solid #ffffff;
             border-left: 2px solid #716f64;
             border-right: 2px solid #ffffff;
@@ -68,12 +121,49 @@ export class AudioPlayer extends EpkApp {
       .content {
         display: flex;
         flex-direction: column;
+        justify-content: space-between;
         user-select: none;
       }
 
       .controls {
         border-top: 1px solid black;
         display: flex;
+      }
+
+      .progress-bar-container {
+        align-items: flex-start;
+        display: flex;
+        flex-grow: 1;
+        gap: 8px;
+      }
+
+      .tick {
+        display: flex;
+        flex-direction: column;
+        min-width: 50px;
+
+        &::before {
+          content: "|";
+          margin-bottom: 2px;
+        }
+
+        &:last-of-type {
+          margin-right: -3px;
+          text-align: right;
+        }
+      }
+
+      .ticks {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .timeline {
+        display: grid;
+        font-family: "Pixelated MS Sans Serif", Arial;
+        grid-column-gap: 8px;
+        grid-template-columns: auto 36px;
+        padding: 8px;
       }
 
       .timer-wrapper {
@@ -102,6 +192,12 @@ export class AudioPlayer extends EpkApp {
   @query('#audioPlayer')
   audioPlayer!: HTMLAudioElement
 
+  @query('#progressBar')
+  progressBar!: HTMLDivElement
+
+  @query('#slider')
+  slider!: HTMLDivElement
+
   @query('#toolbar')
   toolbar!: EpkToolbar
 
@@ -121,10 +217,30 @@ export class AudioPlayer extends EpkApp {
   isPlaying = false
 
   @state()
+  isPaused = false
+
+  @state()
+  isStopped = true
+
+  @state()
   isEnded = false
 
   @state()
-  timerText = '00:00'
+  audioLength = '00.00 (sec)'
+
+  @state()
+  timerText = '00.00 (sec)'
+
+  @state()
+  sliderPosition = '-5px'
+
+  @state()
+  selectionStart = 0
+
+  @state()
+  selectionEnd = 0
+
+  interact: Interactable | null = null
 
   toolbarSpec: ToolbarMenu[] = [
     {
@@ -136,6 +252,8 @@ export class AudioPlayer extends EpkApp {
         },
         {
           text: 'Close', action: () => {
+            this.filePath = undefined
+            this.dispatchEvent(windowPropertyChangeEvent({title: 'Media Player'}))
           }
         },
         ToolbarUiElement.DIVIDER,
@@ -148,7 +266,7 @@ export class AudioPlayer extends EpkApp {
       text: 'Help',
       items: [
         {
-          text: 'About Notepad',
+          text: 'About Media Player',
           action: (event: Event) => {
             event.stopPropagation()
             this.toolbar.closeAll()
@@ -156,7 +274,7 @@ export class AudioPlayer extends EpkApp {
             this.dispatchEvent(launchEvent(() => new Promise<AudioPlayerAbout>(resolve => resolve(new AudioPlayerAbout())), {
               width: 419,
               height: 350,
-              disallowFlags: DISALLOW_ALL,
+              disallowFlags: DisallowFlags.DisallowAll,
             }))
           },
         },
@@ -172,91 +290,185 @@ export class AudioPlayer extends EpkApp {
     }
   }
 
+  disconnectedCallback() {
+    this.interact?.unset()
+  }
+
+  firstUpdated() {
+    this.interact = interact(this.slider)
+
+    this.interact.draggable({
+      listeners: {move: this.handleSliderDrag.bind(this)},
+      startAxis: 'x',
+      lockAxis: 'x',
+    })
+  }
+
+  getMinimumDimensions(): [number, number] {
+    return [256, 144]
+  }
+
+  updateWindowTitle() {
+    this.windowTitle = 'Media Player'
+
+    if (this.filePath) {
+      this.windowTitle += ` - ${getFileName(this.filePath!)}`
+
+      if (this.isPlaying) {
+        this.windowTitle += ' (playing)'
+      } else if (this.isPaused) {
+        this.windowTitle += ' (paused)'
+      } else if (this.isStopped) {
+        this.windowTitle += ' (stopped)'
+      }
+    }
+
+    this.dispatchEvent(windowPropertyChangeEvent({title: this.windowTitle}))
+  }
+
   handleClick(event: MouseEvent) {
     if (event.target !== this.toolbar) {
       this.toolbar.closeAll()
     }
   }
 
+  handleSliderDrag(event: ResizeEvent) {
+    const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
+    const percentMoved = event.dx / progressBarWidth
+    this.audioPlayer.currentTime += this.audioPlayer.duration * percentMoved
+  }
+
   handlePlayPauseClick() {
     if (this.isPlaying) {
       this.audioPlayer.pause()
-      this.isPlaying = !this.isPlaying
+
+      this.isPlaying = false
+      this.isPaused = true
+      this.isStopped = false
+      this.isEnded = false
+
+      this.updateWindowTitle()
     } else {
       if (this.isEnded) {
-        this.isEnded = false
         this.audioPlayer.currentTime = 0
       }
 
-      this.audioPlayer.play().then(() => this.isPlaying = !this.isPlaying)
+      this.audioPlayer.play().then(() => {
+        this.isPlaying = true
+        this.isPaused = false
+        this.isStopped = false
+        this.isEnded = false
+
+        this.updateWindowTitle()
+      })
     }
   }
 
   handleStopClick() {
     this.audioPlayer.pause()
     this.audioPlayer.currentTime = 0
+
     this.isPlaying = false
+    this.isPaused = false
+    this.isStopped = true
     this.isEnded = false
+
+    this.updateWindowTitle()
+  }
+
+  getTimeString(time: number): [string, string] {
+    if (time < 60) {
+      const seconds = time.toFixed(2)
+      const [whole, fraction] = seconds.toString().split('.')
+      return [`${whole.toString().padStart(2, '0')}.${fraction.toString().padStart(2, '0')}`, '(sec)']
+    } else {
+      const minutes = Math.trunc(time / 60)
+      const seconds = Math.round(time % 60)
+      return [`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`, '(min:sec)']
+    }
   }
 
   handleTimeUpdate() {
     const currentTime = this.audioPlayer.currentTime
-    const minutes = Math.trunc(currentTime / 60)
-    const seconds = Math.round(currentTime % 60)
-    this.timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    this.sliderPosition = `-5px + ${(currentTime / this.audioPlayer.duration) * 100}%`
+    this.timerText = this.getTimeString(this.audioPlayer.currentTime).join(' ')
   }
 
   handleEnded() {
     this.isPlaying = false
+    this.isPaused = false
+    this.isStopped = true
     this.isEnded = true
+
+    this.updateWindowTitle()
+  }
+
+  seek(amount: number) {
+    let newTime = this.audioPlayer.currentTime + amount
+
+    if (newTime < 0) {
+      newTime = 0
+    } else if (newTime > this.audioPlayer.duration) {
+      newTime = this.audioPlayer.duration
+    }
+
+    this.audioPlayer.currentTime = newTime
   }
 
   render() {
+    const sliderStyle = {left: `calc(${this.sliderPosition})`}
+
     return html`
       <div class="app" @click="${this.handleClick}">
         <epk-toolbar id="toolbar" class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
         <div class="content">
+          <audio id="audioPlayer" @timeupdate="${this.handleTimeUpdate}"
+                 @loadedmetadata="${() => this.audioLength = this.getTimeString(this.audioPlayer?.duration)[0]}"
+                 @ended="${this.handleEnded}">
+            <source src="${this.filePath}" type="${this.mimeType}"/>
+          </audio>
           <div class="timeline">
-            <audio id="audioPlayer" @timeupdate="${this.handleTimeUpdate}"
-                   @ended="${this.handleEnded}">
-              <source src="${this.filePath}" type="${this.mimeType}"/>
-            </audio>
+            <div id="progressBar">
+              <div id="slider" style="${styleMap(sliderStyle)}"></div>
+            </div>
+            <div class="button-group">
+              <button type="button" ?disabled="${!this.filePath}" class="small"
+                      @click="${() => this.seek(-0.5)}">
+                <img src="/img/media-player/scroll-backward.png"/>
+              </button>
+              <button type="button" ?disabled="${!this.filePath}" class="small"
+                      @click="${() => this.seek(0.5)}">
+                <img src="/img/media-player/scroll-forward.png"/>
+              </button>
+            </div>
+            <div class="ticks">
+              <div class="tick">0:00</div>
+              <div class="tick">${this.audioLength}</div>
+            </div>
           </div>
           <div class="controls">
             <div class="buttons">
               <div class="button-group">
-                <button @click="${this.handlePlayPauseClick}">
+                <button type="button" ?disabled="${!this.filePath}"
+                        @click="${this.handlePlayPauseClick}">
                   <img src="${`/img/media-player/${this.isPlaying ? 'pause' : 'play'}.png`}"/>
                 </button>
-                <button @click="${this.handleStopClick}">
+                <button type="button" ?disabled="${this.isStopped}"
+                        @click="${this.handleStopClick}">
                   <img src="/img/media-player/stop.png"/>
                 </button>
               </div>
               <div class="button-group">
-                <button>
-                  <img src="/img/media-player/previous-mark.png"/>
-                </button>
-                <button>
+                <button type="button" ?disabled="${!this.filePath}" @click="${() => this.seek(-5)}">
                   <img src="/img/media-player/rewind.png"/>
                 </button>
-                <button>
+                <button type="button" ?disabled="${!this.filePath}" @click="${() => this.seek(5)}">
                   <img src="/img/media-player/fast-forward.png"/>
-                </button>
-                <button>
-                  <img src="/img/media-player/next-mark.png"/>
-                </button>
-              </div>
-              <div class="button-group">
-                <button>
-                  <img src="/img/media-player/start-selection.png"/>
-                </button>
-                <button>
-                  <img src="/img/media-player/end-selection.png"/>
                 </button>
               </div>
             </div>
             <div class="timer-wrapper">
-              <span class="timer">${this.timerText} (min:sec)</span>
+              <span class="timer">${this.timerText}</span>
             </div>
           </div>
         </div>
@@ -384,7 +596,7 @@ export class AudioPlayerAbout extends EpkApp {
                       <span class="memory">196,080 KB</span>
                     </div>
                   </div>
-                  <button @click="${this.requestClose}">OK</button>
+                  <button type="button" @click="${this.requestClose}">OK</button>
                 </div>
               </div>
             </div>
