@@ -94,11 +94,8 @@ export class EpkDesktop extends LitElement {
 
     launchData.init().then(app => {
       if (launchData.windowDimensions === 'fullscreen') {
-        const container = document.createElement('div')
-        container.slot = 'fullscreen'
-        container.classList.add('fullscreen-container')
-        container.append(app)
-        this.append(container)
+        app.slot = 'fullscreen'
+        this.append(app)
       } else {
         const epkWindow = new EpkWindow()
 

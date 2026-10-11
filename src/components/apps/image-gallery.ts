@@ -7,49 +7,53 @@ import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
 import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
 
+const buttonStyle = css`
+  .buttons {
+    background-color: #eef2fb;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin: 8px 8px;
+
+    button {
+      align-items: center;
+      background: transparent;
+      border: 1px solid transparent;
+      display: flex;
+      justify-content: center;
+      min-height: 0;
+      min-width: 0;
+      padding: 1px 4px;
+
+      &:focus {
+        outline: none;
+      }
+
+      &:hover {
+        box-shadow: inset 0 -6px 6px -7px rgba(0, 0, 0, 0.4);
+        border: 1px solid #cecec3;
+      }
+
+      * {
+        user-select: none;
+      }
+    }
+  }
+
+  .divider {
+    background-color: #ccc8b6;
+    height: 16px;
+    margin: 2px;
+    width: 1px;
+  }
+`
+
 @customElement('image-gallery')
 export class ImageGallery extends EpkApp {
   static styles = [
     ...EpkApp.styles,
+    buttonStyle,
     css`
-      .buttons {
-        display: flex;
-        justify-content: center;
-        gap: 5px;
-        margin: 8px 8px;
-
-        button {
-          align-items: center;
-          background: transparent;
-          border: 1px solid transparent;
-          display: flex;
-          justify-content: center;
-          min-height: 0;
-          min-width: 0;
-          padding: 1px 4px;
-
-          &:focus {
-            outline: none;
-          }
-
-          &:hover {
-            box-shadow: inset 0 -6px 6px -7px rgba(0, 0, 0, 0.4);
-            border: 1px solid #cecec3;
-          }
-
-          * {
-            user-select: none;
-          }
-        }
-      }
-
-      .divider {
-        background-color: #ccc8b6;
-        height: 16px;
-        margin: 2px;
-        width: 1px;
-      }
-
       .image-wrapper {
         height: 100%;
         width: 100%;
@@ -161,6 +165,8 @@ export class ImageGallery extends EpkApp {
         this.currentIndex = this.pathLoaderTask.value!.paths.length - 1
       }
     }
+
+    this.fullscreen?.requestUpdate()
   }
 
   goToNext() {
@@ -171,6 +177,8 @@ export class ImageGallery extends EpkApp {
         this.currentIndex = 0
       }
     }
+
+    this.fullscreen?.requestUpdate()
   }
 
   render() {
@@ -231,18 +239,42 @@ export class ImageGallery extends EpkApp {
 export class ImageGalleryFullscreen extends EpkApp {
   static styles = [
     ...EpkApp.styles,
+    buttonStyle,
     css`
       #image {
+        background-color: black;
         background-position: center;
         background-repeat: no-repeat;
         background-size: contain;
-        width: 100%;
-        height: 100%;
+        height: 100vh;
+        left: 0;
+        position: absolute;
+        top: 0;
+        width: 100vw;
+        z-index: 10000;
+      }
+
+      .buttons {
+        gap: 2px;
+        margin: 0;
+
+        button {
+          padding: 1px 3px;
+
+          &.active {
+            box-shadow: inset 0 -6px 6px -7px rgba(0, 0, 0, 0.4);
+            border: 1px solid #cecec3;
+            outline: none;
+          }
+        }
       }
 
       .controls {
-        float: right;
         opacity: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+        z-index: 10001;
 
         &:hover {
           opacity: 100%;
@@ -251,25 +283,67 @@ export class ImageGalleryFullscreen extends EpkApp {
     `
   ]
 
+  @query('#play')
+  playButton!: HTMLButtonElement
+
+  @query('#pause')
+  pauseButton!: HTMLButtonElement
+
   windowTitle = 'Image Gallery'
   windowIcon = null
 
-  associatedWindow!: ImageGallery
+  associatedWindow: ImageGallery | undefined
+  intervalId = this.play()
 
   firstUpdated() {
     this.addEventListener('close-window', this.handleCloseWindow)
     window.addEventListener('keyup', this.handleKeyUp.bind(this))
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    this.pause()
+  }
+
+  play() {
+    return setInterval(() => {
+      this.associatedWindow?.goToNext()
+    }, 5000)
+  }
+
+  pause() {
+    clearInterval(this.intervalId)
+  }
+
   handleCloseWindow() {
-    this.associatedWindow.fullscreen = undefined
-    this.parentElement!.remove()
+    if (this.associatedWindow) {
+      this.associatedWindow.fullscreen = undefined
+    }
+
+    this.remove()
   }
 
   handleKeyUp(event: KeyboardEvent) {
     if (event.key === 'Escape') {
       this.close()
     }
+  }
+
+  handleClick() {
+    this.associatedWindow?.goToNext()
+    this.handlePauseClick()
+  }
+
+  handlePlayClick() {
+    this.playButton.classList.add('active')
+    this.pauseButton.classList.remove('active')
+    this.play()
+  }
+
+  handlePauseClick() {
+    this.pauseButton.classList.add('active')
+    this.playButton.classList.remove('active')
+    this.pause()
   }
 
   handleCloseClick(event: PointerEvent) {
@@ -283,13 +357,30 @@ export class ImageGalleryFullscreen extends EpkApp {
   }
 
   render() {
-    const wrapperStyle = {backgroundImage: `url('${this.associatedWindow.getCurrentImage()}')`}
+    const associatedWindow = this.associatedWindow
+    const wrapperStyle = {backgroundImage: `url('${associatedWindow?.getCurrentImage()}')`}
 
     return html`
-      <div id="image" style="${styleMap(wrapperStyle)}" @click="${this.associatedWindow.goToNext}">
-        <div class="controls">
-          <button @click="${this.handleCloseClick}">X</button>
-        </div>
+      <div id="image" style="${styleMap(wrapperStyle)}"
+           @click="${this.handleClick}"></div>
+      <div class="controls buttons">
+        <button id="play" class="active" @click="${this.handlePlayClick}">
+          <img src="/img/image-viewer/play.png"/>
+        </button>
+        <button id="pause" @click="${this.handlePauseClick}">
+          <img src="/img/image-viewer/pause.png"/>
+        </button>
+        <div class="divider"></div>
+        <button @click="${associatedWindow?.goToPrevious.bind(associatedWindow)}">
+          <img src="/img/image-viewer/previous.png"/>
+        </button>
+        <button @click="${associatedWindow?.goToNext.bind(associatedWindow)}">
+          <img src="/img/image-viewer/next.png"/>
+        </button>
+        <div class="divider"></div>
+        <button @click="${this.handleCloseClick}">
+          <img src="/img/image-viewer/exit.png"/>
+        </button>
       </div>`
   }
 }
