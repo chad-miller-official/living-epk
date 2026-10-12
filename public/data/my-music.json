@@ -4,6 +4,10 @@
     {
       "path": "/fs/audio/weirdcore2.wav",
       "displayPath": "weirdcore2.wav"
+    },
+    {
+      "path": "/fs/audio/dk.wav",
+      "displayPath": "dk.wav"
     }
   ]
 }
