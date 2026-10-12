@@ -5,7 +5,7 @@ import {getFileName} from "../../lib/fs.ts";
 import type {EpkApp} from "../app.ts";
 
 @customElement('plaintext-icon')
-export class PlainTextIconElement extends EpkIcon {
+export class PlainTextIcon extends EpkIcon {
   icon = '/img/notepad.ico'
 
   async getAppInstance(): Promise<EpkApp> {

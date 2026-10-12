@@ -1,16 +1,11 @@
-import {EpkToolbar} from "../ui.ts";
 import {type EpkIcon, IconViewMode} from "../icon.ts";
-import {customElement, property, query, queryAll, state} from "lit/decorators.js";
+import {customElement, property, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html} from "lit";
-import {type FsPath, type FsSpec, getFileExtension, loadFsSpec} from "../../lib/fs.ts";
-import {MusicIcon} from "../icons/music-icon.ts";
-import {MarkdownIcon} from "../icons/markdown-icon.ts";
+import {buildIcon, type FsPath, type FsSpec, loadFsSpec} from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
-import {GalleryIcon} from "../icons/gallery-icon.ts";
-import {PlainTextIconElement} from "../icons/plaintext-icon.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -127,9 +122,6 @@ export class FileExplorer extends EpkApp {
   @property({type: String})
   filePath = '/data/my-documents.json'
 
-  @query('#toolbar')
-  toolbar!: EpkToolbar
-
   @queryAll('.epk-icon')
   icons!: EpkIcon[]
 
@@ -188,42 +180,16 @@ export class FileExplorer extends EpkApp {
   })
 
   private buildIcon(path: FsPath) {
-    const extension = getFileExtension(path.path)
-    let icon: EpkIcon
+    const icon = buildIcon(path)
 
-    switch (extension) {
-      case 'wav':
-        icon = new MusicIcon()
-        break
-      case 'md':
-        icon = new MarkdownIcon()
-        break
-      case 'jpg':
-        icon = new GalleryIcon();
-        (icon as GalleryIcon).fsSpecPath = this.filePath
-        break
-      case 'txt':
-        icon = new PlainTextIconElement()
-        break
-      default:
-        // TODO this should raise an alert box
-        throw new Error(`Unhandled extension: ${extension}`)
-    }
-
-    icon.title = path.displayPath
-    icon.filePath = path.path
     icon.timestamp = path.timestamp
     icon.viewMode = IconViewMode.ListView
-    icon.classList.add('epk-icon')
 
     return icon
   }
 
   handleClick(event: Event) {
-    if (event.target !== this.toolbar) {
-      this.toolbar.closeAll()
-    }
-
+    super.handleClick(event)
     Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
   }
 
@@ -309,7 +275,7 @@ export class FileExplorer extends EpkApp {
 
         return html`
           <div class="app" @click="${this.handleClick}">
-            <epk-toolbar id="toolbar" class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+            <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
             <section class="content">
               <div class="viewport">
                 <div class="navigation">

@@ -1,5 +1,7 @@
 import {css, LitElement, unsafeCSS} from "lit"
 import xpStyle from 'xp.css/dist/XP.css?inline'
+import {query} from "lit/decorators.js";
+import {EpkToolbar} from "./ui.ts";
 
 export abstract class EpkApp extends LitElement {
   static styles = [
@@ -44,7 +46,7 @@ export abstract class EpkApp extends LitElement {
         height: 100%;
       }
 
-      .content, .toolbar {
+      .content, #toolbar {
         margin: 0 auto;
         width: calc(100% - 6px);
       }
@@ -55,8 +57,17 @@ export abstract class EpkApp extends LitElement {
     `
   ]
 
+  @query('#toolbar')
+  toolbar?: EpkToolbar
+
   abstract windowTitle: string
   abstract windowIcon: string | null
+
+  handleClick(event: Event) {
+    if (event.target !== this.toolbar) {
+      this.toolbar?.closeAll()
+    }
+  }
 
   getMinimumDimensions() {
     return [256, 256]

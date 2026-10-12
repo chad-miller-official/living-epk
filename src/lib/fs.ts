@@ -1,3 +1,9 @@
+import {MusicIcon} from "../components/icons/music-icon.ts";
+import {MarkdownIcon} from "../components/icons/markdown-icon.ts";
+import {GalleryIcon} from "../components/icons/gallery-icon.ts";
+import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
+import {EpkIcon} from "../components/icon.ts";
+
 export type FsPath = {
   path: string,
   displayPath: string,
@@ -40,4 +46,33 @@ export function getFileName(path: string, withExtension = true) {
   }
 
   return fileName
+}
+
+export function buildIcon(path: FsPath) {
+  const extension = getFileExtension(path.path)
+  let icon: EpkIcon
+
+  switch (extension) {
+    case 'wav':
+      icon = new MusicIcon()
+      break
+    case 'md':
+      icon = new MarkdownIcon()
+      break
+    case 'jpg':
+      icon = new GalleryIcon()
+      break
+    case 'txt':
+      icon = new PlainTextIcon()
+      break
+    default:
+      // TODO this should raise an alert box
+      throw new Error(`Unhandled extension: ${extension}`)
+  }
+
+  icon.title = path.displayPath
+  icon.filePath = path.path
+  icon.classList.add('epk-icon')
+
+  return icon
 }

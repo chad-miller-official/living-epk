@@ -16,7 +16,11 @@ From bottom to top:
 
 The Desktop is the core component. It is the single component within which everything lives.
 
-The Desktop has two `slots`: one for Icons, and one for Windows.
+The Desktop has three `slots`:
+
+* One for Icons
+* One for Windows
+* One for fullscreen Apps
 
 The Desktop also contains logic to handle mouse clicks and manipulate Icons and Windows according to what is being
 clicked. This is useful for, say, telling a Window to lose focus when another Window is clicked, or telling an Icon to
@@ -58,6 +62,11 @@ An Application is a component that contains three sub-components:
 
 The Toolbar and Status Bar are optional. The primary application content is not.
 
+#### Full-screen applications
+
+If an Application is launched with `fullscreen: true` in its launch options, then it is launched with no encapsulating
+window, and is inserted into the Desktop's `fullscreen` slot. All other behavior remains the same.
+
 ## Kernel space vs user space
 
 The Desktop, Icon, and Window components comprise "kernel space". They form the basis of the "operating system".
@@ -69,7 +78,8 @@ The Application has a robust API for defining your own applications and how they
 
 ## Defining an application
 
-1. Define two string properties: `windowTitle` and `windowIcon`, for the title and icon that the containing window should have. Set sensible defaults for both. Keep the icon file in `/public/img/`.
+1. Define two string properties: `windowTitle` and `windowIcon`, for the title and icon that the containing window
+   should have. Set sensible defaults for both. Keep the icon file in `/public/img/`.
 
 ```typescript
 @property({type: String})
@@ -86,15 +96,14 @@ windowIcon = '/img/my-app.ico'
 </div>
 ```
 
-3. (OPTIONAL) If the app should have a toolbar, put an `epk-toolbar` at the top with `toolbar` as its class. Don't forget to give
-   it a `.toolbarSpec` property, and don't forget to add a click handler to auto-close toolbar menus!
+3. (OPTIONAL) If the app should have a toolbar, put an `epk-toolbar` at the top with `toolbar` as its `id`. Don't forget
+   to give
+   it a `.toolbarSpec` property, and give your `div.app` element the base `EpkApp.handleClick()` as its click handler (
+   or override it with your own, but make sure the supermethod is called too).
+
+Example 1:
 
 ```typescript
-@query('#toolbar')
-toolbar!: EpkToolbar
-  
-...
-
 const toolbarSpec: ToolbarSpec[] = [
   {
     ... // see: lib/toolbar.ts for type definitions
@@ -103,16 +112,15 @@ const toolbarSpec: ToolbarSpec[] = [
 
 ...
 
-function handleClick() {
-  if (event.target !== this.toolbar) {
-    this.toolbar.closeAll()
-  }
+handleClick(event: Event) {
+  super.handleClick(event)
+  // Additional click-handling logic
 }
 ```
 
 ```html
 <div class="app" @click="${this.handleClick}">
-  <epk-toolbar id="toolbar" class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+  <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
 </div>
 ```
 
@@ -120,14 +128,15 @@ function handleClick() {
 
 ```html
 <div class="app">
-  <epk-toolbar class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+  <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
   <div class="content">
     <p>Hello, world!</p>
   </div>
 </div>
 ```
 
-5. (OPTIONAL) Give it a status bar [as specified in the docs for XP.css](https://botoxparty.github.io/XP.css/#status-bar).
+5. (OPTIONAL) Give it a status
+   bar [as specified in the docs for XP.css](https://botoxparty.github.io/XP.css/#status-bar).
 
 ```html
 <div class="app">

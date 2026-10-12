@@ -1,11 +1,11 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html, nothing} from "lit";
-import {EpkToolbar} from "../ui.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../../lib/toolbar.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import dayjs from "dayjs";
 import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
+import {AppAbout} from "./about.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
@@ -32,9 +32,6 @@ export class Notepad extends EpkApp {
 
   @property({type: Number})
   currentColumn = 1
-
-  @query('#toolbar')
-  toolbar!: EpkToolbar
 
   @query('#notepad')
   textArea!: HTMLTextAreaElement
@@ -147,9 +144,14 @@ export class Notepad extends EpkApp {
           text: 'About Notepad',
           action: (event: Event) => {
             event.stopPropagation()
-            this.toolbar.closeAll()
+            this.toolbar!.closeAll()
 
-            this.dispatchEvent(launchEvent(() => new Promise<NotepadAbout>(resolve => resolve(new NotepadAbout())), {
+            const about = new AppAbout()
+            about.appName = 'Microsoft &reg; Notepad'
+            about.appIcon = '/img/notepad.ico'
+            about.windowTitle = 'About Notepad'
+
+            this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
               width: 419,
               height: 350,
               disallowFlags: DisallowFlags.DisallowAll,
@@ -179,12 +181,6 @@ export class Notepad extends EpkApp {
     args: () => [this.filePath],
   })
 
-  handleClick(event: Event) {
-    if (event.target !== this.toolbar) {
-      this.toolbar.closeAll()
-    }
-  }
-
   calculatePosition() {
     const lines = this.textArea.value
       .substring(0, this.textArea.selectionStart)
@@ -202,8 +198,7 @@ export class Notepad extends EpkApp {
         </div>`,
       complete: (textValue) => html`
         <div class="app" @click="${this.handleClick}">
-          <epk-toolbar id="toolbar" class="toolbar"
-                       .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+          <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
           <textarea id="notepad" class="content" wrap="off" .value="${textValue}"
                     @click="${this.calculatePosition}"
                     @keyup="${this.calculatePosition}"></textarea>
@@ -218,135 +213,5 @@ export class Notepad extends EpkApp {
           <div class="content">Error</div>
         </div>`,
     })
-  }
-}
-
-@customElement('notepad-about')
-export class NotepadAbout extends EpkApp {
-  static styles = [
-    ...EpkApp.styles,
-    css`
-      .about {
-        display: flex;
-        flex-direction: column;
-        font-family: "Pixelated MS Sans Serif", Arial;
-        height: 100%;
-      }
-
-      .about-text {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-      }
-
-      .about-wrapper {
-        align-items: flex-start;
-        display: flex;
-        gap: 8px;
-        height: 100%;
-        padding: 14px;
-
-        .upper {
-          height: 70%;
-        }
-
-        .lower {
-          align-items: flex-start;
-          height: 30%;
-        }
-
-        .upper, .lower {
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-        }
-
-        p {
-          margin: 0 0 6px 0;
-        }
-      }
-
-      .eula {
-        color: #082ea2;
-        cursor: pointer;
-        text-decoration: underline;
-      }
-
-      .eula-user {
-        margin: 10px 0 18px 14px;
-      }
-
-      .memory {
-        width: 100%;
-      }
-
-      button {
-        align-self: flex-end;
-      }
-
-      hr {
-        width: 100%;
-      }
-    `
-  ]
-
-  windowTitle = 'About Notepad'
-  windowIcon = null
-
-  handleEulaClick(event: Event) {
-    event.stopPropagation()
-
-    this.dispatchEvent(launchEvent(() => new Promise<Notepad>(resolve => {
-      const notepad = new Notepad()
-      notepad.windowTitle = `Notepad - eula`
-      notepad.filePath = '/fs/plaintext/eula.txt'
-      resolve(notepad)
-    })))
-  }
-
-  requestClose() {
-    this.dispatchEvent(closeWindowEvent())
-  }
-
-  render() {
-    return html`
-      <div class="app">
-        <div class="content">
-          <div class="about">
-            <img src="/img/banner.png" width="413" alt="Banner"/>
-            <div class="about-wrapper">
-              <img src="/img/notepad.ico" alt="Notepad"/>
-              <div class="about-text">
-                <div class="upper">
-                  <div>
-                    <p>Microsoft &reg; Notepad</p>
-                    <p>Version 5.1 (Build 2600.xpsp.080413-2111 : Service Pack 3)</p>
-                    <p>Copyright &copy; 2007 Microsoft Corporation</p>
-                  </div>
-                  <div>
-                    <p>
-                      This product is licensed under the terms of the
-                      <span class="eula"
-                            @click="${this.handleEulaClick}">End-User License Agreement</span>
-                      to:
-                    </p>
-                    <p class="eula-user">chad</p>
-                  </div>
-                </div>
-                <div class="lower">
-                  <div class="memory">
-                    <hr/>
-                    <div>
-                      Physical memory available to Windows:
-                      <span class="memory">196,080 KB</span>
-                    </div>
-                  </div>
-                  <button @click="${this.requestClose}">OK</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`
   }
 }

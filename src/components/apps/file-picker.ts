@@ -2,13 +2,9 @@ import {customElement, property, query, queryAll, state} from "lit/decorators.js
 import {EpkApp} from "../app.ts";
 import {css, html} from "lit";
 import {Task} from "@lit/task";
-import {type FsPath, type FsSpec, getFileExtension, getFileName, loadFsSpec} from "../../lib/fs.ts";
+import {buildIcon, type FsPath, type FsSpec, getFileName, loadFsSpec} from "../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../icon.ts";
-import {MusicIcon} from "../icons/music-icon.ts";
-import {MarkdownIcon} from "../icons/markdown-icon.ts";
-import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {closeWindowEvent} from "../../lib/events.ts";
-import {PlainTextIconElement} from "../icons/plaintext-icon.ts";
 
 export type FileTypeFilter = {
   regex: string,
@@ -138,34 +134,14 @@ export class FilePicker extends EpkApp {
   }
 
   private buildIcon(path: FsPath) {
-    const extension = getFileExtension(path.path)
-    let icon: EpkIcon
+    const icon = buildIcon(path)
 
-    switch (extension) {
-      case 'wav':
-        icon = new MusicIcon()
-        break
-      case 'md':
-        icon = new MarkdownIcon()
-        break
-      case 'jpg':
-        icon = new GalleryIcon()
-        break
-      case 'txt':
-        icon = new PlainTextIconElement()
-        break
-      default:
-        // TODO this should raise an alert box
-        throw new Error(`Unhandled extension: ${extension}`)
-    }
-
-    icon.title = path.displayPath
-    icon.filePath = path.path
     icon.viewMode = IconViewMode.ListView
     icon.selected = path.path === this.selectedFilePath
 
-    icon.handleDblClick = () => {} // XXX hack to prevent default double-click behavior
-    icon.classList.add('epk-icon')
+    icon.handleDblClick = () => {
+      // XXX hack to prevent default double-click behavior
+    }
 
     return icon
   }
