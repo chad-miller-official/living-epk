@@ -10,6 +10,7 @@ import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
+import {PlainTextIconElement} from "../icons/plaintext-icon.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -200,6 +201,9 @@ export class FileExplorer extends EpkApp {
       case 'jpg':
         icon = new GalleryIcon();
         (icon as GalleryIcon).fsSpecPath = this.filePath
+        break
+      case 'txt':
+        icon = new PlainTextIconElement()
         break
       default:
         // TODO this should raise an alert box

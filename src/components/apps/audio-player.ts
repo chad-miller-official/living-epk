@@ -242,6 +242,7 @@ export class AudioPlayer extends EpkApp {
   selectionEnd = 0
 
   interact: Interactable | null = null
+  dragged = false
 
   toolbarSpec: ToolbarMenu[] = [
     {
@@ -255,6 +256,16 @@ export class AudioPlayer extends EpkApp {
             const filePicker = new FilePicker()
             filePicker.filePath = '/data/my-music.json'
             filePicker.onFilePick = this.loadFile.bind(this)
+
+            const soundFilterRegex = '[.](mp3|wav)$'
+
+            filePicker.fileTypeFilters = [{
+              regex: soundFilterRegex,
+              label: 'Sound (*.mp3, *.wav)',
+              selected: true
+            }]
+
+            filePicker.filterRegex = new RegExp(soundFilterRegex)
 
             this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
               width: 350,
@@ -309,10 +320,16 @@ export class AudioPlayer extends EpkApp {
   }
 
   firstUpdated() {
+    const appThis = this
     this.interact = interact(this.slider)
 
     this.interact.draggable({
-      listeners: {move: this.handleSliderDrag.bind(this)},
+      listeners: {
+        move: this.handleSliderDrag.bind(this),
+        end() {
+          setTimeout(() => appThis.dragged = false, 50)
+        },
+      },
       startAxis: 'x',
       lockAxis: 'x',
     })
@@ -362,6 +379,8 @@ export class AudioPlayer extends EpkApp {
   }
 
   handleSliderDrag(event: ResizeEvent) {
+    this.dragged = true
+
     const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
     const percentMoved = event.dx / progressBarWidth
     this.audioPlayer.currentTime += this.audioPlayer.duration * percentMoved
@@ -436,6 +455,18 @@ export class AudioPlayer extends EpkApp {
     this.updateWindowTitle()
   }
 
+  handleProgressBarClick(event: PointerEvent) {
+    if (this.dragged) {
+      return
+    }
+
+    this.dragged = false
+
+    const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
+    const percentMoved = event.offsetX / progressBarWidth
+    this.audioPlayer.currentTime = this.audioPlayer.duration * percentMoved
+  }
+
   seek(amount: number) {
     let newTime = this.audioPlayer.currentTime + amount
 
@@ -461,7 +492,7 @@ export class AudioPlayer extends EpkApp {
             <source src="${this.filePath}" type="${this.mimeType}"/>
           </audio>
           <div class="timeline">
-            <div id="progressBar">
+            <div id="progressBar" @click="${this.handleProgressBarClick}">
               <div id="slider" style="${styleMap(sliderStyle)}"></div>
             </div>
             <div class="button-group">

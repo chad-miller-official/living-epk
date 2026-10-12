@@ -8,6 +8,10 @@
     {
       "path": "/fs/audio/dk.wav",
       "displayPath": "dk.wav"
+    },
+    {
+      "path": "/fs/plaintext/eula.txt",
+      "displayPath": "eula.txt"
     }
   ]
 }
