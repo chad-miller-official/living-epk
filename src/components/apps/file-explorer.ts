@@ -6,6 +6,7 @@ import {buildIcon, type FsPath, type FsSpec, loadFsSpec} from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
+import {GalleryIcon} from "../icons/gallery-icon.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -181,6 +182,10 @@ export class FileExplorer extends EpkApp {
 
   private buildIcon(path: FsPath) {
     const icon = buildIcon(path)
+
+    if (icon instanceof GalleryIcon) {
+      (icon as GalleryIcon).fsSpecPath = this.filePath
+    }
 
     icon.timestamp = path.timestamp
     icon.viewMode = IconViewMode.ListView
