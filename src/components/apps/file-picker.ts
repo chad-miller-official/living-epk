@@ -163,6 +163,8 @@ export class FilePicker extends EpkApp {
     icon.filePath = path.path
     icon.viewMode = IconViewMode.ListView
     icon.selected = path.path === this.selectedFilePath
+
+    icon.handleDblClick = () => {} // XXX hack to prevent default double-click behavior
     icon.classList.add('epk-icon')
 
     return icon
