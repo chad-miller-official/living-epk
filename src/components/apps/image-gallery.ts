@@ -1,7 +1,7 @@
 import {css, html} from "lit";
 import {EpkApp} from "../app.ts";
 import {customElement, property, query, state} from "lit/decorators.js";
-import {type FsSpec, loadFsSpec} from "../../lib/fs.ts";
+import {type FsPath, type FsSpec, loadFsSpec} from "../../lib/fs.ts";
 import {Task, TaskStatus} from "@lit/task";
 import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
@@ -87,7 +87,7 @@ export class ImageGallery extends EpkApp {
   windowIcon = '/img/gallery-small.ico'
 
   @property({type: String})
-  filePath: string | undefined
+  filePath?: FsPath
 
   @property({type: String})
   fsSpecPath!: string
@@ -103,7 +103,7 @@ export class ImageGallery extends EpkApp {
       try {
         return loadFsSpec(src, signal).then((data) => {
           if (this.filePath) {
-            this.currentIndex = data.paths.map(path => path.path).indexOf(this.filePath)
+            this.currentIndex = data.paths.map(path => path.path).indexOf(this.filePath.path)
           }
 
           return data

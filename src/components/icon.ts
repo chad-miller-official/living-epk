@@ -3,6 +3,7 @@ import {styleMap} from "lit/directives/style-map.js";
 import {css, type CSSResultGroup, html, LitElement} from "lit";
 import {launchEvent, type LaunchOptions} from "../lib/events.ts";
 import type {EpkApp} from "./app.ts";
+import type {FsPath} from "../lib/fs.ts";
 
 export enum IconViewMode {
   IconView = 'icon',
@@ -94,11 +95,8 @@ export abstract class EpkIcon extends LitElement {
   @property({type: Boolean})
   shadow = false
 
-  @property({type: String})
-  filePath: string | undefined
-
-  @property({type: Number})
-  timestamp = 0
+  @property({type: Object})
+  filePath?: FsPath
 
   @property()
   viewMode = IconViewMode.IconView

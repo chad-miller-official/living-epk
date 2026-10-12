@@ -2,16 +2,13 @@
   "displayRoot": "C:\\Users\\Chad\\My Music\\",
   "paths": [
     {
-      "path": "/fs/audio/weirdcore2.wav",
-      "displayPath": "weirdcore2.wav"
+      "path": "/fs/audio/weirdcore2.wav"
     },
     {
-      "path": "/fs/audio/dk.wav",
-      "displayPath": "dk.wav"
+      "path": "/fs/audio/dk.wav"
     },
     {
-      "path": "/fs/plaintext/eula.txt",
-      "displayPath": "eula.txt"
+      "path": "/fs/plaintext/eula.txt"
     }
   ]
 }

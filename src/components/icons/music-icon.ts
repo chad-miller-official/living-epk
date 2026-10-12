@@ -1,9 +1,9 @@
 import {AudioPlayer} from "../apps/audio-player.ts";
 import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
-import {getFileName} from "../../lib/fs.ts";
 import type {EpkApp} from "../app.ts";
 import {DisallowFlags, type LaunchOptions} from "../../lib/events.ts";
+import {getFileName} from "../../lib/fs.ts";
 
 @customElement('music-icon')
 export class MusicIcon extends EpkIcon {

@@ -6,6 +6,8 @@ import {EpkApp} from "../app.ts";
 import dayjs from "dayjs";
 import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
 import {AppAbout} from "./about.ts";
+import {FilePicker} from "./file-picker.ts";
+import type {FsPath} from "../../lib/fs.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
@@ -20,6 +22,9 @@ export class Notepad extends EpkApp {
       }
     `
   ]
+
+  @property({type: String})
+  filePath?: FsPath
 
   @property({type: String})
   windowTitle = 'Notepad'
@@ -48,7 +53,31 @@ export class Notepad extends EpkApp {
           },
         },
         {
-          text: 'Open', shortcut: 'Ctrl+O', action: () => {
+          text: 'Open', shortcut: 'Ctrl+O', action: (event: Event) => {
+            event.stopPropagation()
+            this.toolbar!.closeAll()
+
+            const filePicker = new FilePicker()
+            filePicker.fsSpecPath = '/data/my-documents.json'
+            filePicker.onFilePick = (path) => this.filePath = path
+
+            /*
+            const plaintextFilterRegex = '[.]txt$'
+
+            filePicker.fileTypeFilters = [{
+              regex: plaintextFilterRegex,
+              label: 'Plain text (*.txt)',
+              selected: true
+            }]
+
+            filePicker.filterRegex = new RegExp(plaintextFilterRegex)
+             */
+
+            this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
+              width: 350,
+              height: 250,
+              disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
+            }))
           },
         },
         {
@@ -162,15 +191,13 @@ export class Notepad extends EpkApp {
     },
   ]
 
-  filePath: string | undefined
-
   private noteTask = new Task(this, {
     task: async ([path], {signal}) => {
       if (!this.filePath) {
         return ''
       }
 
-      const response = await fetch(path!!, {signal})
+      const response = await fetch(path!.path, {signal})
 
       if (!response.ok) {
         alert('Error') // TODO XXX FIXME

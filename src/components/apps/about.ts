@@ -91,7 +91,7 @@ export class AppAbout extends EpkApp {
     this.dispatchEvent(launchEvent(() => new Promise<Notepad>(resolve => {
       const notepad = new Notepad()
       notepad.windowTitle = `Notepad - eula`
-      notepad.filePath = '/fs/plaintext/eula.txt'
+      notepad.filePath = {path: '/fs/plaintext/eula.txt'}
       resolve(notepad)
     })))
   }

@@ -25,7 +25,7 @@ export class FileExplorerIcon extends EpkIcon {
       fileExplorer.windowIcon = this.windowIcon
 
       if (this.filePath) {
-        fileExplorer.filePath = this.filePath
+        fileExplorer.fsSpecPath = this.filePath.path
       }
 
       return resolve(fileExplorer)

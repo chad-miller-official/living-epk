@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     launchEvent(
       () => new Promise<Notepad>(resolve => {
         const notepad = new Notepad()
-        notepad.filePath = '/fs/plaintext/Welcome to my zone.txt'
+        notepad.filePath = {path: '/fs/plaintext/Welcome to my zone.txt'}
         notepad.windowTitle = 'Notepad - Welcome to my zone'
         resolve(notepad)
       }),

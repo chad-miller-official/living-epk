@@ -20,9 +20,12 @@ export class FilePicker extends EpkApp {
       #fileExplorer {
         display: grid;
         grid-auto-flow: column;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         grid-template-rows: repeat(auto-fill, minmax(16px, 1fr));
         height: 97%;
+        
+        * {
+          width: max-content;
+        }
       }
 
       .controls {
@@ -58,7 +61,7 @@ export class FilePicker extends EpkApp {
   icons!: EpkIcon[]
 
   @property({type: String})
-  filePath!: string
+  fsSpecPath!: string
 
   @property({type: Object})
   fileTypeFilters?: FileTypeFilter[]
@@ -70,15 +73,15 @@ export class FilePicker extends EpkApp {
   windowIcon = null
 
   @state()
-  filterRegex = /.*/
+  filterRegex?: RegExp
 
   @state()
   fsSpec?: FsSpec
 
   @state()
-  selectedFilePath?: string
+  selectedFile?: FsPath
 
-  onFilePick!: (filePath: string) => void
+  onFilePick!: (filePath: FsPath) => void
 
   private iconLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
@@ -92,7 +95,7 @@ export class FilePicker extends EpkApp {
 
       return this.fsSpec
     },
-    args: () => [this.filePath]
+    args: () => [this.fsSpecPath]
   })
 
   getMinimumDimensions(): [number, number] {
@@ -102,10 +105,10 @@ export class FilePicker extends EpkApp {
   handleClick(event: Event) {
     if (event.target instanceof EpkIcon) {
       const target = event.target as EpkIcon
-      this.selectedFilePath = target.filePath
+      this.selectedFile = target.filePath
       Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
     } else if (event.target === this.fileExplorer) {
-      this.selectedFilePath = undefined
+      this.selectedFile = undefined
       Array.from(this.icons).forEach(i => i.selected = false)
     }
   }
@@ -116,7 +119,7 @@ export class FilePicker extends EpkApp {
     }
   }
 
-  private handleFilePick(path?: string) {
+  private handleFilePick(path?: FsPath) {
     if (!path) {
       return
     }
@@ -128,8 +131,8 @@ export class FilePicker extends EpkApp {
   handleFileTypeFilterChange(event: Event) {
     this.filterRegex = new RegExp((event.target as HTMLOptionElement).value)
 
-    if (this.selectedFilePath && !this.filterRegex.test(this.selectedFilePath)) {
-      this.selectedFilePath = undefined
+    if (this.selectedFile && !this.filterRegex.test(this.selectedFile.path)) {
+      this.selectedFile = undefined
     }
   }
 
@@ -137,7 +140,7 @@ export class FilePicker extends EpkApp {
     const icon = buildIcon(path)
 
     icon.viewMode = IconViewMode.ListView
-    icon.selected = path.path === this.selectedFilePath
+    icon.selected = path.path === this.selectedFile?.path
 
     icon.handleDblClick = () => {
       // XXX hack to prevent default double-click behavior
@@ -153,6 +156,12 @@ export class FilePicker extends EpkApp {
           <div class="content"></div>
         </div>`,
       complete: (spec: FsSpec) => {
+        let files = spec.paths
+
+        if (this.filterRegex) {
+          files = files.filter(path => this.filterRegex!.test(path.path))
+        }
+
         return html`
           <div class="app" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
             <div class="content">
@@ -160,14 +169,14 @@ export class FilePicker extends EpkApp {
                 <input id="pathInput" type="text" value="${spec.displayRoot}"/>
                 <div class="file-explorer-container">
                   <div id="fileExplorer">
-                    ${spec.paths.filter(path => this.filterRegex.test(path.displayPath)).map(this.buildIcon.bind(this))}
+                    ${files.map(this.buildIcon.bind(this))}
                   </div>
                 </div>
                 <div class="controls">
                   <span>File name:</span>
-                  <input type="text" value="${getFileName(this.selectedFilePath || '')}" readonly/>
+                  <input type="text" value="${this.selectedFile ? getFileName(this.selectedFile) : ''}" readonly/>
                   <button type="button"
-                          @click="${() => this.handleFilePick(this.selectedFilePath)}">
+                          @click="${() => this.handleFilePick(this.selectedFile)}">
                     Open
                   </button>
                   <span>Files of type:</span>

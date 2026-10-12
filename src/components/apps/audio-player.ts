@@ -1,4 +1,4 @@
-import {getFileExtension, getFileName} from "../../lib/fs.ts";
+import {type FsPath, getFileExtension, getFileName} from "../../lib/fs.ts";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {EpkApp} from "../app.ts";
@@ -177,10 +177,6 @@ export class AudioPlayer extends EpkApp {
         padding: 3px 1px;
         width: 100%;
       }
-
-      audio {
-        width: 100%;
-      }
     `
   ]
 
@@ -200,7 +196,7 @@ export class AudioPlayer extends EpkApp {
   windowIcon = '/img/media-player-small.ico'
 
   @property({type: String})
-  filePath: string | undefined
+  filePath?: FsPath
 
   @state()
   mimeType: string | undefined
@@ -226,12 +222,6 @@ export class AudioPlayer extends EpkApp {
   @state()
   sliderPosition = '-5px'
 
-  @state()
-  selectionStart = 0
-
-  @state()
-  selectionEnd = 0
-
   interact: Interactable | null = null
   dragged = false
 
@@ -245,7 +235,7 @@ export class AudioPlayer extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
-            filePicker.filePath = '/data/my-music.json'
+            filePicker.fsSpecPath = '/data/my-music.json'
             filePicker.onFilePick = this.loadFile.bind(this)
 
             const soundFilterRegex = '[.](mp3|wav)$'
@@ -339,7 +329,7 @@ export class AudioPlayer extends EpkApp {
     this.windowTitle = 'Media Player'
 
     if (this.filePath) {
-      this.windowTitle += ` - ${getFileName(this.filePath!)}`
+      this.windowTitle += ` - ${getFileName(this.filePath)}`
 
       if (this.isPlaying) {
         this.windowTitle += ' (playing)'
@@ -353,7 +343,7 @@ export class AudioPlayer extends EpkApp {
     this.dispatchEvent(windowPropertyChangeEvent({title: this.windowTitle}))
   }
 
-  loadFile(filePath: string) {
+  loadFile(filePath: FsPath) {
     this.isPlaying = false
     this.isPaused = false
     this.isStopped = true

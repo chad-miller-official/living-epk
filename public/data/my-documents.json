@@ -3,18 +3,15 @@
   "paths": [
     {
       "path": "/fs/md/helloworld.md",
-      "displayPath": "helloworld.md",
       "timestamp": 1790366784147
     },
     {
-      "path": "/fs/md/helloworld.md",
-      "displayPath": "test 123.md",
-      "timestamp": 1890366784147
+      "path": "/fs/plaintext/eula.txt",
+      "timestamp": 1790362584147
     },
     {
-      "path": "/fs/md/helloworld.md",
-      "displayPath": "this is another one.md",
-      "timestamp": 1790362784147
+      "path": "/fs/plaintext/Welcome to my zone.txt",
+      "timestamp": 1790362784146
     }
   ]
 }

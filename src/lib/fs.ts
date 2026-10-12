@@ -5,14 +5,27 @@ import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
 import {EpkIcon} from "../components/icon.ts";
 
 export type FsPath = {
-  path: string,
-  displayPath: string,
-  timestamp: number,
+  path: string
+  timestamp?: number
 }
 
 export type FsSpec = {
   displayRoot: string,
   paths: FsPath[],
+}
+
+export function getFileName(path: FsPath, withExtension = true) {
+  let fileName = path.path.split('/').pop() || ''
+
+  if (!withExtension) {
+    fileName = fileName?.split(/\.(?=[^.]+$)/)[0]
+  }
+
+  return fileName
+}
+
+export function getFileExtension(path: FsPath) {
+  return path.path.split('.').pop()
 }
 
 export class FsError extends Error {
@@ -29,27 +42,13 @@ export async function loadFsSpec(fsSpecFile: string, signal?: AbortSignal): Prom
   }
 
   const fsSpec = await response.json() as FsSpec
-  fsSpec.paths.sort((a, b) => a.displayPath.localeCompare(b.displayPath))
+  fsSpec.paths.sort((a, b) => a.path.localeCompare(b.path))
 
   return fsSpec
 }
 
-export function getFileExtension(path: string) {
-  return path.split('.').pop()
-}
-
-export function getFileName(path: string, withExtension = true) {
-  let fileName = path.split('/').pop() || ''
-
-  if (!withExtension) {
-    fileName = fileName?.split(/\.(?=[^.]+$)/)[0]
-  }
-
-  return fileName
-}
-
 export function buildIcon(path: FsPath) {
-  const extension = getFileExtension(path.path)
+  const extension = getFileExtension(path)
   let icon: EpkIcon
 
   switch (extension) {
@@ -70,8 +69,8 @@ export function buildIcon(path: FsPath) {
       throw new Error(`Unhandled extension: ${extension}`)
   }
 
-  icon.title = path.displayPath
-  icon.filePath = path.path
+  icon.title = getFileName(path)
+  icon.filePath = path
   icon.classList.add('epk-icon')
 
   return icon

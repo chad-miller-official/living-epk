@@ -2,7 +2,7 @@ import {type EpkIcon, IconViewMode} from "../icon.ts";
 import {customElement, property, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html} from "lit";
-import {buildIcon, type FsPath, type FsSpec, loadFsSpec} from "../../lib/fs.ts";
+import {buildIcon, type FsPath, type FsSpec, getFileName, loadFsSpec} from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
@@ -121,7 +121,7 @@ export class FileExplorer extends EpkApp {
   windowIcon = '/img/file-explorer-small.ico'
 
   @property({type: String})
-  filePath = '/data/my-documents.json'
+  fsSpecPath!: string
 
   @queryAll('.epk-icon')
   icons!: EpkIcon[]
@@ -177,19 +177,17 @@ export class FileExplorer extends EpkApp {
 
       return this.fsSpec
     },
-    args: () => [this.filePath]
+    args: () => [this.fsSpecPath]
   })
 
   private buildIcon(path: FsPath) {
     const icon = buildIcon(path)
 
     if (icon instanceof GalleryIcon) {
-      (icon as GalleryIcon).fsSpecPath = this.filePath
+      (icon as GalleryIcon).fsSpecPath = this.fsSpecPath
     }
 
-    icon.timestamp = path.timestamp
     icon.viewMode = IconViewMode.ListView
-
     return icon
   }
 
@@ -225,16 +223,16 @@ export class FileExplorer extends EpkApp {
       case SortColumn.Filename:
         this.fsSpec.paths.sort(
           this.sortAsc
-            ? (a, b) => a.displayPath.localeCompare(b.displayPath)
-            : (a, b) => b.displayPath.localeCompare(a.displayPath)
+            ? (a, b) => getFileName(a).localeCompare(getFileName(b))
+            : (a, b) => getFileName(b).localeCompare(getFileName(a))
         )
 
         break
       case SortColumn.Modified:
         this.fsSpec.paths.sort(
           this.sortAsc
-            ? (a, b) => a.timestamp - b.timestamp
-            : (a, b) => b.timestamp - a.timestamp
+            ? (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
+            : (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
         )
 
         break
