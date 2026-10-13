@@ -3,7 +3,6 @@ import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
 import {DisallowFlags, type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
-import {EpkToolbar} from "./ui.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
@@ -33,6 +32,8 @@ export class EpkDesktop extends LitElement {
   @queryAssignedElements({slot: 'windows'})
   windows!: EpkWindow[]
 
+  appInstanceCount = new Map<string, number>()
+
   firstUpdated() {
     this.addEventListener('launch', this.handleLaunch)
     this.addEventListener('active-window-change', this.handleActiveWindowChange)
@@ -49,24 +50,27 @@ export class EpkDesktop extends LitElement {
         w.active = false
       }
 
-      w.content.forEach(wc => {
-        const children = wc.querySelectorAll('.epk-icon')
-        const shadowChildren = wc.shadowRoot?.querySelectorAll('.epk-icon')
-        let allChildren = Array.from(children)
+      let allChildren: Element[] = []
+      const children = w.app[0].querySelectorAll('.epk-icon')
 
-        if (shadowChildren) {
-          allChildren = allChildren.concat(Array.from(shadowChildren))
-        }
+      if (children) {
+        allChildren = allChildren.concat(Array.from(children))
+      }
 
-        allChildren
-          .filter(elem => elem !== event.target)
-          .forEach(elem => (elem as EpkIcon).selected = false)
+      const shadowChildren = w.app[0].shadowRoot?.querySelectorAll('.epk-icon')
 
-        if (event.target !== wc) {
-          (wc.shadowRoot?.querySelector('epk-toolbar') as EpkToolbar)?.closeAll()
-        }
-      })
-    });
+      if (shadowChildren) {
+        allChildren = allChildren.concat(Array.from(shadowChildren))
+      }
+
+      allChildren
+        .filter(elem => elem !== event.target)
+        .forEach(elem => (elem as EpkIcon).selected = false)
+
+      if (event.target !== w.app[0]) {
+        w.app[0].toolbar?.closeAll()
+      }
+    })
   }
 
   private getSortedWindows(event: Event) {
@@ -84,6 +88,11 @@ export class EpkDesktop extends LitElement {
   }
 
   handleCloseWindow(event: Event) {
+    const appName = (event.target as EpkWindow).app[0].constructor.name
+    const instanceCount = this.appInstanceCount.get(appName)!
+
+    this.appInstanceCount.set(appName, instanceCount - 1)
+
     this.getSortedWindows(event)
       ?.pop()
       ?.setActive()
@@ -93,21 +102,28 @@ export class EpkDesktop extends LitElement {
     const launchData = (event as CustomEvent<Launch>).detail
 
     launchData.init().then(app => {
+      const appName = app.constructor.name
+      app.classList.add('epk-app')
+
+      const instanceCount = this.appInstanceCount.get(appName) || 0
+      this.appInstanceCount.set(appName, instanceCount + 1)
+
       if (launchData.windowDimensions === 'fullscreen') {
         app.slot = 'fullscreen'
         this.append(app)
       } else {
-        app.classList.add('epk-app')
-
-        const appName = app.constructor.name
-        const appLastPosition = EpkWindow.lastAppPositions.get(appName)
-
         const epkWindow = new EpkWindow()
+        const appLastPosition = EpkWindow.lastAppPositions.get(appName)
 
         epkWindow.slot = 'windows'
         epkWindow.x = appLastPosition?.x || launchData.x || 0
         epkWindow.y = appLastPosition?.y || launchData.y || 0
         epkWindow.title = app.windowTitle
+
+        if (instanceCount > 0) {
+          epkWindow.x += 16
+          epkWindow.y += 16
+        }
 
         if (app.windowIcon) {
           epkWindow.thumbnail = app.windowIcon

@@ -7,6 +7,7 @@ import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {activeWindowChangeEvent, closeWindowEvent, type WindowProperties} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
+import type {EpkApp} from "./app.ts";
 
 type WindowPosition = {
   x: number,
@@ -105,8 +106,8 @@ export class EpkWindow extends LitElement {
   @query('.window')
   window!: HTMLElement
 
-  @queryAssignedElements()
-  content!: HTMLElement[]
+  @queryAssignedElements({selector: '.epk-app'})
+  app!: EpkApp[]
 
   @property({type: String})
   title = "Untitled Window"
@@ -234,6 +235,7 @@ export class EpkWindow extends LitElement {
 
     this.resetDimensions()
     this.setActive()
+    this.updateLastPosition()
 
     this.style.transform = `translate(${this.x}px, ${this.y}px)`
     EpkWindow.instanceCount++
@@ -250,15 +252,6 @@ export class EpkWindow extends LitElement {
   }
 
   handleCloseWindow() {
-    const containedAppName = this.content[0].constructor.name
-
-    EpkWindow.lastAppPositions.set(containedAppName, {
-      x: this.x,
-      y: this.y,
-      width: this.width!,
-      height: this.height!,
-    })
-
     this.remove()
     this.isClosing = true
   }
@@ -289,6 +282,19 @@ export class EpkWindow extends LitElement {
     this.toggleFullscreen()
   }
 
+  updateLastPosition() {
+    const containedAppName = this.app[0].constructor.name
+
+    if (containedAppName) {
+      EpkWindow.lastAppPositions.set(containedAppName, {
+        x: this.x,
+        y: this.y,
+        width: this.width!,
+        height: this.height!,
+      })
+    }
+  }
+
   handleDrag(event: InteractEvent) {
     if (this.fullscreen) {
       return
@@ -299,6 +305,8 @@ export class EpkWindow extends LitElement {
 
     this.style.transform = `translate(${this.x}px, ${this.y}px)`
     this.setActive()
+
+    this.updateLastPosition()
   }
 
   handleResize(event: ResizeEvent) {
@@ -319,6 +327,8 @@ export class EpkWindow extends LitElement {
     this.resetCoordinates()
     this.resetDimensions()
     this.setActive()
+
+    this.updateLastPosition()
   }
 
   toggleFullscreen() {
