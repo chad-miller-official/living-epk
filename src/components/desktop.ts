@@ -97,11 +97,16 @@ export class EpkDesktop extends LitElement {
         app.slot = 'fullscreen'
         this.append(app)
       } else {
+        app.classList.add('epk-app')
+
+        const appName = app.constructor.name
+        const appLastPosition = EpkWindow.lastAppPositions.get(appName)
+
         const epkWindow = new EpkWindow()
 
         epkWindow.slot = 'windows'
-        epkWindow.x = launchData.x || 0
-        epkWindow.y = launchData.y || 0
+        epkWindow.x = appLastPosition?.x || launchData.x || 0
+        epkWindow.y = appLastPosition?.y || launchData.y || 0
         epkWindow.title = app.windowTitle
 
         if (app.windowIcon) {
@@ -113,19 +118,14 @@ export class EpkDesktop extends LitElement {
         epkWindow.noFullscreen = (launchData.disallowFlags & DisallowFlags.DisallowMaximize) > 0
         epkWindow.noMinimize = (launchData.disallowFlags & DisallowFlags.DisallowMinimize) > 0
 
-
+        const [lastWidth, lastHeight] = [appLastPosition?.width, appLastPosition?.height]
         const [minWidth, minHeight] = app.getMinimumDimensions()
         const [eventWidth, eventHeight] = launchData.windowDimensions
 
-        let [widthToUse, heightToUse] = [eventWidth || minWidth, eventHeight || minHeight]
-
-        if (eventWidth && minWidth && eventWidth < minWidth) {
-          widthToUse = minWidth
-        }
-
-        if (eventHeight && minHeight && eventHeight < minHeight) {
-          heightToUse = minHeight
-        }
+        let [widthToUse, heightToUse] = [
+          lastWidth || eventWidth || minWidth,
+          lastHeight || eventHeight || minHeight
+        ]
 
         epkWindow.minWidth = minWidth
         epkWindow.minHeight = minHeight

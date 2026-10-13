@@ -8,9 +8,17 @@ import {activeWindowChangeEvent, closeWindowEvent, type WindowProperties} from "
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 
+type WindowPosition = {
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+}
+
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
   private static instanceCount = 0
+  static lastAppPositions = new Map<string, WindowPosition>()
 
   static styles = [
     unsafeCSS(xpStyle),
@@ -242,6 +250,15 @@ export class EpkWindow extends LitElement {
   }
 
   handleCloseWindow() {
+    const containedAppName = this.content[0].constructor.name
+
+    EpkWindow.lastAppPositions.set(containedAppName, {
+      x: this.x,
+      y: this.y,
+      width: this.width!,
+      height: this.height!,
+    })
+
     this.remove()
     this.isClosing = true
   }
