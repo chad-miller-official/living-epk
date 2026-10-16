@@ -469,7 +469,7 @@ export class AudioPlayer extends EpkApp {
           <audio id="audioPlayer" @timeupdate="${this.handleTimeUpdate}"
                  @loadedmetadata="${this.handleLoadedMetadata}"
                  @ended="${this.handleEnded}">
-            <source src="${this.filePath}" type="${this.mimeType}"/>
+            <source src="${this.filePath?.path}" type="${this.mimeType}"/>
           </audio>
           <div class="timeline">
             <div id="progressBar" @click="${this.handleProgressBarClick}">

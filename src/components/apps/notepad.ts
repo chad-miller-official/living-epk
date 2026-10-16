@@ -61,7 +61,6 @@ export class Notepad extends EpkApp {
             filePicker.fsSpecPath = '/data/my-documents.json'
             filePicker.onFilePick = (path) => this.filePath = path
 
-            /*
             const plaintextFilterRegex = '[.]txt$'
 
             filePicker.fileTypeFilters = [{
@@ -71,7 +70,6 @@ export class Notepad extends EpkApp {
             }]
 
             filePicker.filterRegex = new RegExp(plaintextFilterRegex)
-             */
 
             this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
               width: 350,
