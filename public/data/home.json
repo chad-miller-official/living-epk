@@ -1,0 +1,24 @@
+{
+  "displayRoot": "C:\\Users\\Chad\\",
+  "paths": [
+    {
+      "path": "/data/my-documents.json",
+      "displayPath": "My Documents",
+      "timestamp": "1792160986328"
+    },
+    {
+      "path": "/data/my-music.json",
+      "displayPath": "My Music",
+      "timestamp": "1792160986328"
+    },
+    {
+      "path": "/data/my-pictures.json",
+      "displayPath": "My Pictures",
+      "timestamp": "1792160986328"
+    },
+    {
+      "path": "/fs/plaintext/eula.txt",
+      "timestamp": 1790362584147
+    }
+  ]
+}

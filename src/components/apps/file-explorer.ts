@@ -2,11 +2,13 @@ import {type EpkIcon, IconViewMode} from "../icon.ts";
 import {customElement, property, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html} from "lit";
-import {buildIcon, type FsPath, type FsSpec, getFileName, loadFsSpec} from "../../lib/fs.ts";
+import {buildIcon, type FsPath, type FsSpec, getFileName, getFormattedTimestamp, loadFsSpec} from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
+import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
+import {buttonStyle2} from "../ui.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -17,6 +19,7 @@ enum SortColumn {
 export class FileExplorer extends EpkApp {
   static styles = [
     ...EpkApp.styles,
+    buttonStyle2,
     css`
       #pathInput {
         border-left: none;
@@ -138,6 +141,9 @@ export class FileExplorer extends EpkApp {
   @state()
   sortAsc = true
 
+  private pathStack: string[] = []
+  private pathStackIdx = 0
+
   private toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
@@ -185,10 +191,41 @@ export class FileExplorer extends EpkApp {
 
     if (icon instanceof GalleryIcon) {
       (icon as GalleryIcon).fsSpecPath = this.fsSpecPath
+    } else if (icon instanceof FileExplorerIcon) {
+      icon.handleDblClick = () => {
+        const newFsSpecPath = icon.filePath!.path
+
+        this.fsSpecPath = newFsSpecPath
+        this.pathStackIdx++
+
+        if (newFsSpecPath !== this.pathStack[this.pathStackIdx]) {
+          this.pathStack.length = this.pathStackIdx
+          this.pathStack.push(newFsSpecPath)
+        }
+      }
     }
 
     icon.viewMode = IconViewMode.ListView
     return icon
+  }
+
+  private goBack() {
+    if (this.pathStackIdx > 0) {
+      this.pathStackIdx--
+      this.fsSpecPath = this.pathStack[this.pathStackIdx]
+    }
+  }
+
+  private goForward() {
+    if (this.pathStackIdx < this.pathStack.length - 1) {
+      this.pathStackIdx++
+      this.fsSpecPath = this.pathStack[this.pathStackIdx]
+    }
+  }
+
+  connectedCallback() {
+    super.connectedCallback()
+    this.pathStack.push(this.fsSpecPath)
   }
 
   handleClick(event: Event) {
@@ -269,11 +306,6 @@ export class FileExplorer extends EpkApp {
           <div class="content"></div>
         </div>`,
       complete: (spec: FsSpec) => {
-        const LIST_VIEW_DATE_FORMAT_OPTIONS = {
-          dateStyle: 'full',
-          timeStyle: 'short',
-        } as const
-
         const colStyle = styleMap({backgroundColor: '#f7f7f7'})
 
         return html`
@@ -282,6 +314,14 @@ export class FileExplorer extends EpkApp {
             <section class="content">
               <div class="viewport">
                 <div class="navigation">
+                  <button class="style-2" ?disabled="${this.pathStackIdx === 0}"
+                          @click="${this.goBack}">
+                    B
+                  </button>
+                  <button class="style-2" ?disabled="${this.pathStackIdx === this.pathStack.length - 1}"
+                          @click="${this.goForward}">
+                    F
+                  </button>
                   <input type="text" value="${spec.displayRoot}" id="pathInput"/>
                 </div>
                 <div class="file-explorer">
@@ -309,7 +349,7 @@ export class FileExplorer extends EpkApp {
                       <tr>
                         <td>${this.buildIcon(path)}</td>
                         <td class="divider"></td>
-                        <td>${new Intl.DateTimeFormat('en-US', LIST_VIEW_DATE_FORMAT_OPTIONS).format(path.timestamp)}
+                        <td>${getFormattedTimestamp(path)}
                         </td>
                       </tr>
                     `)}

@@ -3,9 +3,16 @@ import {MarkdownIcon} from "../components/icons/markdown-icon.ts";
 import {GalleryIcon} from "../components/icons/gallery-icon.ts";
 import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
 import {EpkIcon} from "../components/icon.ts";
+import {FileExplorerIcon} from "../components/icons/file-explorer-icon.ts";
+
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'full',
+  timeStyle: 'short',
+})
 
 export type FsPath = {
   path: string
+  displayPath?: string
   timestamp?: number
 }
 
@@ -15,7 +22,7 @@ export type FsSpec = {
 }
 
 export function getFileName(path: FsPath, withExtension = true) {
-  let fileName = path.path.split('/').pop() || ''
+  let fileName = path.displayPath || path.path.split('/').pop() || ''
 
   if (!withExtension) {
     fileName = fileName?.split(/\.(?=[^.]+$)/)[0]
@@ -26,6 +33,10 @@ export function getFileName(path: FsPath, withExtension = true) {
 
 export function getFileExtension(path: FsPath) {
   return path.path.split('.').pop()
+}
+
+export function getFormattedTimestamp(path: FsPath) {
+  return DATE_TIME_FORMAT.format(path.timestamp)
 }
 
 export class FsError extends Error {
@@ -52,6 +63,9 @@ export function buildIcon(path: FsPath) {
   let icon: EpkIcon
 
   switch (extension) {
+    case 'json':
+      icon = new FileExplorerIcon()
+      break
     case 'wav':
       icon = new MusicIcon()
       break

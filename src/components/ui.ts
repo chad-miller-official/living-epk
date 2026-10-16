@@ -4,6 +4,33 @@ import {type ToolbarMenu, ToolbarUiElement} from "../lib/toolbar.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 
+export const buttonStyle2 = css`
+  button.style-2 {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    display: flex;
+    justify-content: center;
+    min-height: 0;
+    min-width: 0;
+    padding: 1px 4px;
+
+    &:focus {
+      outline: none;
+    }
+
+    &:hover:not([disabled]), &.active {
+      box-shadow: inset 0 -6px 6px -7px rgba(0, 0, 0, 0.4);
+      border: 1px solid #cecec3;
+      outline: none;
+    }
+
+    * {
+      user-select: none;
+    }
+  }
+`
+
 @customElement('epk-toolbar')
 export class EpkToolbar extends LitElement {
   static styles = [
