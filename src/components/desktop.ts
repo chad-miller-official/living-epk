@@ -90,12 +90,7 @@ export class EpkDesktop extends LitElement {
   handleCloseWindow(event: Event) {
     const appName = (event.target as EpkWindow).app[0].constructor.name
     const instanceCount = this.appInstanceCount.get(appName)!
-
     this.appInstanceCount.set(appName, instanceCount - 1)
-
-    this.getSortedWindows(event)
-      ?.pop()
-      ?.setActive()
   }
 
   handleLaunch(event: Event) {

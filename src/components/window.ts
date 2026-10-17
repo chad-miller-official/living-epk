@@ -60,13 +60,21 @@ export class EpkWindow extends LitElement {
       .window {
         display: flex;
         flex-direction: column;
-        opacity: 0.9;
         position: fixed;
-        user-select: none;
 
-        &.active {
-          opacity: 1;
-          user-select: revert;
+        &:not(.active) {
+          box-shadow: inset -1px -1px #5c659f,
+          inset 1px 1px #6073c4,
+          inset -2px -2px #5c6aa9,
+          inset 2px 2px #647ecf,
+          inset -3px -3px #5c74ca,
+          inset 3px 3px #607ecb;
+
+          user-select: none;
+
+          & > .title-bar {
+            filter: contrast(0.4) brightness(1.2);
+          }
         }
 
         &.fullscreen {

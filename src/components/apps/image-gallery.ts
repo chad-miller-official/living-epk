@@ -19,7 +19,7 @@ const buttonStyle = css`
 
   .divider {
     background-color: #ccc8b6;
-    height: 16px;
+    height: 85%;
     margin: 2px;
     width: 1px;
   }

@@ -21,11 +21,34 @@ export class FileExplorer extends EpkApp {
     ...EpkApp.styles,
     buttonStyle2,
     css`
+      #backButton, #forwardButton {
+        & > span {
+          align-items: center;
+          display: flex;
+          gap: 8px;
+          margin: 2px 4px;
+        }
+
+        &[disabled] > img {
+          filter: grayscale(1);
+          opacity: 0.5;
+        }
+      }
+      
+      #goButton {
+        display: flex;
+        gap: 4px;
+        height: 100%;
+        padding: 0 8px 0 4px;
+      }
+      
       #pathInput {
-        border-left: none;
-        border-right: none;
-        border-top: none;
-        width: 100%;
+        flex-grow: 1;
+      }
+
+      .address {
+        opacity: 0.5;
+        padding: 0 4px;
       }
 
       .file-explorer {
@@ -37,7 +60,23 @@ export class FileExplorer extends EpkApp {
       }
 
       .navigation {
+        align-items: center;
+        background-color: #eceadb;
+        border-bottom: 1px groove #c7c5b2;
         display: flex;
+        width: 100%;
+        
+        button {
+          padding: 4px 7px;
+          margin: 1px;
+        }
+
+        .divider {
+          background-color: #ccc8b6;
+          height: 85%;
+          margin: 2px;
+          width: 1px;
+        }
       }
 
       .viewport {
@@ -314,15 +353,28 @@ export class FileExplorer extends EpkApp {
             <section class="content">
               <div class="viewport">
                 <div class="navigation">
-                  <button class="style-2" ?disabled="${this.pathStackIdx === 0}"
-                          @click="${this.goBack}">
-                    B
+                  <button type="button" id="backButton" class="style-2"
+                          ?disabled="${this.pathStackIdx === 0}" @click="${this.goBack}">
+                    <img src="/img/file-explorer/back.png"/>
+                    <span>Back</span>
                   </button>
-                  <button class="style-2" ?disabled="${this.pathStackIdx === this.pathStack.length - 1}"
+                  <button type="button" id="forwardButton" class="style-2"
+                          ?disabled="${this.pathStackIdx === this.pathStack.length - 1}"
                           @click="${this.goForward}">
-                    F
+                    <img src="/img/file-explorer/forward.png"/>
                   </button>
+                  <button type="button" id="upButton" class="style-2">
+                    <img src="/img/file-explorer/up.png" />
+                  </button>
+                  <div class="divider"></div>
+                </div>
+                <div class="navigation">
+                  <span class="address">Address</span>
                   <input type="text" value="${spec.displayRoot}" id="pathInput"/>
+                  <button type="button" id="goButton" class="style-2">
+                    <img src="/img/file-explorer/go.png" />
+                    <span>Go</span>
+                  </button>
                 </div>
                 <div class="file-explorer">
                   <table>
@@ -333,7 +385,8 @@ export class FileExplorer extends EpkApp {
                     </colgroup>
                     <thead>
                     <tr>
-                      <th class="sort asc" data-column="${SortColumn.Filename}" @click="${this.sortFiles}">
+                      <th class="sort asc" data-column="${SortColumn.Filename}"
+                          @click="${this.sortFiles}">
                         File Name
                       </th>
                       <th class="divider" @mousedown="${this.handleDividerDrag}">
