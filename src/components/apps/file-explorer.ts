@@ -2,7 +2,14 @@ import {type EpkIcon, IconViewMode} from "../icon.ts";
 import {customElement, property, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html} from "lit";
-import {buildIcon, type FsPath, type FsSpec, getFileName, getFormattedTimestamp, loadFsSpec} from "../../lib/fs.ts";
+import {
+  buildIcon,
+  type FsPath,
+  type FsSpec,
+  getFileName,
+  getFormattedTimestamp,
+  loadFsSpec
+} from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
@@ -28,20 +35,15 @@ export class FileExplorer extends EpkApp {
           gap: 8px;
           margin: 2px 4px;
         }
-
-        &[disabled] > img {
-          filter: grayscale(1);
-          opacity: 0.5;
-        }
       }
-      
+
       #goButton {
         display: flex;
         gap: 4px;
         height: 100%;
         padding: 0 8px 0 4px;
       }
-      
+
       #pathInput {
         flex-grow: 1;
       }
@@ -65,10 +67,15 @@ export class FileExplorer extends EpkApp {
         border-bottom: 1px groove #c7c5b2;
         display: flex;
         width: 100%;
-        
+
         button {
           padding: 4px 7px;
           margin: 1px;
+
+          &[disabled] > img {
+            filter: grayscale(1);
+            opacity: 0.5;
+          }
         }
 
         .divider {
@@ -231,21 +238,21 @@ export class FileExplorer extends EpkApp {
     if (icon instanceof GalleryIcon) {
       (icon as GalleryIcon).fsSpecPath = this.fsSpecPath
     } else if (icon instanceof FileExplorerIcon) {
-      icon.handleDblClick = () => {
-        const newFsSpecPath = icon.filePath!.path
-
-        this.fsSpecPath = newFsSpecPath
-        this.pathStackIdx++
-
-        if (newFsSpecPath !== this.pathStack[this.pathStackIdx]) {
-          this.pathStack.length = this.pathStackIdx
-          this.pathStack.push(newFsSpecPath)
-        }
-      }
+      icon.handleDblClick = () => this.navigate(icon.filePath!.path)
     }
 
     icon.viewMode = IconViewMode.ListView
     return icon
+  }
+
+  private navigate(newFsSpecPath: string) {
+    this.fsSpecPath = newFsSpecPath
+    this.pathStackIdx++
+
+    if (newFsSpecPath !== this.pathStack[this.pathStackIdx]) {
+      this.pathStack.length = this.pathStackIdx
+      this.pathStack.push(newFsSpecPath)
+    }
   }
 
   private goBack() {
@@ -363,8 +370,9 @@ export class FileExplorer extends EpkApp {
                           @click="${this.goForward}">
                     <img src="/img/file-explorer/forward.png"/>
                   </button>
-                  <button type="button" id="upButton" class="style-2">
-                    <img src="/img/file-explorer/up.png" />
+                  <button type="button" id="upButton" class="style-2" ?disabled="${!spec.parent}"
+                          @click="${() => this.navigate(spec.parent!)}">
+                    <img src="/img/file-explorer/up.png"/>
                   </button>
                   <div class="divider"></div>
                 </div>
@@ -372,7 +380,7 @@ export class FileExplorer extends EpkApp {
                   <span class="address">Address</span>
                   <input type="text" value="${spec.displayRoot}" id="pathInput"/>
                   <button type="button" id="goButton" class="style-2">
-                    <img src="/img/file-explorer/go.png" />
+                    <img src="/img/file-explorer/go.png"/>
                     <span>Go</span>
                   </button>
                 </div>

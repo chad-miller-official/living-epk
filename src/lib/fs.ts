@@ -18,6 +18,7 @@ export type FsPath = {
 
 export type FsSpec = {
   displayRoot: string,
+  parent?: string,
   paths: FsPath[],
 }
 
