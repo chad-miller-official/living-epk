@@ -13,8 +13,11 @@ import './components/icons/plaintext-icon.ts'
 import {launchEvent} from "./lib/events.ts";
 
 import {Notepad} from "./components/apps/notepad.ts";
+import {loadFolders} from "./lib/fs.ts";
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadFolders().then(console.log)
+
   document.querySelector('#desktop')!.dispatchEvent(
     launchEvent(
       () => new Promise<Notepad>(resolve => {

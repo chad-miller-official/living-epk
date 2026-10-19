@@ -46,6 +46,34 @@ export class FsError extends Error {
   }
 }
 
+function loadFoldersHelper(prefix: string, cwd: string, spec: object | string): object[] {
+  const record = {
+    id: `${prefix}${cwd}`,
+    path: null,
+    members: null,
+  }
+
+  if (typeof spec === 'string') {
+    record.path = spec
+    return [record]
+  } else {
+    record.path = spec['.']
+    record.members = Object.keys(spec).filter(f => f !== '.')
+
+    return [
+      record,
+      ...record.members.map(m => loadFoldersHelper(`${record.id}\\`, m, spec[m])).flat()
+    ]
+  }
+}
+
+export async function loadFolders() {
+  const response = await fetch("/data/_folders.json")
+  const folders = await response.json()
+  const root = Object.keys(folders)[0]
+  return loadFoldersHelper('', root, folders[root])
+}
+
 export async function loadFsSpec(fsSpecFile: string, signal?: AbortSignal): Promise<FsSpec> {
   const response = await fetch(fsSpecFile, {signal})
 
