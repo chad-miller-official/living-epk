@@ -4,6 +4,7 @@ import {css, html} from "lit";
 import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
 import {Notepad} from "./notepad.ts";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
+import {LinkNodeType} from "../../lib/fs.ts";
 
 @customElement('app-about')
 export class AppAbout extends EpkApp {
@@ -91,7 +92,7 @@ export class AppAbout extends EpkApp {
     this.dispatchEvent(launchEvent(() => new Promise<Notepad>(resolve => {
       const notepad = new Notepad()
       notepad.windowTitle = `Notepad - eula`
-      notepad.filePath = {path: '/fs/plaintext/eula.txt'}
+      notepad.fileLinkNode = {type: LinkNodeType.File, path: '/fs/plaintext/eula.txt'}
       resolve(notepad)
     })))
   }

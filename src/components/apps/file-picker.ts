@@ -2,7 +2,13 @@ import {customElement, property, query, queryAll, state} from "lit/decorators.js
 import {EpkApp} from "../app.ts";
 import {css, html} from "lit";
 import {Task} from "@lit/task";
-import {buildIcon, type FsPath, type FsSpec, getFileName, loadFsSpec} from "../../lib/fs.ts";
+import {
+  type FolderNode,
+  getLinkName,
+  type LinkNode,
+  linkNodeToIcon,
+  loadFolderNode
+} from "../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../icon.ts";
 import {closeWindowEvent} from "../../lib/events.ts";
 
@@ -22,7 +28,7 @@ export class FilePicker extends EpkApp {
         grid-auto-flow: column;
         grid-template-rows: repeat(auto-fill, minmax(16px, 1fr));
         height: 97%;
-        
+
         * {
           width: max-content;
         }
@@ -76,24 +82,24 @@ export class FilePicker extends EpkApp {
   filterRegex?: RegExp
 
   @state()
-  fsSpec?: FsSpec
+  folderNode?: FolderNode
 
   @state()
-  selectedFile?: FsPath
+  selectedFileLinkNode?: LinkNode
 
-  onFilePick!: (filePath: FsPath) => void
+  onFilePick!: (fileLinkNode: LinkNode) => void
 
   private iconLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
       try {
-        this.fsSpec = await loadFsSpec(src, signal)
+        this.folderNode = await loadFolderNode(src, signal)
       } catch (ex: unknown) {
         // TODO this should bring up a Windows XP-style alert
         alert(ex instanceof Error ? ex.message : String(ex))
-        this.fsSpec = {} as FsSpec
+        this.folderNode = {path: src, folderLinks: [], fileLinks: []}
       }
 
-      return this.fsSpec
+      return this.folderNode
     },
     args: () => [this.fsSpecPath]
   })
@@ -105,42 +111,42 @@ export class FilePicker extends EpkApp {
   handleClick(event: Event) {
     if (event.target instanceof EpkIcon) {
       const target = event.target as EpkIcon
-      this.selectedFile = target.filePath
+      this.selectedFileLinkNode = target.fileLinkNode
       Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
     } else if (event.target === this.fileExplorer) {
-      this.selectedFile = undefined
+      this.selectedFileLinkNode = undefined
       Array.from(this.icons).forEach(i => i.selected = false)
     }
   }
 
   handleDblClick(event: PointerEvent) {
     if (event.target instanceof EpkIcon && Array.from(this.icons).includes(event.target)) {
-      this.handleFilePick((event.target as EpkIcon).filePath)
+      this.handleFilePick((event.target as EpkIcon).fileLinkNode)
     }
   }
 
-  private handleFilePick(path?: FsPath) {
-    if (!path) {
+  private handleFilePick(fileLinkNode?: LinkNode) {
+    if (!fileLinkNode) {
       return
     }
 
-    this.onFilePick(path)
+    this.onFilePick(fileLinkNode)
     this.dispatchEvent(closeWindowEvent())
   }
 
   handleFileTypeFilterChange(event: Event) {
     this.filterRegex = new RegExp((event.target as HTMLOptionElement).value)
 
-    if (this.selectedFile && !this.filterRegex.test(this.selectedFile.path)) {
-      this.selectedFile = undefined
+    if (this.selectedFileLinkNode && !this.filterRegex.test(this.selectedFileLinkNode.path)) {
+      this.selectedFileLinkNode = undefined
     }
   }
 
-  private buildIcon(path: FsPath) {
-    const icon = buildIcon(path)
+  private buildIcon(path: LinkNode) {
+    const icon = linkNodeToIcon(path)
 
     icon.viewMode = IconViewMode.ListView
-    icon.selected = path.path === this.selectedFile?.path
+    icon.selected = path.path === this.selectedFileLinkNode?.path
 
     icon.handleDblClick = () => {
       // XXX hack to prevent default double-click behavior
@@ -155,8 +161,8 @@ export class FilePicker extends EpkApp {
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: (spec: FsSpec) => {
-        let files = spec.paths
+      complete: (folderNode: FolderNode) => {
+        let files = folderNode.fileLinks
 
         if (this.filterRegex) {
           files = files.filter(path => this.filterRegex!.test(path.path))
@@ -166,17 +172,20 @@ export class FilePicker extends EpkApp {
           <div class="app" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
             <div class="content">
               <div class="viewport">
-                <input id="pathInput" type="text" value="${spec.displayRoot}"/>
+                <input id="pathInput" type="text" value="${folderNode.path}"/>
                 <div class="file-explorer-container">
                   <div id="fileExplorer">
+                    ${folderNode.folderLinks.map(this.buildIcon.bind(this))}
                     ${files.map(this.buildIcon.bind(this))}
                   </div>
                 </div>
                 <div class="controls">
                   <span>File name:</span>
-                  <input type="text" value="${this.selectedFile ? getFileName(this.selectedFile) : ''}" readonly/>
+                  <input type="text"
+                         value="${this.selectedFileLinkNode ? getLinkName(this.selectedFileLinkNode) : ''}"
+                         readonly/>
                   <button type="button"
-                          @click="${() => this.handleFilePick(this.selectedFile)}">
+                          @click="${() => this.handleFilePick(this.selectedFileLinkNode)}">
                     Open
                   </button>
                   <span>Files of type:</span>

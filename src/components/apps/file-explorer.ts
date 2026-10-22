@@ -1,14 +1,14 @@
 import {type EpkIcon, IconViewMode} from "../icon.ts";
-import {customElement, property, queryAll, state} from "lit/decorators.js";
+import {customElement, property, query, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html} from "lit";
 import {
-  buildIcon,
-  type FsPath,
-  type FsSpec,
-  getFileName,
+  type FolderNode,
   getFormattedTimestamp,
-  loadFsSpec
+  getLinkName,
+  type LinkNode,
+  linkNodeToIcon,
+  loadFolderNode
 } from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
@@ -170,7 +170,7 @@ export class FileExplorer extends EpkApp {
   windowIcon = '/img/file-explorer-small.ico'
 
   @property({type: String})
-  fsSpecPath!: string
+  folderNodeJsonPath!: string
 
   @queryAll('.epk-icon')
   icons!: EpkIcon[]
@@ -178,8 +178,11 @@ export class FileExplorer extends EpkApp {
   @queryAll('th')
   headers!: HTMLTableCellElement[]
 
+  @query('#pathInput')
+  pathInput!: HTMLInputElement
+
   @state()
-  fsSpec!: FsSpec
+  folderNode!: FolderNode
 
   @state()
   sortColumn = SortColumn.Filename
@@ -220,58 +223,61 @@ export class FileExplorer extends EpkApp {
   private iconLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
       try {
-        this.fsSpec = await loadFsSpec(src, signal)
+        this.folderNode = await loadFolderNode(src, signal)
       } catch (ex: unknown) {
         // TODO this should bring up a Windows XP-style alert
         alert(ex instanceof Error ? ex.message : String(ex))
-        this.fsSpec = {} as FsSpec
+        this.folderNode = {path: src, folderLinks: [], fileLinks: []}
       }
 
-      return this.fsSpec
+      return this.folderNode
     },
-    args: () => [this.fsSpecPath]
+    args: () => [this.folderNodeJsonPath]
   })
 
-  private buildIcon(path: FsPath) {
-    const icon = buildIcon(path)
+  private buildIcon(path: LinkNode) {
+    const icon = linkNodeToIcon(path)
 
     if (icon instanceof GalleryIcon) {
-      (icon as GalleryIcon).fsSpecPath = this.fsSpecPath
+      (icon as GalleryIcon).fsSpecPath = this.folderNodeJsonPath
     } else if (icon instanceof FileExplorerIcon) {
-      icon.handleDblClick = () => this.navigate(icon.filePath!.path)
+      icon.handleDblClick = () => this.navigate(icon.fileLinkNode!.path)
     }
 
     icon.viewMode = IconViewMode.ListView
     return icon
   }
 
-  private navigate(newFsSpecPath: string) {
-    this.fsSpecPath = newFsSpecPath
+  private navigate(newPath: string) {
+    if (this.folderNodeJsonPath.replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
+      return
+    }
+    this.folderNodeJsonPath = newPath
     this.pathStackIdx++
 
-    if (newFsSpecPath !== this.pathStack[this.pathStackIdx]) {
+    if (newPath !== this.pathStack[this.pathStackIdx]) {
       this.pathStack.length = this.pathStackIdx
-      this.pathStack.push(newFsSpecPath)
+      this.pathStack.push(newPath)
     }
   }
 
   private goBack() {
     if (this.pathStackIdx > 0) {
       this.pathStackIdx--
-      this.fsSpecPath = this.pathStack[this.pathStackIdx]
+      this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
     }
   }
 
   private goForward() {
     if (this.pathStackIdx < this.pathStack.length - 1) {
       this.pathStackIdx++
-      this.fsSpecPath = this.pathStack[this.pathStackIdx]
+      this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
     }
   }
 
   connectedCallback() {
     super.connectedCallback()
-    this.pathStack.push(this.fsSpecPath)
+    this.pathStack.push(this.folderNodeJsonPath)
   }
 
   handleClick(event: Event) {
@@ -304,15 +310,16 @@ export class FileExplorer extends EpkApp {
 
     switch (this.sortColumn) {
       case SortColumn.Filename:
-        this.fsSpec.paths.sort(
-          this.sortAsc
-            ? (a, b) => getFileName(a).localeCompare(getFileName(b))
-            : (a, b) => getFileName(b).localeCompare(getFileName(a))
-        )
+        const sortAlphabetical = this.sortAsc
+          ? (a: LinkNode, b: LinkNode) => getLinkName(a).localeCompare(getLinkName(b))
+          : (a: LinkNode, b: LinkNode) => getLinkName(b).localeCompare(getLinkName(a))
+
+        this.folderNode.folderLinks.sort(sortAlphabetical)
+        this.folderNode.fileLinks.sort(sortAlphabetical)
 
         break
       case SortColumn.Modified:
-        this.fsSpec.paths.sort(
+        this.folderNode.fileLinks.sort(
           this.sortAsc
             ? (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
             : (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
@@ -323,8 +330,18 @@ export class FileExplorer extends EpkApp {
   }
 
   handleDividerDrag(mouseDownEvent: MouseEvent) {
-    const divider = mouseDownEvent.target as HTMLTableCellElement
-    const precedingHeader = divider.previousElementSibling as HTMLTableCellElement
+    const divider = mouseDownEvent.target as HTMLElement
+    let precedingHeader: HTMLTableCellElement
+
+    if (divider.tagName === 'div') {
+      precedingHeader = divider.parentElement!.previousElementSibling as HTMLTableCellElement
+    } else {
+      precedingHeader = divider.previousElementSibling as HTMLTableCellElement
+    }
+
+    if (!precedingHeader) {
+      return
+    }
 
     const startX = mouseDownEvent.clientX
     const startWidth = precedingHeader.offsetWidth
@@ -345,14 +362,24 @@ export class FileExplorer extends EpkApp {
     document.addEventListener('mouseup', handleMouseUp)
   }
 
+  handlePathInputSubmit(event: SubmitEvent) {
+    event.preventDefault()
+    this.navigate(this.pathInput.value)
+  }
+
   render() {
     return this.iconLoaderTask.render({
       pending: () => html`
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: (spec: FsSpec) => {
+      complete: (folderNode: FolderNode) => {
         const colStyle = styleMap({backgroundColor: '#f7f7f7'})
+
+        const parentPathParts = folderNode.path.split('\\')
+        parentPathParts.pop()
+
+        const parentPath = parentPathParts.join('\\')
 
         return html`
           <div class="app" @click="${this.handleClick}">
@@ -370,20 +397,21 @@ export class FileExplorer extends EpkApp {
                           @click="${this.goForward}">
                     <img src="/img/file-explorer/forward.png"/>
                   </button>
-                  <button type="button" id="upButton" class="style-2" ?disabled="${!spec.parent}"
-                          @click="${() => this.navigate(spec.parent!)}">
+                  <button type="button" id="upButton" class="style-2"
+                          ?disabled="${!parentPath}"
+                          @click="${() => this.navigate(parentPath)}">
                     <img src="/img/file-explorer/up.png"/>
                   </button>
                   <div class="divider"></div>
                 </div>
-                <div class="navigation">
+                <form class="navigation" @submit="${this.handlePathInputSubmit}">
                   <span class="address">Address</span>
-                  <input type="text" value="${spec.displayRoot}" id="pathInput"/>
-                  <button type="button" id="goButton" class="style-2">
+                  <input type="text" value="${`${folderNode.path}\\`}" id="pathInput"/>
+                  <button type="submit" id="goButton" class="style-2">
                     <img src="/img/file-explorer/go.png"/>
                     <span>Go</span>
                   </button>
-                </div>
+                </form>
                 <div class="file-explorer">
                   <table>
                     <colgroup>
@@ -406,11 +434,18 @@ export class FileExplorer extends EpkApp {
                     </tr>
                     </thead>
                     <tbody>
-                    ${spec.paths.map(path => html`
+                    ${folderNode.folderLinks.map(linkNode => html`
                       <tr>
-                        <td>${this.buildIcon(path)}</td>
+                        <td>${this.buildIcon(linkNode)}</td>
                         <td class="divider"></td>
-                        <td>${getFormattedTimestamp(path)}
+                        <td></td>
+                      </tr>
+                    `)}
+                    ${folderNode.fileLinks.map(linkNode => html`
+                      <tr>
+                        <td>${this.buildIcon(linkNode)}</td>
+                        <td class="divider"></td>
+                        <td>${getFormattedTimestamp(linkNode)}
                         </td>
                       </tr>
                     `)}
@@ -420,7 +455,9 @@ export class FileExplorer extends EpkApp {
               </div>
             </section>
             <div class="status-bar">
-              <p class="status-bar-field">${spec.paths.length} item(s)</p>
+              <p class="status-bar-field">
+                ${folderNode.folderLinks.length + folderNode.fileLinks.length} item(s)
+              </p>
             </div>
           </div>`
       },

@@ -3,6 +3,7 @@ import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
 import {DisallowFlags, type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
+import {EpkApp} from "./app.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
@@ -88,7 +89,16 @@ export class EpkDesktop extends LitElement {
   }
 
   handleCloseWindow(event: Event) {
-    const appName = (event.target as EpkWindow).app[0].constructor.name
+    let appName: string
+
+    if (event.target instanceof EpkWindow) {
+      appName = (event.target as EpkWindow).app[0].constructor.name
+    } else if (event.target instanceof EpkApp) {
+      appName = (event.target as EpkApp).constructor.name
+    } else {
+      return
+    }
+
     const instanceCount = this.appInstanceCount.get(appName)!
     this.appInstanceCount.set(appName, instanceCount - 1)
   }

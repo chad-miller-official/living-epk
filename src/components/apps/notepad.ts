@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
 import {AppAbout} from "./about.ts";
 import {FilePicker} from "./file-picker.ts";
-import type {FsPath} from "../../lib/fs.ts";
+import type {LinkNode} from "../../lib/fs.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
@@ -23,8 +23,8 @@ export class Notepad extends EpkApp {
     `
   ]
 
-  @property({type: String})
-  filePath?: FsPath
+  @property({type: Object})
+  fileLinkNode?: LinkNode
 
   @property({type: String})
   windowTitle = 'Notepad'
@@ -58,8 +58,8 @@ export class Notepad extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
-            filePicker.fsSpecPath = '/data/my-documents.json'
-            filePicker.onFilePick = (path) => this.filePath = path
+            filePicker.fsSpecPath = 'C:\\Users\\Chad\\My Documents'
+            filePicker.onFilePick = (path) => this.fileLinkNode = path
 
             const plaintextFilterRegex = '[.]txt$'
 
@@ -72,8 +72,8 @@ export class Notepad extends EpkApp {
             filePicker.filterRegex = new RegExp(plaintextFilterRegex)
 
             this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
-              width: 350,
-              height: 250,
+              width: 450,
+              height: 350,
               disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
             }))
           },
@@ -191,7 +191,7 @@ export class Notepad extends EpkApp {
 
   private noteTask = new Task(this, {
     task: async ([path], {signal}) => {
-      if (!this.filePath) {
+      if (!this.fileLinkNode) {
         return ''
       }
 
@@ -203,7 +203,7 @@ export class Notepad extends EpkApp {
 
       return await response.text()
     },
-    args: () => [this.filePath],
+    args: () => [this.fileLinkNode],
   })
 
   calculatePosition() {

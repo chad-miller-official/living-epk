@@ -13,16 +13,19 @@ import './components/icons/plaintext-icon.ts'
 import {launchEvent} from "./lib/events.ts";
 
 import {Notepad} from "./components/apps/notepad.ts";
-import {loadFolders} from "./lib/fs.ts";
+import {initDb, LinkNodeType} from "./lib/fs.ts";
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadFolders().then(console.log)
+document.addEventListener('DOMContentLoaded', async () => {
+  await initDb()
 
   document.querySelector('#desktop')!.dispatchEvent(
     launchEvent(
       () => new Promise<Notepad>(resolve => {
         const notepad = new Notepad()
-        notepad.filePath = {path: '/fs/plaintext/Welcome to my zone.txt'}
+        notepad.fileLinkNode = {
+          type: LinkNodeType.File,
+          path: '/fs/plaintext/Welcome to my zone.txt'
+        }
         notepad.windowTitle = 'Notepad - Welcome to my zone'
         resolve(notepad)
       }),

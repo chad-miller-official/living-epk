@@ -1,7 +1,7 @@
 import {css, html} from "lit";
 import {EpkApp} from "../app.ts";
 import {customElement, property, query, state} from "lit/decorators.js";
-import {type FsPath, type FsSpec, loadFsSpec} from "../../lib/fs.ts";
+import {type FolderNode, type LinkNode, loadFolderNode} from "../../lib/fs.ts";
 import {Task, TaskStatus} from "@lit/task";
 import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
@@ -65,7 +65,7 @@ export class ImageGallery extends EpkApp {
   windowIcon = '/img/gallery-small.ico'
 
   @property({type: String})
-  filePath?: FsPath
+  fileLinkNode?: LinkNode
 
   @property({type: String})
   fsSpecPath!: string
@@ -79,9 +79,9 @@ export class ImageGallery extends EpkApp {
   private pathLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
       try {
-        return loadFsSpec(src, signal).then((data) => {
-          if (this.filePath) {
-            this.currentIndex = data.paths.map(path => path.path).indexOf(this.filePath.path)
+        return loadFolderNode(src, signal).then((data) => {
+          if (this.fileLinkNode) {
+            this.currentIndex = data.fileLinks.map(path => path.path).indexOf(this.fileLinkNode.path)
           }
 
           return data
@@ -89,7 +89,7 @@ export class ImageGallery extends EpkApp {
       } catch (ex: unknown) {
         // TODO this should bring up a Windows XP-style alert
         alert(ex instanceof Error ? ex.message : String(ex))
-        return {} as FsSpec
+        return {path: src, fileLinks: [], folderLinks: []} as FolderNode
       }
     },
     args: () => [this.fsSpecPath]
@@ -118,7 +118,7 @@ export class ImageGallery extends EpkApp {
   }
 
   getCurrentImage() {
-    return this.pathLoaderTask.value!.paths[this.currentIndex].path
+    return this.pathLoaderTask.value!.fileLinks[this.currentIndex].path
   }
 
   handleSlideshowClick() {
@@ -140,7 +140,7 @@ export class ImageGallery extends EpkApp {
       this.currentIndex--
 
       if (this.currentIndex < 0) {
-        this.currentIndex = this.pathLoaderTask.value!.paths.length - 1
+        this.currentIndex = this.pathLoaderTask.value!.fileLinks.length - 1
       }
     }
 
@@ -151,7 +151,7 @@ export class ImageGallery extends EpkApp {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
       this.currentIndex++
 
-      if (this.currentIndex >= this.pathLoaderTask.value!.paths.length) {
+      if (this.currentIndex >= this.pathLoaderTask.value!.fileLinks.length) {
         this.currentIndex = 0
       }
     }
@@ -165,8 +165,8 @@ export class ImageGallery extends EpkApp {
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: (spec: FsSpec) => {
-        const wrapperStyle = {backgroundImage: `url('${spec.paths[this.currentIndex].path}')`}
+      complete: (folderNode: FolderNode) => {
+        const wrapperStyle = {backgroundImage: `url('${folderNode.fileLinks[this.currentIndex].path}')`}
 
         return html`
           <div class="app">

@@ -3,7 +3,7 @@ import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 import type {EpkApp} from "../app.ts";
 import {DisallowFlags, type LaunchOptions} from "../../lib/events.ts";
-import {getFileName} from "../../lib/fs.ts";
+import {getLinkName} from "../../lib/fs.ts";
 
 @customElement('music-icon')
 export class MusicIcon extends EpkIcon {
@@ -21,9 +21,9 @@ export class MusicIcon extends EpkIcon {
     return new Promise<AudioPlayer>(resolve => {
       const audioPlayer = new AudioPlayer()
 
-      if (this.filePath) {
-        audioPlayer.filePath = this.filePath
-        audioPlayer.windowTitle = `Media Player - ${getFileName(this.filePath)} (stopped)`
+      if (this.fileLinkNode) {
+        audioPlayer.fileLinkNode = this.fileLinkNode
+        audioPlayer.windowTitle = `Media Player - ${getLinkName(this.fileLinkNode)} (stopped)`
       }
 
       return resolve(audioPlayer)

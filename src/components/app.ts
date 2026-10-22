@@ -50,6 +50,10 @@ export abstract class EpkApp extends LitElement {
         margin: 0 auto;
         width: calc(100% - 6px);
       }
+      
+      .status-bar-field {
+        user-select: none;
+      }
 
       .status-bar-field.spacer {
         width: 40%;

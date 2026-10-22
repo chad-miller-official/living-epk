@@ -1,15 +1,20 @@
-import {type FsPath, getFileExtension, getFileName} from "../../lib/fs.ts";
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {EpkApp} from "../app.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../../lib/toolbar.ts";
-import {closeWindowEvent, DisallowFlags, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
+import {
+  closeWindowEvent,
+  DisallowFlags,
+  launchEvent,
+  windowPropertyChangeEvent
+} from "../../lib/events.ts";
 import {styleMap} from "lit/directives/style-map.js";
 import interact from "interactjs";
 import type {Interactable} from "@interactjs/types";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {FilePicker} from "./file-picker.ts";
 import {AppAbout} from "./about.ts";
+import {getFileExtension, getLinkName, type LinkNode} from "../../lib/fs.ts";
 
 @customElement('audio-player')
 export class AudioPlayer extends EpkApp {
@@ -196,7 +201,7 @@ export class AudioPlayer extends EpkApp {
   windowIcon = '/img/media-player-small.ico'
 
   @property({type: String})
-  filePath?: FsPath
+  fileLinkNode?: LinkNode
 
   @state()
   mimeType: string | undefined
@@ -235,7 +240,7 @@ export class AudioPlayer extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
-            filePicker.fsSpecPath = '/data/my-music.json'
+            filePicker.fsSpecPath = 'C:\\Users\\Chad\\My Music'
             filePicker.onFilePick = this.loadFile.bind(this)
 
             const soundFilterRegex = '[.](mp3|wav)$'
@@ -249,15 +254,15 @@ export class AudioPlayer extends EpkApp {
             filePicker.filterRegex = new RegExp(soundFilterRegex)
 
             this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
-              width: 350,
-              height: 250,
+              width: 450,
+              height: 350,
               disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
             }))
           },
         },
         {
           text: 'Close', action: () => {
-            this.filePath = undefined
+            this.fileLinkNode = undefined
             this.audioPlayer.load()
             this.dispatchEvent(windowPropertyChangeEvent({title: 'Media Player'}))
           }
@@ -296,8 +301,8 @@ export class AudioPlayer extends EpkApp {
   connectedCallback() {
     super.connectedCallback()
 
-    if (this.filePath) {
-      this.mimeType = `audio/${getFileExtension(this.filePath)}`
+    if (this.fileLinkNode) {
+      this.mimeType = `audio/${getFileExtension(this.fileLinkNode)}`
     }
   }
 
@@ -328,8 +333,8 @@ export class AudioPlayer extends EpkApp {
   updateWindowTitle() {
     this.windowTitle = 'Media Player'
 
-    if (this.filePath) {
-      this.windowTitle += ` - ${getFileName(this.filePath)}`
+    if (this.fileLinkNode) {
+      this.windowTitle += ` - ${getLinkName(this.fileLinkNode)}`
 
       if (this.isPlaying) {
         this.windowTitle += ' (playing)'
@@ -343,14 +348,14 @@ export class AudioPlayer extends EpkApp {
     this.dispatchEvent(windowPropertyChangeEvent({title: this.windowTitle}))
   }
 
-  loadFile(filePath: FsPath) {
+  loadFile(fileLinkNode: LinkNode) {
     this.isPlaying = false
     this.isPaused = false
     this.isStopped = true
     this.isEnded = false
 
-    this.filePath = filePath
-    this.mimeType = `audio/${getFileExtension(this.filePath)}`
+    this.fileLinkNode = fileLinkNode
+    this.mimeType = `audio/${getFileExtension(this.fileLinkNode)}`
 
     this.sliderPosition = '-5px'
 
@@ -469,18 +474,18 @@ export class AudioPlayer extends EpkApp {
           <audio id="audioPlayer" @timeupdate="${this.handleTimeUpdate}"
                  @loadedmetadata="${this.handleLoadedMetadata}"
                  @ended="${this.handleEnded}">
-            <source src="${this.filePath?.path}" type="${this.mimeType}"/>
+            <source src="${this.fileLinkNode?.path}" type="${this.mimeType}"/>
           </audio>
           <div class="timeline">
             <div id="progressBar" @click="${this.handleProgressBarClick}">
               <div id="slider" style="${styleMap(sliderStyle)}"></div>
             </div>
             <div class="button-group">
-              <button type="button" ?disabled="${!this.filePath}" class="small"
+              <button type="button" ?disabled="${!this.fileLinkNode}" class="small"
                       @click="${() => this.seek(-0.5)}">
                 <img src="/img/media-player/scroll-backward.png"/>
               </button>
-              <button type="button" ?disabled="${!this.filePath}" class="small"
+              <button type="button" ?disabled="${!this.fileLinkNode}" class="small"
                       @click="${() => this.seek(0.5)}">
                 <img src="/img/media-player/scroll-forward.png"/>
               </button>
@@ -493,7 +498,7 @@ export class AudioPlayer extends EpkApp {
           <div class="controls">
             <div class="buttons">
               <div class="button-group">
-                <button type="button" ?disabled="${!this.filePath}"
+                <button type="button" ?disabled="${!this.fileLinkNode}"
                         @click="${this.handlePlayPauseClick}">
                   <img src="${`/img/media-player/${this.isPlaying ? 'pause' : 'play'}.png`}"/>
                 </button>
@@ -503,10 +508,12 @@ export class AudioPlayer extends EpkApp {
                 </button>
               </div>
               <div class="button-group">
-                <button type="button" ?disabled="${!this.filePath}" @click="${() => this.seek(-5)}">
+                <button type="button" ?disabled="${!this.fileLinkNode}"
+                        @click="${() => this.seek(-5)}">
                   <img src="/img/media-player/rewind.png"/>
                 </button>
-                <button type="button" ?disabled="${!this.filePath}" @click="${() => this.seek(5)}">
+                <button type="button" ?disabled="${!this.fileLinkNode}"
+                        @click="${() => this.seek(5)}">
                   <img src="/img/media-player/fast-forward.png"/>
                 </button>
               </div>
