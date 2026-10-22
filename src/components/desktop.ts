@@ -10,8 +10,9 @@ export class EpkDesktop extends LitElement {
   static styles = css`
     main {
       align-items: flex-start;
-      background-image: url("/img/Coffee_Bean.webp");
-      background-repeat: repeat;
+      background-image: url("/img/bliss.jpg");
+      background-position: center;
+      background-size: cover;
       display: flex;
       flex-direction: column;
       gap: 16px;
