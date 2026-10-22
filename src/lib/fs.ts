@@ -4,6 +4,65 @@ import {GalleryIcon} from "../components/icons/gallery-icon.ts";
 import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
 import {EpkIcon} from "../components/icon.ts";
 import {FileExplorerIcon} from "../components/icons/file-explorer-icon.ts";
+import {type DBSchema, type IDBPDatabase, openDB} from "idb";
+
+interface IdbSchema extends DBSchema {
+  'file-system': {
+    key: string,
+    value: RecordType,
+  }
+}
+
+let _idb: IDBPDatabase<IdbSchema>
+
+export async function initDb() {
+  _idb = await openDB<IdbSchema>('chad-db', 1, {
+    upgrade(db) {
+      db.createObjectStore('file-system', {
+        keyPath: 'path',
+      })
+
+      const tx = db.transaction('file-system', 'readwrite')
+
+      await Promise.all([
+        ...loadFolders(),
+        tx.done
+      ])
+
+      loadFolders().then(records => {
+        records.forEach(record => tx.store.put(record))
+      })
+    }
+  })
+}
+
+function loadFoldersHelper(prefix: string, cwd: string, body: BodyType): RecordType[] {
+  const record: RecordType = {
+    path: `${prefix}${cwd}`,
+    files: null,
+    folders: [],
+  }
+
+  if (typeof body === 'string') {
+    record.files = body
+    return [record]
+  } else {
+    record.files = body['.']
+    record.folders = Object.keys(body).filter(f => f !== '.')
+
+    return [
+      record,
+      ...record.folders.map(m => loadFoldersHelper(`${record.path}\\`, m, body[m])).flat()
+    ]
+  }
+}
+
+async function loadFolders() {
+  const response = await fetch("/data/_folders.json")
+  const folders = await response.json()
+  const root = Object.keys(folders)[0]
+  return loadFoldersHelper('', root, folders[root])
+}
 
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'full',
@@ -46,32 +105,14 @@ export class FsError extends Error {
   }
 }
 
-function loadFoldersHelper(prefix: string, cwd: string, spec: object | string): object[] {
-  const record = {
-    id: `${prefix}${cwd}`,
-    path: null,
-    members: null,
-  }
+type BodyType = {
+  [dir: string]: string,
+} | string
 
-  if (typeof spec === 'string') {
-    record.path = spec
-    return [record]
-  } else {
-    record.path = spec['.']
-    record.members = Object.keys(spec).filter(f => f !== '.')
-
-    return [
-      record,
-      ...record.members.map(m => loadFoldersHelper(`${record.id}\\`, m, spec[m])).flat()
-    ]
-  }
-}
-
-export async function loadFolders() {
-  const response = await fetch("/data/_folders.json")
-  const folders = await response.json()
-  const root = Object.keys(folders)[0]
-  return loadFoldersHelper('', root, folders[root])
+type RecordType = {
+  path: string,
+  files: string | null,
+  folders: string[],
 }
 
 export async function loadFsSpec(fsSpecFile: string, signal?: AbortSignal): Promise<FsSpec> {
