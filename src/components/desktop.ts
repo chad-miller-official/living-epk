@@ -24,7 +24,7 @@ export class EpkDesktop extends LitElement {
       align-items: center;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 8px;
     }
   `
 

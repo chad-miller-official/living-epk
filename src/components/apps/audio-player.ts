@@ -240,7 +240,7 @@ export class AudioPlayer extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
-            filePicker.fsSpecPath = 'C:\\Users\\Chad\\My Music'
+            filePicker.folderNodeJsonPath = 'C:\\Users\\Chad\\My Music'
             filePicker.onFilePick = this.loadFile.bind(this)
 
             const soundFilterRegex = '[.](mp3|wav)$'
@@ -254,8 +254,8 @@ export class AudioPlayer extends EpkApp {
             filePicker.filterRegex = new RegExp(soundFilterRegex)
 
             this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
-              width: 450,
-              height: 350,
+              width: 500,
+              height: 400,
               disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
             }))
           },

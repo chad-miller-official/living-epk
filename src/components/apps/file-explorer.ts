@@ -5,7 +5,7 @@ import {css, html} from "lit";
 import {
   type FolderNode,
   getFormattedTimestamp,
-  getLinkName,
+  getLinkName, getParentFolder,
   type LinkNode,
   linkNodeToIcon,
   loadFolderNode
@@ -71,11 +71,6 @@ export class FileExplorer extends EpkApp {
         button {
           padding: 4px 7px;
           margin: 1px;
-
-          &[disabled] > img {
-            filter: grayscale(1);
-            opacity: 0.5;
-          }
         }
 
         .divider {
@@ -252,6 +247,7 @@ export class FileExplorer extends EpkApp {
     if (this.folderNodeJsonPath.replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
       return
     }
+
     this.folderNodeJsonPath = newPath
     this.pathStackIdx++
 
@@ -375,11 +371,7 @@ export class FileExplorer extends EpkApp {
         </div>`,
       complete: (folderNode: FolderNode) => {
         const colStyle = styleMap({backgroundColor: '#f7f7f7'})
-
-        const parentPathParts = folderNode.path.split('\\')
-        parentPathParts.pop()
-
-        const parentPath = parentPathParts.join('\\')
+        const parentPath = getParentFolder(folderNode)
 
         return html`
           <div class="app" @click="${this.handleClick}">
@@ -390,7 +382,6 @@ export class FileExplorer extends EpkApp {
                   <button type="button" id="backButton" class="style-2"
                           ?disabled="${this.pathStackIdx === 0}" @click="${this.goBack}">
                     <img src="/img/file-explorer/back.png"/>
-                    <span>Back</span>
                   </button>
                   <button type="button" id="forwardButton" class="style-2"
                           ?disabled="${this.pathStackIdx === this.pathStack.length - 1}"

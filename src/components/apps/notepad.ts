@@ -58,7 +58,7 @@ export class Notepad extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
-            filePicker.fsSpecPath = 'C:\\Users\\Chad\\My Documents'
+            filePicker.folderNodeJsonPath = 'C:\\Users\\Chad\\My Documents'
             filePicker.onFilePick = (path) => this.fileLinkNode = path
 
             const plaintextFilterRegex = '[.]txt$'
@@ -72,8 +72,8 @@ export class Notepad extends EpkApp {
             filePicker.filterRegex = new RegExp(plaintextFilterRegex)
 
             this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
-              width: 450,
-              height: 350,
+              width: 500,
+              height: 400,
               disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
             }))
           },

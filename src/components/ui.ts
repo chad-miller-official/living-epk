@@ -25,6 +25,11 @@ export const buttonStyle2 = css`
       outline: none;
     }
 
+    &[disabled] > img {
+      filter: grayscale(1);
+      opacity: 0.5;
+    }
+
     * {
       user-select: none;
     }

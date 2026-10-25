@@ -166,6 +166,12 @@ export function getFormattedTimestamp(linkNode: LinkNode) {
   return _dateTimeFormat.format(linkNode.timestamp)
 }
 
+export function getParentFolder(folderNode: FolderNode) {
+  const parentPathParts = folderNode.path.split('\\')
+  parentPathParts.pop()
+  return parentPathParts.join('\\')
+}
+
 export function linkNodeToIcon(linkNode: LinkNode) {
   let icon: EpkIcon
 
