@@ -36,6 +36,11 @@ export class FileExplorer extends EpkApp {
         margin: 2px 4px;
       }
 
+      #closeButton {
+        height: 18px;
+        width: 18px;
+      }
+
       #goButton {
         display: flex;
         gap: 4px;
@@ -47,7 +52,6 @@ export class FileExplorer extends EpkApp {
         flex-shrink: 0;
         min-width: 12ch;
         overflow: auto;
-        width: 160px;
 
         & > ul {
           border: none;
@@ -99,14 +103,34 @@ export class FileExplorer extends EpkApp {
         }
       }
 
-      .selected {
-        background-color: #316AC5;
-        color: white;
-      }
-
       .tree-item {
         list-style-type: none;
         width: fit-content;
+
+        &.selected span {
+          background-color: #316AC5;
+          color: #ffffff;
+
+          &:hover {
+            // Need to explicitly define this to override the rule below: &>div>span:hover { color }
+            color: #ffffff;
+          }
+        }
+
+        & > div {
+          align-items: center;
+          display: flex;
+          gap: 4px;
+
+          & > span {
+            padding: 2px;
+
+            &:hover {
+              color: #3f3f9f;
+              text-decoration: underline;
+            }
+          }
+        }
       }
 
       .primary-content {
@@ -229,8 +253,13 @@ export class FileExplorer extends EpkApp {
   @state()
   sortAsc = true
 
+  @state()
+  fileTreeWidth = 160
+
   private pathStack: string[] = []
   private pathStackIdx = 0
+
+  private treeOpenPaths: { [path: string]: boolean } = {}
 
   private toolbarSpec: ToolbarMenu[] = [
     {
@@ -336,6 +365,12 @@ export class FileExplorer extends EpkApp {
   handleClick(event: Event) {
     super.handleClick(event)
     Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
+
+    const selectedTreeItem = this.shadowRoot?.querySelector('.tree-item.selected')
+
+    if (selectedTreeItem && !(selectedTreeItem === event.target || selectedTreeItem.contains(event.target as HTMLElement))) {
+      selectedTreeItem.classList.remove('selected')
+    }
   }
 
   sortFiles(event: Event) {
@@ -398,7 +433,7 @@ export class FileExplorer extends EpkApp {
 
     this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
       const deltaX = mouseMoveEvent.clientX - startX
-      this.fileTree.style.width = `${startWidth + deltaX}px`
+      this.fileTreeWidth = startWidth + deltaX
     })
   }
 
@@ -432,6 +467,10 @@ export class FileExplorer extends EpkApp {
     this.navigate(this.pathInput.value)
   }
 
+  handleTreeClose() {
+    // TODO
+  }
+
   buildFileTree(tree: any, currentPath: string): TemplateResult<1> | TemplateResult<1>[] {
     return Object.keys(tree).filter(folder => folder !== '.').map(folder => {
       let nextPath = currentPath
@@ -445,21 +484,47 @@ export class FileExplorer extends EpkApp {
       const nextIsString = typeof tree[folder] === 'string'
       const cwdIsNext = this.folderNodeJsonPath.replace(/\\$/, '') === nextPath.replace(/\\$/, '')
 
+      let icon: string
+
+      switch (folder) {
+        case 'C:':
+          icon = 'disk'
+          break
+        case 'My Music':
+          icon = 'my-music'
+          break
+        case 'My Pictures':
+          icon = 'my-pictures'
+          break
+        case 'My Videos':
+          icon = 'my-videos'
+          break
+        default:
+          icon = 'folder-closed'
+      }
+
       if (nextIsString) {
         return html`
           <li class="tree-item ${cwdIsNext ? 'selected' : ''}"
               @click="${() => this.navigate(nextPath)}">
-            ${folder}
+            <div>
+              <img src="/img/file-explorer/${icon}.ico"/>
+              <span>${folder}</span>
+            </div>
           </li>`
       } else {
         return html`
           <li class="tree-item">
             <details
-                ?open="${this.folderNodeJsonPath.startsWith(`${nextPath}\\`) || cwdIsNext}">
+                ?open="${this.treeOpenPaths[nextPath] || this.folderNodeJsonPath.startsWith(`${nextPath}\\`) || cwdIsNext}"
+                @toggle="${(event: ToggleEvent) => this.treeOpenPaths[nextPath] = event.newState === 'open'}">
               <summary
                   class="tree-item ${cwdIsNext ? 'selected' : ''}"
                   @click="${() => this.navigate(nextPath)}">
-                ${folder}
+                <div>
+                  <img src="/img/file-explorer/${icon}.ico"/>
+                  <span>${folder}</span>
+                </div>
               </summary>
               <ul>
                 ${this.buildFileTree(tree[folder], nextPath)}
@@ -512,10 +577,13 @@ export class FileExplorer extends EpkApp {
                   </button>
                 </form>
                 <div class="primary-content">
-                  <div id="fileTree">
+                  <div id="fileTree" style="${styleMap({width: `${this.fileTreeWidth}px`})}">
                     <div class="file-tree-header">
                       Folders
-                      <button class="style-2">X</button>
+                      <button type="button" id="closeButton" class="style-2"
+                              @click="${this.handleTreeClose}">
+                        <img src="/img/file-explorer/x.png"/>
+                      </button>
                     </div>
                     <ul class="tree-view">
                       ${this.buildFileTree(tree, '')}
