@@ -29,7 +29,7 @@ export class FileExplorer extends EpkApp {
     ...EpkApp.styles,
     buttonStyle2,
     css`
-      #backButton, #forwardButton {
+      #backButton, #forwardButton, #treeView {
         align-items: center;
         display: flex;
         gap: 8px;
@@ -91,7 +91,7 @@ export class FileExplorer extends EpkApp {
         width: 100%;
 
         button {
-          padding: 4px 7px;
+          padding: 9px 7px;
           margin: 1px;
         }
 
@@ -255,6 +255,9 @@ export class FileExplorer extends EpkApp {
 
   @state()
   fileTreeWidth = 160
+
+  @state()
+  showFileTree = true
 
   private pathStack: string[] = []
   private pathStackIdx = 0
@@ -467,10 +470,6 @@ export class FileExplorer extends EpkApp {
     this.navigate(this.pathInput.value)
   }
 
-  handleTreeClose() {
-    // TODO
-  }
-
   buildFileTree(tree: any, currentPath: string): TemplateResult<1> | TemplateResult<1>[] {
     return Object.keys(tree).filter(folder => folder !== '.').map(folder => {
       let nextPath = currentPath
@@ -542,8 +541,16 @@ export class FileExplorer extends EpkApp {
           <div class="content"></div>
         </div>`,
       complete: ([tree, folderNode]: readonly [any, FolderNode]) => {
-        const colStyle = styleMap({backgroundColor: '#f7f7f7'})
+        const colStyle = {backgroundColor: '#f7f7f7'}
         const parentPath = getParentFolder(folderNode)
+
+        const fileTreeStyle: any = {width: `${this.fileTreeWidth}px`}
+        const primaryDividerStyle: any = {}
+
+        if (!this.showFileTree) {
+          fileTreeStyle.display = 'none'
+          primaryDividerStyle.display = 'none'
+        }
 
         return html`
           <div class="app" @click="${this.handleClick}">
@@ -567,6 +574,12 @@ export class FileExplorer extends EpkApp {
                     <img src="/img/file-explorer/up.png"/>
                   </button>
                   <div class="divider"></div>
+                  <button type="button" id="treeView"
+                          class="style-2 ${this.showFileTree ? 'active' : ''}"
+                          @click="${() => this.showFileTree = !this.showFileTree}">
+                    <img src="/img/file-explorer/tree-view.png"/>
+                    <span>Folders</span>
+                  </button>
                 </div>
                 <form class="navigation" @submit="${this.handlePathInputSubmit}">
                   <span class="address">Address</span>
@@ -577,11 +590,11 @@ export class FileExplorer extends EpkApp {
                   </button>
                 </form>
                 <div class="primary-content">
-                  <div id="fileTree" style="${styleMap({width: `${this.fileTreeWidth}px`})}">
+                  <div id="fileTree" style="${styleMap(fileTreeStyle)}">
                     <div class="file-tree-header">
                       Folders
                       <button type="button" id="closeButton" class="style-2"
-                              @click="${this.handleTreeClose}">
+                              @click="${() => this.showFileTree = false}">
                         <img src="/img/file-explorer/x.png"/>
                       </button>
                     </div>
@@ -589,13 +602,16 @@ export class FileExplorer extends EpkApp {
                       ${this.buildFileTree(tree, '')}
                     </ul>
                   </div>
-                  <div class="primary-divider" @mousedown="${this.handlePrimaryDividerDrag}"></div>
+                  <div class="primary-divider" style="${styleMap(primaryDividerStyle)}"
+                       @mousedown="${this.handlePrimaryDividerDrag}"></div>
                   <div class="file-explorer">
                     <table>
                       <colgroup>
-                        <col style="${this.sortColumn === SortColumn.Filename ? colStyle : ''}"/>
+                        <col
+                            style="${this.sortColumn === SortColumn.Filename ? styleMap(colStyle) : ''}"/>
                         <col/>
-                        <col style="${this.sortColumn === SortColumn.Modified ? colStyle : ''}"/>
+                        <col
+                            style="${this.sortColumn === SortColumn.Modified ? styleMap(colStyle) : ''}"/>
                       </colgroup>
                       <thead>
                       <tr>
