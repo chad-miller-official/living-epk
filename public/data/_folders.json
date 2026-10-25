@@ -8,7 +8,13 @@
         "My Documents": "/data/my-documents.json",
         "My Music": "/data/my-music.json",
         "My Pictures": "/data/my-pictures.json"
+      },
+      "Chad2": {
+        ".": ""
       }
+    },
+    "Test": {
+      ".": ""
     }
   }
 }

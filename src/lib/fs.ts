@@ -95,7 +95,7 @@ export async function initDb() {
   ])
 }
 
-export async function loadFolderNode(path: string, signal: AbortSignal): Promise<FolderNode> {
+export async function loadFolderNode(path: string, signal?: AbortSignal): Promise<FolderNode> {
   path = path.replace(/\\?$/, '')
   const record = await _idb.get('file-system', path)
 

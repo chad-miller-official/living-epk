@@ -1,11 +1,12 @@
 import {type EpkIcon, IconViewMode} from "../icon.ts";
 import {customElement, property, query, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
-import {css, html} from "lit";
+import {css, html, type TemplateResult} from "lit";
 import {
   type FolderNode,
   getFormattedTimestamp,
-  getLinkName, getParentFolder,
+  getLinkName,
+  getParentFolder,
   type LinkNode,
   linkNodeToIcon,
   loadFolderNode
@@ -29,12 +30,10 @@ export class FileExplorer extends EpkApp {
     buttonStyle2,
     css`
       #backButton, #forwardButton {
-        & > span {
-          align-items: center;
-          display: flex;
-          gap: 8px;
-          margin: 2px 4px;
-        }
+        align-items: center;
+        display: flex;
+        gap: 8px;
+        margin: 2px 4px;
       }
 
       #goButton {
@@ -42,6 +41,18 @@ export class FileExplorer extends EpkApp {
         gap: 4px;
         height: 100%;
         padding: 0 8px 0 4px;
+      }
+
+      #fileTree {
+        flex-shrink: 0;
+        min-width: 12ch;
+        overflow: auto;
+        width: 160px;
+
+        & > ul {
+          border: none;
+          width: max-content;
+        }
       }
 
       #pathInput {
@@ -56,9 +67,16 @@ export class FileExplorer extends EpkApp {
       .file-explorer {
         display: flex;
         flex-direction: column;
-        height: 100%;
+        flex-grow: 1;
         overflow: auto;
-        width: 100%;
+      }
+
+      .file-tree-header {
+        align-items: center;
+        background: linear-gradient(to right, #f3f4f7, #eee9d5);
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 7px;
       }
 
       .navigation {
@@ -79,6 +97,29 @@ export class FileExplorer extends EpkApp {
           margin: 2px;
           width: 1px;
         }
+      }
+
+      .selected {
+        background-color: #316AC5;
+        color: white;
+      }
+
+      .tree-item {
+        list-style-type: none;
+        width: fit-content;
+      }
+
+      .primary-content {
+        display: flex;
+        height: 100%;
+      }
+
+      .primary-divider {
+        background-color: #eee9d5;
+        cursor: col-resize;
+        min-width: 5px;
+        max-width: 5px;
+        width: 5px;
       }
 
       .viewport {
@@ -173,6 +214,9 @@ export class FileExplorer extends EpkApp {
   @queryAll('th')
   headers!: HTMLTableCellElement[]
 
+  @query('#fileTree')
+  fileTree!: HTMLDivElement
+
   @query('#pathInput')
   pathInput!: HTMLInputElement
 
@@ -215,19 +259,32 @@ export class FileExplorer extends EpkApp {
     }
   ]
 
-  private iconLoaderTask = new Task(this, {
+  private treeLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
+      const treeResponse = await fetch(src, {signal})
+
+      if (!treeResponse.ok) {
+        alert('Failed to load file tree')
+      }
+
+      return treeResponse.json()
+    },
+    args: () => ['/data/_folders.json']
+  })
+
+  private iconLoaderTask = new Task(this, {
+    task: async ([tree, src]) => {
       try {
-        this.folderNode = await loadFolderNode(src, signal)
+        this.folderNode = await loadFolderNode(src)
       } catch (ex: unknown) {
         // TODO this should bring up a Windows XP-style alert
         alert(ex instanceof Error ? ex.message : String(ex))
         this.folderNode = {path: src, folderLinks: [], fileLinks: []}
       }
 
-      return this.folderNode
+      return [tree, this.folderNode]
     },
-    args: () => [this.folderNodeJsonPath]
+    args: () => [this.treeLoaderTask.value, this.folderNodeJsonPath]
   })
 
   private buildIcon(path: LinkNode) {
@@ -244,7 +301,7 @@ export class FileExplorer extends EpkApp {
   }
 
   private navigate(newPath: string) {
-    if (this.folderNodeJsonPath.replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
+    if (this.folderNodeJsonPath.replace(/\\$/, '') === newPath.replace(/\\$/, '')) {
       return
     }
 
@@ -325,6 +382,26 @@ export class FileExplorer extends EpkApp {
     }
   }
 
+  private connectDividerDragListeners(handleMouseMove: (mouseMoveEvent: MouseEvent) => void) {
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  handlePrimaryDividerDrag(mouseDownEvent: MouseEvent) {
+    const startX = mouseDownEvent.clientX
+    const startWidth = this.fileTree.offsetWidth
+
+    this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
+      const deltaX = mouseMoveEvent.clientX - startX
+      this.fileTree.style.width = `${startWidth + deltaX}px`
+    })
+  }
+
   handleDividerDrag(mouseDownEvent: MouseEvent) {
     const divider = mouseDownEvent.target as HTMLElement
     let precedingHeader: HTMLTableCellElement
@@ -342,25 +419,55 @@ export class FileExplorer extends EpkApp {
     const startX = mouseDownEvent.clientX
     const startWidth = precedingHeader.offsetWidth
 
-    const handleMouseMove = (mouseMoveEvent: MouseEvent) => {
+    this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
       const deltaX = mouseMoveEvent.clientX - startX
 
       // Subtract 15 to account for padding within the <th> element
       precedingHeader.style.width = `${startWidth + deltaX - 15}px`
-    }
-
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    })
   }
 
   handlePathInputSubmit(event: SubmitEvent) {
     event.preventDefault()
     this.navigate(this.pathInput.value)
+  }
+
+  buildFileTree(tree: any, currentPath: string): TemplateResult<1> | TemplateResult<1>[] {
+    return Object.keys(tree).filter(folder => folder !== '.').map(folder => {
+      let nextPath = currentPath
+
+      if (nextPath) {
+        nextPath += '\\'
+      }
+
+      nextPath += folder
+
+      const nextIsString = typeof tree[folder] === 'string'
+      const cwdIsNext = this.folderNodeJsonPath.replace(/\\$/, '') === nextPath.replace(/\\$/, '')
+
+      if (nextIsString) {
+        return html`
+          <li class="tree-item ${cwdIsNext ? 'selected' : ''}"
+              @click="${() => this.navigate(nextPath)}">
+            ${folder}
+          </li>`
+      } else {
+        return html`
+          <li class="tree-item">
+            <details
+                ?open="${this.folderNodeJsonPath.startsWith(`${nextPath}\\`) || cwdIsNext}">
+              <summary
+                  class="tree-item ${cwdIsNext ? 'selected' : ''}"
+                  @click="${() => this.navigate(nextPath)}">
+                ${folder}
+              </summary>
+              <ul>
+                ${this.buildFileTree(tree[folder], nextPath)}
+              </ul>
+            </details>
+          </li>`
+      }
+    }).flat()
   }
 
   render() {
@@ -369,7 +476,7 @@ export class FileExplorer extends EpkApp {
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: (folderNode: FolderNode) => {
+      complete: ([tree, folderNode]: readonly [any, FolderNode]) => {
         const colStyle = styleMap({backgroundColor: '#f7f7f7'})
         const parentPath = getParentFolder(folderNode)
 
@@ -382,6 +489,7 @@ export class FileExplorer extends EpkApp {
                   <button type="button" id="backButton" class="style-2"
                           ?disabled="${this.pathStackIdx === 0}" @click="${this.goBack}">
                     <img src="/img/file-explorer/back.png"/>
+                    <span>Back</span>
                   </button>
                   <button type="button" id="forwardButton" class="style-2"
                           ?disabled="${this.pathStackIdx === this.pathStack.length - 1}"
@@ -397,51 +505,63 @@ export class FileExplorer extends EpkApp {
                 </div>
                 <form class="navigation" @submit="${this.handlePathInputSubmit}">
                   <span class="address">Address</span>
-                  <input type="text" value="${`${folderNode.path}\\`}" id="pathInput"/>
+                  <input type="text" value="${folderNode.path}" id="pathInput"/>
                   <button type="submit" id="goButton" class="style-2">
                     <img src="/img/file-explorer/go.png"/>
                     <span>Go</span>
                   </button>
                 </form>
-                <div class="file-explorer">
-                  <table>
-                    <colgroup>
-                      <col style="${this.sortColumn === SortColumn.Filename ? colStyle : ''}"/>
-                      <col/>
-                      <col style="${this.sortColumn === SortColumn.Modified ? colStyle : ''}"/>
-                    </colgroup>
-                    <thead>
-                    <tr>
-                      <th class="sort asc" data-column="${SortColumn.Filename}"
-                          @click="${this.sortFiles}">
-                        File Name
-                      </th>
-                      <th class="divider" @mousedown="${this.handleDividerDrag}">
-                        <div></div>
-                      </th>
-                      <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
-                        Last Modified
-                      </th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    ${folderNode.folderLinks.map(linkNode => html`
+                <div class="primary-content">
+                  <div id="fileTree">
+                    <div class="file-tree-header">
+                      Folders
+                      <button class="style-2">X</button>
+                    </div>
+                    <ul class="tree-view">
+                      ${this.buildFileTree(tree, '')}
+                    </ul>
+                  </div>
+                  <div class="primary-divider" @mousedown="${this.handlePrimaryDividerDrag}"></div>
+                  <div class="file-explorer">
+                    <table>
+                      <colgroup>
+                        <col style="${this.sortColumn === SortColumn.Filename ? colStyle : ''}"/>
+                        <col/>
+                        <col style="${this.sortColumn === SortColumn.Modified ? colStyle : ''}"/>
+                      </colgroup>
+                      <thead>
                       <tr>
-                        <td>${this.buildIcon(linkNode)}</td>
-                        <td class="divider"></td>
-                        <td></td>
+                        <th class="sort asc" data-column="${SortColumn.Filename}"
+                            @click="${this.sortFiles}">
+                          File Name
+                        </th>
+                        <th class="divider" @mousedown="${this.handleDividerDrag}">
+                          <div></div>
+                        </th>
+                        <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
+                          Last Modified
+                        </th>
                       </tr>
-                    `)}
-                    ${folderNode.fileLinks.map(linkNode => html`
-                      <tr>
-                        <td>${this.buildIcon(linkNode)}</td>
-                        <td class="divider"></td>
-                        <td>${getFormattedTimestamp(linkNode)}
-                        </td>
-                      </tr>
-                    `)}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                      ${folderNode.folderLinks.map(linkNode => html`
+                        <tr>
+                          <td>${this.buildIcon(linkNode)}</td>
+                          <td class="divider"></td>
+                          <td></td>
+                        </tr>
+                      `)}
+                      ${folderNode.fileLinks.map(linkNode => html`
+                        <tr>
+                          <td>${this.buildIcon(linkNode)}</td>
+                          <td class="divider"></td>
+                          <td>${getFormattedTimestamp(linkNode)}
+                          </td>
+                        </tr>
+                      `)}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </section>
