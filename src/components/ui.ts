@@ -18,11 +18,29 @@ export const buttonStyle2 = css`
     &:focus {
       outline: none;
     }
+    
+    &:not([disabled]) {
+      &:hover {
+        background: #f3f4f7 none;
+        box-shadow: inset 0 -6px 6px -7px rgba(0, 0, 0, 0.4);
+        border: 1px solid #cecec3;
+        outline: none;
+      }
+    }
 
-    &:hover:not([disabled]), &.active {
+    &.active, &.active:hover {
+      background: #ffffff none;
+      border: 1px solid #7a98af;
+    }
+
+    &.active:hover {
       box-shadow: inset 0 -6px 6px -7px rgba(0, 0, 0, 0.4);
-      border: 1px solid #cecec3;
-      outline: none;
+    }
+
+    &:not([disabled]):active, &.active:active {
+      background: #E6EAD8 none;
+      border: 1px solid #A1A192;
+      color: #ffffff;
     }
 
     &[disabled] > img {

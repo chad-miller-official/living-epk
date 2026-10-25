@@ -107,13 +107,18 @@ export class FileExplorer extends EpkApp {
         list-style-type: none;
         width: fit-content;
 
-        &.selected span {
-          background-color: #316AC5;
-          color: #ffffff;
+        &.selected {
+          &.unfocused span {
+            background-color: #ece9d8;
+          }
 
-          &:hover {
-            // Need to explicitly define this to override the rule below: &>div>span:hover { color }
+          &:not(.unfocused) span {
+            background-color: #316AC5;
             color: #ffffff;
+            
+            &:hover {
+              color: #ffffff;
+            }
           }
         }
 
@@ -223,6 +228,8 @@ export class FileExplorer extends EpkApp {
     `
   ]
 
+  static fileTreeWidth = 160
+
   @property({type: String})
   windowTitle = 'File Explorer'
 
@@ -252,9 +259,6 @@ export class FileExplorer extends EpkApp {
 
   @state()
   sortAsc = true
-
-  @state()
-  fileTreeWidth = 160
 
   @state()
   showFileTree = true
@@ -367,12 +371,23 @@ export class FileExplorer extends EpkApp {
 
   handleClick(event: Event) {
     super.handleClick(event)
-    Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
+
+    const target = event.target as HTMLElement
+
+    Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
 
     const selectedTreeItem = this.shadowRoot?.querySelector('.tree-item.selected')
 
-    if (selectedTreeItem && !(selectedTreeItem === event.target || selectedTreeItem.contains(event.target as HTMLElement))) {
-      selectedTreeItem.classList.remove('selected')
+    if (selectedTreeItem) {
+      if (selectedTreeItem === target || selectedTreeItem.contains(target)) {
+        selectedTreeItem.classList.remove('unfocused')
+      } else {
+        if (target.classList.contains('tree-item')) {
+          selectedTreeItem.classList.remove('selected')
+        } else {
+          selectedTreeItem.classList.add('unfocused')
+        }
+      }
     }
   }
 
@@ -436,7 +451,8 @@ export class FileExplorer extends EpkApp {
 
     this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
       const deltaX = mouseMoveEvent.clientX - startX
-      this.fileTreeWidth = startWidth + deltaX
+      FileExplorer.fileTreeWidth = startWidth + deltaX
+      this.requestUpdate()
     })
   }
 
@@ -544,7 +560,7 @@ export class FileExplorer extends EpkApp {
         const colStyle = {backgroundColor: '#f7f7f7'}
         const parentPath = getParentFolder(folderNode)
 
-        const fileTreeStyle: any = {width: `${this.fileTreeWidth}px`}
+        const fileTreeStyle: any = {width: `${FileExplorer.fileTreeWidth}px`}
         const primaryDividerStyle: any = {}
 
         if (!this.showFileTree) {
