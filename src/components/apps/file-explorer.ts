@@ -17,6 +17,7 @@ import {styleMap} from "lit/directives/style-map.js";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
 import {buttonStyle2} from "../ui.ts";
+import {alertDialog} from "../../lib/os.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -115,7 +116,7 @@ export class FileExplorer extends EpkApp {
           &:not(.unfocused) span {
             background-color: #316AC5;
             color: #ffffff;
-            
+
             &:hover {
               color: #ffffff;
             }
@@ -252,7 +253,7 @@ export class FileExplorer extends EpkApp {
   pathInput!: HTMLInputElement
 
   @state()
-  folderNode!: FolderNode
+  folderNode: FolderNode = {path: '', folderLinks: [], fileLinks: []}
 
   @state()
   sortColumn = SortColumn.Filename
@@ -313,9 +314,7 @@ export class FileExplorer extends EpkApp {
       try {
         this.folderNode = await loadFolderNode(src)
       } catch (ex: unknown) {
-        // TODO this should bring up a Windows XP-style alert
-        alert(ex instanceof Error ? ex.message : String(ex))
-        this.folderNode = {path: src, folderLinks: [], fileLinks: []}
+        alertDialog(this, 'Address Bar', `Windows cannot find '${src}'. Check the spelling and try again.`)
       }
 
       return [tree, this.folderNode]
@@ -371,11 +370,9 @@ export class FileExplorer extends EpkApp {
 
   handleClick(event: Event) {
     super.handleClick(event)
-
     const target = event.target as HTMLElement
 
     Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
-
     const selectedTreeItem = this.shadowRoot?.querySelector('.tree-item.selected')
 
     if (selectedTreeItem) {

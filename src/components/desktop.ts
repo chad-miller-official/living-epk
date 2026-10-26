@@ -119,17 +119,16 @@ export class EpkDesktop extends LitElement {
         this.append(app)
       } else {
         const epkWindow = new EpkWindow()
-        const appLastPosition = EpkWindow.lastAppPositions.get(appName)
+
+        const appLastPosition = app.doNotTrackLastPosition ? {
+          x: null,
+          y: null,
+          height: null,
+          width: null,
+        } : EpkWindow.lastAppPositions.get(appName)
 
         epkWindow.slot = 'windows'
-        epkWindow.x = appLastPosition?.x || launchData.x || 0
-        epkWindow.y = appLastPosition?.y || launchData.y || 0
         epkWindow.title = app.windowTitle
-
-        if (instanceCount > 0) {
-          epkWindow.x += 16
-          epkWindow.y += 16
-        }
 
         if (app.windowIcon) {
           epkWindow.thumbnail = app.windowIcon
@@ -153,6 +152,18 @@ export class EpkDesktop extends LitElement {
         epkWindow.minHeight = minHeight
         epkWindow.width = widthToUse
         epkWindow.height = heightToUse
+
+        const position = launchData.position
+
+        if (position !== 'center') {
+          epkWindow.x = appLastPosition?.x || (position[0] as number) || 0
+          epkWindow.y = appLastPosition?.y || (position[1] as number) || 0
+
+          if (instanceCount > 0) {
+            epkWindow.x += 16
+            epkWindow.y += 16
+          }
+        }
 
         epkWindow.append(app)
         this.append(epkWindow)

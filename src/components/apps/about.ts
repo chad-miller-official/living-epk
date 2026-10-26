@@ -97,10 +97,6 @@ export class AppAbout extends EpkApp {
     })))
   }
 
-  requestClose() {
-    this.dispatchEvent(closeWindowEvent())
-  }
-
   render() {
     return html`
       <div class="app">
@@ -134,7 +130,7 @@ export class AppAbout extends EpkApp {
                       <span class="memory">196,080 KB</span>
                     </div>
                   </div>
-                  <button @click="${this.requestClose}">OK</button>
+                  <button @click="${() => this.dispatchEvent(closeWindowEvent())}">OK</button>
                 </div>
               </div>
             </div>

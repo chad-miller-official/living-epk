@@ -18,7 +18,7 @@ export const buttonStyle2 = css`
     &:focus {
       outline: none;
     }
-    
+
     &:not([disabled]) {
       &:hover {
         background: #f3f4f7 none;

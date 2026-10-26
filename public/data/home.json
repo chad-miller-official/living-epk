@@ -1,3 +1,7 @@
 {
-  "paths": []
+  "paths": [
+    {
+      "path": "/fs/junk.lol"
+    }
+  ]
 }

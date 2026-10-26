@@ -123,22 +123,22 @@ export class EpkWindow extends LitElement {
   @property({type: String})
   thumbnail = ''
 
-  @property({type: Number})
-  x = 0
+  @property()
+  x: number | null = null
 
-  @property({type: Number})
-  y = 0
+  @property()
+  y: number | null = null
 
-  @property({type: Number})
+  @property()
   width: number | null = null
 
-  @property({type: Number})
+  @property()
   height: number | null = null
 
-  @property({type: Number})
+  @property()
   minWidth: number | null = null
 
-  @property({type: Number})
+  @property()
   minHeight: number | null = null
 
   @property({type: Boolean})
@@ -198,8 +198,13 @@ export class EpkWindow extends LitElement {
   }
 
   private resetDimensions(overrideHeight?: string, overrideWidth?: string) {
-    this.style.height = overrideHeight || `${this.height}px`
-    this.style.width = overrideWidth || `${this.width}px`
+    if (overrideHeight || this.height) {
+      this.style.height = overrideHeight || `${this.height}px`
+    }
+
+    if (overrideWidth || this.width) {
+      this.style.width = overrideWidth || `${this.width}px`
+    }
   }
 
   firstUpdated() {
@@ -210,8 +215,20 @@ export class EpkWindow extends LitElement {
 
     if (epkWindow) {
       const bodyStyle = window.getComputedStyle(this.window!)
-      const minWidth = this.minWidth || parseInt(bodyStyle.width.replace(/px$/, ''))
-      const minHeight = this.minHeight || parseInt(bodyStyle.height.replace(/px$/, ''))
+
+      const literalWidth = parseInt(bodyStyle.width.replace(/px$/, ''))
+      const literalHeight = parseInt(bodyStyle.height.replace(/px$/, ''))
+
+      const minWidth = this.minWidth || literalWidth
+      const minHeight = this.minHeight || literalHeight
+
+      if (!this.x) {
+        this.x = Math.floor((window.innerWidth - literalWidth) / 2)
+      }
+
+      if (!this.y) {
+        this.y = Math.floor((window.innerHeight - literalHeight) / 2)
+      }
 
       this.interact = interact(epkWindow)
 
@@ -295,8 +312,8 @@ export class EpkWindow extends LitElement {
 
     if (containedAppName) {
       EpkWindow.lastAppPositions.set(containedAppName, {
-        x: this.x,
-        y: this.y,
+        x: this.x!,
+        y: this.y!,
         width: this.width!,
         height: this.height!,
       })
@@ -308,8 +325,8 @@ export class EpkWindow extends LitElement {
       return
     }
 
-    this.x += event.dx
-    this.y += event.dy
+    this.x! += event.dx
+    this.y! += event.dy
 
     this.style.transform = `translate(${this.x}px, ${this.y}px)`
     this.setActive()
@@ -323,12 +340,12 @@ export class EpkWindow extends LitElement {
     }
 
     if (event.axes?.includes('x')) {
-      this.x += event.deltaRect!.left
+      this.x! += event.deltaRect!.left
       this.width = event.rect.width - 12
     }
 
     if (event.axes?.includes('y')) {
-      this.y += event.deltaRect!.top
+      this.y! += event.deltaRect!.top
       this.height = event.rect.height - 15
     }
 
@@ -345,7 +362,7 @@ export class EpkWindow extends LitElement {
     }
 
     if (this.minimized) {
-      this.resetDimensions(`${this.height}px`)
+      this.resetDimensions(this.height ? `${this.height}px` : undefined)
     } else {
       this.fullscreen = !this.fullscreen
 
@@ -376,7 +393,7 @@ export class EpkWindow extends LitElement {
       this.resetDimensions('28px')
       this.restoreWindow()
     } else {
-      this.resetDimensions(`${this.height}px`)
+      this.resetDimensions(this.height ? `${this.height}px` : undefined)
     }
   }
 
@@ -396,11 +413,13 @@ export class EpkWindow extends LitElement {
       if (this.minimized) {
         windowClass += ' minimized'
         viewportClass += ' minimized'
-      } else {
+      } else if (this.height) {
         windowStyle['height'] = `${this.height}px`
       }
 
-      windowStyle['width'] = `${this.width}px`
+      if (this.width) {
+        windowStyle['width'] = `${this.width}px`
+      }
     }
 
     const iconStyle = {'backgroundImage': `url(${this.thumbnail})`}

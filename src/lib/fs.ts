@@ -5,6 +5,7 @@ import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
 import {EpkIcon} from "../components/icon.ts";
 import {type DBSchema, type IDBPDatabase, openDB} from "idb";
 import {FileExplorerIcon} from "../components/icons/file-explorer-icon.ts";
+import {UnknownIcon} from "../components/icons/unknown-icon.ts";
 
 
 export enum LinkNodeType {
@@ -173,6 +174,7 @@ export function getParentFolder(folderNode: FolderNode) {
 }
 
 export function linkNodeToIcon(linkNode: LinkNode) {
+  const title = getLinkName(linkNode)
   let icon: EpkIcon
 
   if (linkNode.type === LinkNodeType.File) {
@@ -192,14 +194,13 @@ export function linkNodeToIcon(linkNode: LinkNode) {
         icon = new PlainTextIcon()
         break
       default:
-        // TODO this should raise an alert box
-        throw new Error(`Unhandled extension: ${extension}`)
+        icon = new UnknownIcon()
     }
   } else {
     icon = new FileExplorerIcon()
   }
 
-  icon.title = getLinkName(linkNode)
+  icon.title = title
   icon.fileLinkNode = linkNode
   icon.classList.add('epk-icon')
 
