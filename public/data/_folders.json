@@ -1,0 +1,14 @@
+{
+  "C:": {
+    ".": "",
+    "Users": {
+      ".": "/data/home.json",
+      "Chad": {
+        ".": "/data/home.json",
+        "My Documents": "/data/my-documents.json",
+        "My Music": "/data/my-music.json",
+        "My Pictures": "/data/my-pictures.json"
+      }
+    }
+  }
+}

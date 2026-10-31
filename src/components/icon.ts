@@ -3,7 +3,7 @@ import {styleMap} from "lit/directives/style-map.js";
 import {css, type CSSResultGroup, html, LitElement} from "lit";
 import {launchEvent, type LaunchOptions} from "../lib/events.ts";
 import type {EpkApp} from "./app.ts";
-import type {FsPath} from "../lib/fs.ts";
+import type {LinkNode} from "../lib/fs.ts";
 
 export enum IconViewMode {
   IconView = 'icon',
@@ -79,7 +79,7 @@ export abstract class EpkIcon extends LitElement {
     }
 
     .shadowed {
-      text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
+      text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.75);
     }
   `
 
@@ -96,7 +96,7 @@ export abstract class EpkIcon extends LitElement {
   shadow = false
 
   @property({type: Object})
-  filePath?: FsPath
+  fileLinkNode?: LinkNode
 
   @property()
   viewMode = IconViewMode.IconView

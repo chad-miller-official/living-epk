@@ -14,7 +14,7 @@ export class GalleryIcon extends EpkIcon {
   getAppInstance(): Promise<EpkApp> {
     return new Promise<ImageGallery>(resolve => {
       const imageGallery = new ImageGallery()
-      imageGallery.filePath = this.filePath
+      imageGallery.fileLinkNode = this.fileLinkNode
       imageGallery.fsSpecPath = this.fsSpecPath
       return resolve(imageGallery)
     })

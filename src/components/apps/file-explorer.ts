@@ -1,21 +1,21 @@
 import {type EpkIcon, IconViewMode} from "../icon.ts";
-import {customElement, property, queryAll, state} from "lit/decorators.js";
+import {customElement, property, query, queryAll, state} from "lit/decorators.js";
 import type {ToolbarMenu} from "../../lib/toolbar.ts";
-import {css, html} from "lit";
+import {css, html, type TemplateResult} from "lit";
 import {
-  buildIcon,
-  type FsPath,
-  type FsSpec,
-  getFileName,
+  type FolderNode,
   getFormattedTimestamp,
-  loadFsSpec
+  getLinkName,
+  getParentFolder,
+  type LinkNode,
+  linkNodeToIcon
 } from "../../lib/fs.ts";
 import {Task} from "@lit/task";
-import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
-import {buttonStyle2} from "../ui.ts";
+import {alertDialog} from "../../lib/os.ts";
+import {BaseFileViewer} from "./file-viewer.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -23,29 +23,28 @@ enum SortColumn {
 }
 
 @customElement('file-explorer')
-export class FileExplorer extends EpkApp {
+export class FileExplorer extends BaseFileViewer {
   static styles = [
-    ...EpkApp.styles,
-    buttonStyle2,
+    ...BaseFileViewer.styles,
     css`
-      #backButton, #forwardButton {
-        & > span {
-          align-items: center;
-          display: flex;
-          gap: 8px;
-          margin: 2px 4px;
-        }
+      #closeButton {
+        height: 18px;
+        width: 18px;
       }
 
       #goButton {
-        display: flex;
-        gap: 4px;
-        height: 100%;
         padding: 0 8px 0 4px;
       }
 
-      #pathInput {
-        flex-grow: 1;
+      #fileTree {
+        flex-shrink: 0;
+        min-width: 12ch;
+        overflow: auto;
+
+        & > ul {
+          border: none;
+          width: max-content;
+        }
       }
 
       .address {
@@ -53,12 +52,33 @@ export class FileExplorer extends EpkApp {
         padding: 0 4px;
       }
 
-      .file-explorer {
+      .explorer {
+        background-color: #ffffff;
+        display: flex;
+        height: 100%;
+      }
+
+      .explorer-divider {
+        background-color: #eee9d5;
+        cursor: col-resize;
+        min-width: 5px;
+        max-width: 5px;
+        width: 5px;
+      }
+
+      .file-list {
         display: flex;
         flex-direction: column;
-        height: 100%;
+        flex-grow: 1;
         overflow: auto;
-        width: 100%;
+      }
+
+      .file-tree-header {
+        align-items: center;
+        background: linear-gradient(to right, #f3f4f7, #eee9d5);
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 7px;
       }
 
       .navigation {
@@ -69,26 +89,52 @@ export class FileExplorer extends EpkApp {
         width: 100%;
 
         button {
-          padding: 4px 7px;
+          padding: 9px 7px;
           margin: 1px;
+        }
+      }
 
-          &[disabled] > img {
-            filter: grayscale(1);
-            opacity: 0.5;
+      .tree-item {
+        list-style-type: none;
+        width: fit-content;
+
+        &.selected {
+          &.unfocused span {
+            background-color: #ece9d8;
+          }
+
+          &:not(.unfocused) span {
+            background-color: #316AC5;
+            color: #ffffff;
+
+            &:hover {
+              color: #ffffff;
+            }
           }
         }
 
-        .divider {
-          background-color: #ccc8b6;
-          height: 85%;
-          margin: 2px;
-          width: 1px;
+        & > div {
+          align-items: center;
+          display: flex;
+          gap: 4px;
+
+          & > span {
+            padding: 2px;
+
+            &:hover {
+              color: #3f3f9f;
+              text-decoration: underline;
+            }
+          }
         }
+      }
+
+      .selected-sort {
+        background-color: #f7f7f7;
       }
 
       .viewport {
         -webkit-font-smoothing: none;
-        background-color: #ffffff;
         display: flex;
         flex-direction: column;
         font-family: "Pixelated MS Sans Serif", Arial;
@@ -103,11 +149,8 @@ export class FileExplorer extends EpkApp {
       }
 
       td, th {
+        padding: 0 4px;
         white-space: nowrap;
-
-        &:not(.divider) {
-          padding: 0 4px;
-        }
       }
 
       th {
@@ -163,32 +206,30 @@ export class FileExplorer extends EpkApp {
     `
   ]
 
+  static fileTreeWidth = 160
+
+  @queryAll('th')
+  headers!: HTMLTableCellElement[]
+
+  @query('#fileTree')
+  fileTree!: HTMLDivElement
+
   @property({type: String})
   windowTitle = 'File Explorer'
 
   @property({type: String})
   windowIcon = '/img/file-explorer-small.ico'
 
-  @property({type: String})
-  fsSpecPath!: string
-
-  @queryAll('.epk-icon')
-  icons!: EpkIcon[]
-
-  @queryAll('th')
-  headers!: HTMLTableCellElement[]
-
   @state()
-  fsSpec!: FsSpec
+  sortAsc = true
 
   @state()
   sortColumn = SortColumn.Filename
 
   @state()
-  sortAsc = true
+  showFileTree = true
 
-  private pathStack: string[] = []
-  private pathStackIdx = 0
+  private treeOpenPaths: { [path: string]: boolean } = {}
 
   private toolbarSpec: ToolbarMenu[] = [
     {
@@ -217,66 +258,70 @@ export class FileExplorer extends EpkApp {
     }
   ]
 
-  private iconLoaderTask = new Task(this, {
-    task: async ([src], {signal}) => {
-      try {
-        this.fsSpec = await loadFsSpec(src, signal)
-      } catch (ex: unknown) {
-        // TODO this should bring up a Windows XP-style alert
-        alert(ex instanceof Error ? ex.message : String(ex))
-        this.fsSpec = {} as FsSpec
+  private treeLoaderTask = new Task(this, {
+    task: async ([src]) => {
+      const treeResponse = await fetch(src)
+
+      if (!treeResponse.ok) {
+        alertDialog(this, 'Error', 'Failed to load file system tree.')
+        return {}
       }
 
-      return this.fsSpec
+      return treeResponse.json()
     },
-    args: () => [this.fsSpecPath]
+    args: () => ['/data/_folders.json']
   })
 
-  private buildIcon(path: FsPath) {
-    const icon = buildIcon(path)
+  private iconLoaderTask = new Task(this, {
+    task: async ([tree, src]) => {
+      const icons = await this.loadIcons(src)
+
+      if (icons) {
+        this.folderNode = icons
+      }
+
+      return [tree, this.folderNode]
+    },
+    args: () => [this.treeLoaderTask.value, this.folderNodeJsonPath]
+  })
+
+  private buildIcon(path: LinkNode): EpkIcon {
+    const icon = linkNodeToIcon(path)
 
     if (icon instanceof GalleryIcon) {
-      (icon as GalleryIcon).fsSpecPath = this.fsSpecPath
+      (icon as GalleryIcon).fsSpecPath = this.folderNodeJsonPath
     } else if (icon instanceof FileExplorerIcon) {
-      icon.handleDblClick = () => this.navigate(icon.filePath!.path)
+      icon.handleDblClick = () => this.navigate(icon.fileLinkNode!.path)
     }
 
     icon.viewMode = IconViewMode.ListView
     return icon
   }
 
-  private navigate(newFsSpecPath: string) {
-    this.fsSpecPath = newFsSpecPath
-    this.pathStackIdx++
-
-    if (newFsSpecPath !== this.pathStack[this.pathStackIdx]) {
-      this.pathStack.length = this.pathStackIdx
-      this.pathStack.push(newFsSpecPath)
-    }
-  }
-
-  private goBack() {
-    if (this.pathStackIdx > 0) {
-      this.pathStackIdx--
-      this.fsSpecPath = this.pathStack[this.pathStackIdx]
-    }
-  }
-
   private goForward() {
     if (this.pathStackIdx < this.pathStack.length - 1) {
       this.pathStackIdx++
-      this.fsSpecPath = this.pathStack[this.pathStackIdx]
+      this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
     }
-  }
-
-  connectedCallback() {
-    super.connectedCallback()
-    this.pathStack.push(this.fsSpecPath)
   }
 
   handleClick(event: Event) {
     super.handleClick(event)
-    Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
+    const selectedTreeItem = this.shadowRoot?.querySelector('.tree-item.selected')
+
+    if (selectedTreeItem) {
+      const target = event.target as HTMLElement
+
+      if (selectedTreeItem === event.target || selectedTreeItem.contains(target)) {
+        selectedTreeItem.classList.remove('unfocused')
+      } else {
+        if (target.classList.contains('tree-item')) {
+          selectedTreeItem.classList.remove('selected')
+        } else {
+          selectedTreeItem.classList.add('unfocused')
+        }
+      }
+    }
   }
 
   sortFiles(event: Event) {
@@ -304,15 +349,16 @@ export class FileExplorer extends EpkApp {
 
     switch (this.sortColumn) {
       case SortColumn.Filename:
-        this.fsSpec.paths.sort(
-          this.sortAsc
-            ? (a, b) => getFileName(a).localeCompare(getFileName(b))
-            : (a, b) => getFileName(b).localeCompare(getFileName(a))
-        )
+        const sortAlphabetical = this.sortAsc
+          ? (a: LinkNode, b: LinkNode) => getLinkName(a).localeCompare(getLinkName(b))
+          : (a: LinkNode, b: LinkNode) => getLinkName(b).localeCompare(getLinkName(a))
+
+        this.folderNode.folderLinks.sort(sortAlphabetical)
+        this.folderNode.fileLinks.sort(sortAlphabetical)
 
         break
       case SortColumn.Modified:
-        this.fsSpec.paths.sort(
+        this.folderNode.fileLinks.sort(
           this.sortAsc
             ? (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
             : (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
@@ -322,20 +368,7 @@ export class FileExplorer extends EpkApp {
     }
   }
 
-  handleDividerDrag(mouseDownEvent: MouseEvent) {
-    const divider = mouseDownEvent.target as HTMLTableCellElement
-    const precedingHeader = divider.previousElementSibling as HTMLTableCellElement
-
-    const startX = mouseDownEvent.clientX
-    const startWidth = precedingHeader.offsetWidth
-
-    const handleMouseMove = (mouseMoveEvent: MouseEvent) => {
-      const deltaX = mouseMoveEvent.clientX - startX
-
-      // Subtract 15 to account for padding within the <th> element
-      precedingHeader.style.width = `${startWidth + deltaX - 15}px`
-    }
-
+  private connectDividerDragListeners(handleMouseMove: (mouseMoveEvent: MouseEvent) => void) {
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
@@ -345,14 +378,118 @@ export class FileExplorer extends EpkApp {
     document.addEventListener('mouseup', handleMouseUp)
   }
 
+  handlePrimaryDividerDrag(mouseDownEvent: MouseEvent) {
+    const startX = mouseDownEvent.clientX
+    const startWidth = this.fileTree.offsetWidth
+
+    this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
+      const deltaX = mouseMoveEvent.clientX - startX
+      FileExplorer.fileTreeWidth = startWidth + deltaX
+      this.requestUpdate()
+    })
+  }
+
+  handleDividerDrag(mouseDownEvent: MouseEvent) {
+    const divider = mouseDownEvent.target as HTMLElement
+
+    const precedingHeader = (divider.tagName.toLowerCase() === 'div'
+      ? divider.parentElement!.previousElementSibling
+      : divider.previousElementSibling) as HTMLTableCellElement
+
+    if (!precedingHeader) {
+      return
+    }
+
+    const startX = mouseDownEvent.clientX
+    const startWidth = precedingHeader.offsetWidth
+
+    this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
+      const deltaX = mouseMoveEvent.clientX - startX
+
+      // Subtract 15 to account for padding within the <th> element
+      precedingHeader.style.width = `${startWidth + deltaX - 15}px`
+    })
+  }
+
+  buildFileTree(tree: any, currentPath: string): TemplateResult<1> | TemplateResult<1>[] {
+    return Object.keys(tree).filter(folder => folder !== '.').map(folder => {
+      let nextPath = currentPath
+
+      if (nextPath) {
+        nextPath += '\\'
+      }
+
+      nextPath += folder
+
+      const nextIsString = typeof tree[folder] === 'string'
+      const cwdIsNext = this.folderNodeJsonPath.replace(/\\$/, '') === nextPath.replace(/\\$/, '')
+
+      let icon: string
+
+      switch (folder) {
+        case 'C:':
+          icon = 'disk'
+          break
+        case 'My Music':
+          icon = 'my-music'
+          break
+        case 'My Pictures':
+          icon = 'my-pictures'
+          break
+        case 'My Videos':
+          icon = 'my-videos'
+          break
+        default:
+          icon = 'folder-closed'
+      }
+
+      if (nextIsString) {
+        return html`
+          <li class="tree-item ${cwdIsNext ? 'selected' : ''}"
+              @click="${() => this.navigate(nextPath)}">
+            <div>
+              <img src="/img/file-explorer/${icon}.ico"/>
+              <span>${folder}</span>
+            </div>
+          </li>`
+      } else {
+        return html`
+          <li class="tree-item">
+            <details
+                ?open="${this.treeOpenPaths[nextPath] || this.folderNodeJsonPath.startsWith(`${nextPath}\\`) || cwdIsNext}"
+                @toggle="${(event: ToggleEvent) => this.treeOpenPaths[nextPath] = event.newState === 'open'}">
+              <summary
+                  class="tree-item ${cwdIsNext ? 'selected' : ''}"
+                  @click="${() => this.navigate(nextPath)}">
+                <div>
+                  <img src="/img/file-explorer/${icon}.ico"/>
+                  <span>${folder === 'C:' ? 'Local Disk (C:)' : folder}</span>
+                </div>
+              </summary>
+              <ul>
+                ${this.buildFileTree(tree[folder], nextPath)}
+              </ul>
+            </details>
+          </li>`
+      }
+    }).flat()
+  }
+
   render() {
     return this.iconLoaderTask.render({
       pending: () => html`
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: (spec: FsSpec) => {
-        const colStyle = styleMap({backgroundColor: '#f7f7f7'})
+      complete: ([tree, folderNode]: readonly [any, FolderNode]) => {
+        const parentPath = getParentFolder(folderNode)
+        const fileTreeStyle: any = {width: `${FileExplorer.fileTreeWidth}px`}
+        const primaryDividerStyle: any = {}
+
+        if (!this.showFileTree) {
+          fileTreeStyle.display = 'none'
+          primaryDividerStyle.display = 'none'
+        }
 
         return html`
           <div class="app" @click="${this.handleClick}">
@@ -370,57 +507,91 @@ export class FileExplorer extends EpkApp {
                           @click="${this.goForward}">
                     <img src="/img/file-explorer/forward.png"/>
                   </button>
-                  <button type="button" id="upButton" class="style-2" ?disabled="${!spec.parent}"
-                          @click="${() => this.navigate(spec.parent!)}">
+                  <button type="button" id="upButton" class="style-2"
+                          ?disabled="${!parentPath}"
+                          @click="${() => this.navigate(parentPath)}">
                     <img src="/img/file-explorer/up.png"/>
                   </button>
                   <div class="divider"></div>
+                  <button type="button" id="treeView"
+                          class="style-2 ${this.showFileTree ? 'active' : ''}"
+                          @click="${() => this.showFileTree = !this.showFileTree}">
+                    <img src="/img/file-explorer/tree-view.png"/>
+                    <span>Folders</span>
+                  </button>
                 </div>
-                <div class="navigation">
+                <form class="navigation" @submit="${this.handlePathInputSubmit}">
                   <span class="address">Address</span>
-                  <input type="text" value="${spec.displayRoot}" id="pathInput"/>
-                  <button type="button" id="goButton" class="style-2">
+                  <input type="text" value="${folderNode.path}" id="pathInput"/>
+                  <button type="submit" id="goButton" class="style-2">
                     <img src="/img/file-explorer/go.png"/>
                     <span>Go</span>
                   </button>
-                </div>
-                <div class="file-explorer">
-                  <table>
-                    <colgroup>
-                      <col style="${this.sortColumn === SortColumn.Filename ? colStyle : ''}"/>
-                      <col/>
-                      <col style="${this.sortColumn === SortColumn.Modified ? colStyle : ''}"/>
-                    </colgroup>
-                    <thead>
-                    <tr>
-                      <th class="sort asc" data-column="${SortColumn.Filename}"
-                          @click="${this.sortFiles}">
-                        File Name
-                      </th>
-                      <th class="divider" @mousedown="${this.handleDividerDrag}">
-                        <div></div>
-                      </th>
-                      <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
-                        Last Modified
-                      </th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    ${spec.paths.map(path => html`
+                </form>
+                <div class="explorer">
+                  <div id="fileTree" style="${styleMap(fileTreeStyle)}">
+                    <div class="file-tree-header">
+                      Folders
+                      <button type="button" id="closeButton" class="style-2"
+                              @click="${() => this.showFileTree = false}">
+                        <img src="/img/file-explorer/x.png"/>
+                      </button>
+                    </div>
+                    <ul class="tree-view">
+                      ${this.buildFileTree(tree, '')}
+                    </ul>
+                  </div>
+                  <div class="explorer-divider" style="${styleMap(primaryDividerStyle)}"
+                       @mousedown="${this.handlePrimaryDividerDrag}"></div>
+                  <div class="file-list">
+                    <table>
+                      <colgroup>
+                        <col
+                            class="${this.sortColumn === SortColumn.Filename ? 'selected-sort' : ''}"/>
+                        <col/>
+                        <col
+                            class="${this.sortColumn === SortColumn.Modified ? 'selected-sort' : ''}"/>
+                      </colgroup>
+                      <thead>
                       <tr>
-                        <td>${this.buildIcon(path)}</td>
-                        <td class="divider"></td>
-                        <td>${getFormattedTimestamp(path)}
-                        </td>
+                        <th class="sort asc" data-column="${SortColumn.Filename}"
+                            @click="${this.sortFiles}">
+                          File Name
+                        </th>
+                        <th class="divider" @mousedown="${this.handleDividerDrag}">
+                          <div></div>
+                        </th>
+                        <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
+                          Last Modified
+                        </th>
                       </tr>
-                    `)}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                      ${folderNode.folderLinks.map(linkNode => html`
+                        <tr>
+                          <td>${this.buildIcon(linkNode)}</td>
+                          <td class="divider"></td>
+                          <td></td>
+                        </tr>
+                      `)}
+                      ${folderNode.fileLinks.map(linkNode => html`
+                        <tr>
+                          <td>${this.buildIcon(linkNode)}</td>
+                          <td class="divider"></td>
+                          <td>${getFormattedTimestamp(linkNode)}
+                          </td>
+                        </tr>
+                      `)}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </section>
             <div class="status-bar">
-              <p class="status-bar-field">${spec.paths.length} item(s)</p>
+              <p class="status-bar-field">
+                ${folderNode.folderLinks.length + folderNode.fileLinks.length} item(s)
+              </p>
             </div>
           </div>`
       },

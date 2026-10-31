@@ -12,21 +12,20 @@
 </head>
 <body>
 <epk-desktop id="desktop">
-  <file-explorer-icon class="epk-icon" slot="icons" title="Chad" color = "#ffffff" shadow="true"
-                      filePath='{"path": "/data/home.json"}'></file-explorer-icon>
+  <file-explorer-icon class="epk-icon" slot="icons" title="Chad" color="#ffffff" shadow="true"
+                      fileLinkNode='{"type": "folder", "path": "C:\\Users\\Chad"}'></file-explorer-icon>
   <file-explorer-icon class="epk-icon" slot="icons" title="My Documents" color="#ffffff"
                       shadow="true"
-                      filePath='{"path": "/data/my-documents.json"}'></file-explorer-icon>
+                      fileLinkNode='{"type": "folder", "path": "C:\\Users\\Chad\\My Documents"}'></file-explorer-icon>
   <file-explorer-icon class="epk-icon" slot="icons" title="My Pictures" icon="/img/my-pictures.ico"
                       windowIcon="/img/my-pictures-small.ico" color="#ffffff" shadow="true"
-                      filePath='{"path": "/data/my-pictures.json"}'></file-explorer-icon>
+                      fileLinkNode='{"type": "folder", "path": "C:\\Users\\Chad\\My Pictures"}'></file-explorer-icon>
   <file-explorer-icon class="epk-icon" slot="icons" title="My Music" icon="/img/my-music.ico"
                       windowIcon="/img/my-music-small.ico" color="#ffffff" shadow="true"
-                      filePath='{"path": "/data/my-music.json"}'></file-explorer-icon>
+                      fileLinkNode='{"type": "folder", "path": "C:\\Users\\Chad\\My Music"}'></file-explorer-icon>
   <plaintext-icon class="epk-icon" slot="icons" title="Welcome to my zone.txt"
-                  filePath='{"path": "/fs/plaintext/Welcome to my zone.txt"}'
-                  color="#ffffff"
-                  shadow="true"></plaintext-icon>
+                  fileLinkNode='{"type": "file", "path": "/fs/plaintext/Welcome to my zone.txt"}'
+                  color="#ffffff" shadow="true"></plaintext-icon>
 </epk-desktop>
 </body>
 </html>

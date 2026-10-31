@@ -1,10 +1,17 @@
-import {customElement, property, query, queryAll, state} from "lit/decorators.js";
-import {EpkApp} from "../app.ts";
+import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {Task} from "@lit/task";
-import {buildIcon, type FsPath, type FsSpec, getFileName, loadFsSpec} from "../../lib/fs.ts";
+import {
+  type FolderNode,
+  getLinkName,
+  getParentFolder,
+  type LinkNode,
+  linkNodeToIcon,
+  LinkNodeType
+} from "../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../icon.ts";
 import {closeWindowEvent} from "../../lib/events.ts";
+import {BaseFileViewer} from "./file-viewer.ts";
 
 export type FileTypeFilter = {
   regex: string,
@@ -13,26 +20,44 @@ export type FileTypeFilter = {
 }
 
 @customElement('file-picker')
-export class FilePicker extends EpkApp {
+export class FilePicker extends BaseFileViewer {
   static styles = [
-    ...EpkApp.styles,
+    ...BaseFileViewer.styles,
     css`
+      #backButton, #upButton {
+        img {
+          width: 15px;
+        }
+      }
+
       #fileExplorer {
         display: grid;
         grid-auto-flow: column;
         grid-template-rows: repeat(auto-fill, minmax(16px, 1fr));
         height: 97%;
-        
+
         * {
           width: max-content;
         }
       }
 
+      #goButton {
+        display: flex;
+        gap: 7px;
+        height: 100%;
+        padding: 0 8px 0 4px;
+      }
+
+      #pathInput {
+        margin-right: 10px;
+      }
+
       .controls {
         align-items: center;
         display: grid;
+        grid-area: controls;
         grid-column-gap: 32px;
-        grid-row-gap: 2px;
+        grid-row-gap: 8px;
         grid-template-columns: auto 3fr auto;
         user-select: none;
       }
@@ -40,28 +65,69 @@ export class FilePicker extends EpkApp {
       .file-explorer-container {
         background-color: #ffffff;
         border: 1px solid #7f9db9;
+        grid-area: file-explorer;
         height: 100%;
         overflow-x: scroll;
       }
 
-      .viewport {
+      .look-in {
+        align-self: center;
+        grid-area: look-in;
+        justify-self: end;
+      }
+
+      .navigation {
         display: flex;
+        grid-area: navigation;
+        margin-right: 48px;
+      }
+
+      .shortcuts {
+        background-color: #f9f8f3;
+        display: flex;
+        filter: drop-shadow(1px 1px 1px #cac7b9);
         flex-direction: column;
+        padding: 2px;
+        grid-area: shortcuts;
+
+        & > button {
+          flex-direction: column;
+          gap: 8px;
+          height: 70px;
+          justify-content: flex-start;
+          max-height: 70px;
+          max-width: 78px;
+          padding: 4px;
+          width: 78px;
+
+          & > img {
+            width: 32px;
+          }
+        }
+      }
+
+      .viewport {
+        -webkit-font-smoothing: none;
+        box-sizing: border-box;
+        display: grid;
+        font-family: "Pixelated MS Sans Serif", Arial;
+        font-size: 11px;
         gap: 8px;
-        height: calc(100% - 16px);
-        margin: 8px;
+        grid-template-areas:
+          "look-in navigation"
+          "shortcuts file-explorer"
+          "shortcuts controls";
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto 1fr;
+        height: 100%;
+        user-select: none;
+        padding: 8px;
       }
     `
   ]
 
   @query('#fileExplorer')
   fileExplorer!: HTMLDivElement
-
-  @queryAll('.epk-icon')
-  icons!: EpkIcon[]
-
-  @property({type: String})
-  fsSpecPath!: string
 
   @property({type: Object})
   fileTypeFilters?: FileTypeFilter[]
@@ -76,75 +142,63 @@ export class FilePicker extends EpkApp {
   filterRegex?: RegExp
 
   @state()
-  fsSpec?: FsSpec
+  selectedFileLinkNode?: LinkNode
 
-  @state()
-  selectedFile?: FsPath
-
-  onFilePick!: (filePath: FsPath) => void
+  onFilePick!: (fileLinkNode: LinkNode) => void
 
   private iconLoaderTask = new Task(this, {
-    task: async ([src], {signal}) => {
-      try {
-        this.fsSpec = await loadFsSpec(src, signal)
-      } catch (ex: unknown) {
-        // TODO this should bring up a Windows XP-style alert
-        alert(ex instanceof Error ? ex.message : String(ex))
-        this.fsSpec = {} as FsSpec
+    task: async ([src]) => {
+      const icons = await this.loadIcons(src)
+
+      if (icons) {
+        this.folderNode = icons
       }
 
-      return this.fsSpec
+      return this.folderNode
     },
-    args: () => [this.fsSpecPath]
+    args: () => [this.folderNodeJsonPath]
   })
 
   getMinimumDimensions(): [number, number] {
-    return [375, 275]
+    return [400, 300]
   }
 
   handleClick(event: Event) {
+    super.handleClick(event)
+
     if (event.target instanceof EpkIcon) {
-      const target = event.target as EpkIcon
-      this.selectedFile = target.filePath
-      Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
+      this.selectedFileLinkNode = (event.target as EpkIcon).fileLinkNode
     } else if (event.target === this.fileExplorer) {
-      this.selectedFile = undefined
-      Array.from(this.icons).forEach(i => i.selected = false)
+      this.selectedFileLinkNode = undefined
     }
   }
 
-  handleDblClick(event: PointerEvent) {
-    if (event.target instanceof EpkIcon && Array.from(this.icons).includes(event.target)) {
-      this.handleFilePick((event.target as EpkIcon).filePath)
-    }
-  }
-
-  private handleFilePick(path?: FsPath) {
-    if (!path) {
+  private handleFilePick(fileLinkNode?: LinkNode) {
+    if (!fileLinkNode) {
       return
     }
 
-    this.onFilePick(path)
+    this.onFilePick(fileLinkNode)
     this.dispatchEvent(closeWindowEvent())
   }
 
   handleFileTypeFilterChange(event: Event) {
     this.filterRegex = new RegExp((event.target as HTMLOptionElement).value)
 
-    if (this.selectedFile && !this.filterRegex.test(this.selectedFile.path)) {
-      this.selectedFile = undefined
+    if (this.selectedFileLinkNode && !this.filterRegex.test(this.selectedFileLinkNode.path)) {
+      this.selectedFileLinkNode = undefined
     }
   }
 
-  private buildIcon(path: FsPath) {
-    const icon = buildIcon(path)
+  private buildIcon(path: LinkNode): EpkIcon {
+    const icon = linkNodeToIcon(path)
 
     icon.viewMode = IconViewMode.ListView
-    icon.selected = path.path === this.selectedFile?.path
+    icon.selected = path.path === this.selectedFileLinkNode?.path
 
-    icon.handleDblClick = () => {
-      // XXX hack to prevent default double-click behavior
-    }
+    icon.handleDblClick = path.type === LinkNodeType.File
+      ? () => this.handleFilePick(icon.fileLinkNode)
+      : () => this.navigate(path.path)
 
     return icon
   }
@@ -155,28 +209,66 @@ export class FilePicker extends EpkApp {
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: (spec: FsSpec) => {
-        let files = spec.paths
+      complete: (folderNode: FolderNode) => {
+        let files = folderNode.fileLinks
 
         if (this.filterRegex) {
           files = files.filter(path => this.filterRegex!.test(path.path))
         }
 
+        const parentPath = getParentFolder(folderNode)
+
         return html`
-          <div class="app" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
+          <div class="app" @click="${this.handleClick}">
             <div class="content">
               <div class="viewport">
-                <input id="pathInput" type="text" value="${spec.displayRoot}"/>
+                <div class="look-in">Look in:</div>
+                <form class="navigation" @submit="${this.handlePathInputSubmit}">
+                  <input id="pathInput" type="text" value="${folderNode.path}"/>
+                  <button type="submit" id="goButton" class="style-2">
+                    <img src="/img/file-explorer/go.png"/>
+                    <span>Go</span>
+                  </button>
+                  <div class="divider"></div>
+                  <button type="button" id="backButton" class="style-2"
+                          ?disabled="${this.pathStackIdx === 0}" @click="${this.goBack}">
+                    <img src="/img/file-explorer/back.png"/>
+                  </button>
+                  <button type="button" id="upButton" class="style-2" ?disabled="${!parentPath}"
+                          @click="${() => this.navigate(parentPath)}">
+                    <img src="/img/file-explorer/up.png"/>
+                  </button>
+                </form>
+                <div class="shortcuts">
+                  <button type="button" class="style-2"
+                          @click="${() => this.navigate('C:\\Users\\Chad\\My Documents')}">
+                    <img src="/img/file-explorer.ico"/>
+                    <span>My Documents</span>
+                  </button>
+                  <button type="button" class="style-2"
+                          @click="${() => this.navigate('C:\\Users\\Chad\\My Pictures')}">
+                    <img src="/img/my-pictures.ico"/>
+                    <span>My Pictures</span>
+                  </button>
+                  <button type="button" class="style-2"
+                          @click="${() => this.navigate('C:\\Users\\Chad\\My Music')}">
+                    <img src="/img/my-music.ico"/>
+                    <span>My Music</span>
+                  </button>
+                </div>
                 <div class="file-explorer-container">
                   <div id="fileExplorer">
+                    ${folderNode.folderLinks.map(this.buildIcon.bind(this))}
                     ${files.map(this.buildIcon.bind(this))}
                   </div>
                 </div>
                 <div class="controls">
                   <span>File name:</span>
-                  <input type="text" value="${this.selectedFile ? getFileName(this.selectedFile) : ''}" readonly/>
+                  <input type="text"
+                         value="${this.selectedFileLinkNode ? getLinkName(this.selectedFileLinkNode) : ''}"
+                         readonly/>
                   <button type="button"
-                          @click="${() => this.handleFilePick(this.selectedFile)}">
+                          @click="${() => this.handleFilePick(this.selectedFileLinkNode)}">
                     Open
                   </button>
                   <span>Files of type:</span>

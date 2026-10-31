@@ -1,14 +1,8 @@
 {
-  "displayRoot": "C:\\Users\\Chad\\My Documents\\",
-  "parent": "/data/home.json",
   "paths": [
     {
       "path": "/fs/md/helloworld.md",
       "timestamp": 1790366784147
-    },
-    {
-      "path": "/fs/plaintext/eula.txt",
-      "timestamp": 1790362584147
     },
     {
       "path": "/fs/plaintext/Welcome to my zone.txt",

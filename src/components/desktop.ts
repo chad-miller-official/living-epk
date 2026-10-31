@@ -3,6 +3,7 @@ import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
 import {DisallowFlags, type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
+import {EpkApp} from "./app.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
@@ -23,7 +24,7 @@ export class EpkDesktop extends LitElement {
       align-items: center;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 8px;
     }
   `
 
@@ -89,7 +90,16 @@ export class EpkDesktop extends LitElement {
   }
 
   handleCloseWindow(event: Event) {
-    const appName = (event.target as EpkWindow).app[0].constructor.name
+    let appName: string
+
+    if (event.target instanceof EpkWindow) {
+      appName = (event.target as EpkWindow).app[0].constructor.name
+    } else if (event.target instanceof EpkApp) {
+      appName = (event.target as EpkApp).constructor.name
+    } else {
+      return
+    }
+
     const instanceCount = this.appInstanceCount.get(appName)!
     this.appInstanceCount.set(appName, instanceCount - 1)
   }
@@ -109,17 +119,16 @@ export class EpkDesktop extends LitElement {
         this.append(app)
       } else {
         const epkWindow = new EpkWindow()
-        const appLastPosition = EpkWindow.lastAppPositions.get(appName)
+
+        const appLastPosition = app.doNotTrackLastPosition ? {
+          x: null,
+          y: null,
+          height: null,
+          width: null,
+        } : EpkWindow.lastAppPositions.get(appName)
 
         epkWindow.slot = 'windows'
-        epkWindow.x = appLastPosition?.x || launchData.x || 0
-        epkWindow.y = appLastPosition?.y || launchData.y || 0
         epkWindow.title = app.windowTitle
-
-        if (instanceCount > 0) {
-          epkWindow.x += 16
-          epkWindow.y += 16
-        }
 
         if (app.windowIcon) {
           epkWindow.thumbnail = app.windowIcon
@@ -143,6 +152,18 @@ export class EpkDesktop extends LitElement {
         epkWindow.minHeight = minHeight
         epkWindow.width = widthToUse
         epkWindow.height = heightToUse
+
+        const position = launchData.position
+
+        if (position !== 'center') {
+          epkWindow.x = appLastPosition?.x || (position[0] as number) || 0
+          epkWindow.y = appLastPosition?.y || (position[1] as number) || 0
+
+          if (instanceCount > 0) {
+            epkWindow.x += 16
+            epkWindow.y += 16
+          }
+        }
 
         epkWindow.append(app)
         this.append(epkWindow)

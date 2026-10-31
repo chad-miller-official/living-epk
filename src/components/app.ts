@@ -50,6 +50,10 @@ export abstract class EpkApp extends LitElement {
         margin: 0 auto;
         width: calc(100% - 6px);
       }
+      
+      .status-bar-field {
+        user-select: none;
+      }
 
       .status-bar-field.spacer {
         width: 40%;
@@ -63,13 +67,15 @@ export abstract class EpkApp extends LitElement {
   abstract windowTitle: string
   abstract windowIcon: string | null
 
+  doNotTrackLastPosition = false
+
   handleClick(event: Event) {
     if (event.target !== this.toolbar) {
       this.toolbar?.closeAll()
     }
   }
 
-  getMinimumDimensions() {
-    return [256, 256]
+  getMinimumDimensions(): [number | null, number | null] {
+    return [null, null]
   }
 }
