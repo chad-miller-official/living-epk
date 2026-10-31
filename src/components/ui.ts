@@ -10,6 +10,7 @@ export const buttonStyle2 = css`
     background: transparent;
     border: 1px solid transparent;
     display: flex;
+    gap: 8px;
     justify-content: center;
     min-height: 0;
     min-width: 0;
@@ -51,6 +52,13 @@ export const buttonStyle2 = css`
     * {
       user-select: none;
     }
+  }
+  
+  div.divider {
+    background-color: #ccc8b6;
+    height: 85%;
+    margin: 2px;
+    width: 1px;
   }
 `
 

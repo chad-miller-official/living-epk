@@ -16,13 +16,6 @@ const buttonStyle = css`
     gap: 5px;
     margin: 8px 8px;
   }
-
-  .divider {
-    background-color: #ccc8b6;
-    height: 85%;
-    margin: 2px;
-    width: 1px;
-  }
 `
 
 @customElement('image-gallery')

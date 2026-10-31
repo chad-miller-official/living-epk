@@ -8,16 +8,14 @@ import {
   getLinkName,
   getParentFolder,
   type LinkNode,
-  linkNodeToIcon,
-  loadFolderNode
+  linkNodeToIcon
 } from "../../lib/fs.ts";
 import {Task} from "@lit/task";
-import {EpkApp} from "../app.ts";
 import {styleMap} from "lit/directives/style-map.js";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
-import {buttonStyle2} from "../ui.ts";
 import {alertDialog} from "../../lib/os.ts";
+import {BaseFileViewer} from "./file-viewer.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -25,27 +23,16 @@ enum SortColumn {
 }
 
 @customElement('file-explorer')
-export class FileExplorer extends EpkApp {
+export class FileExplorer extends BaseFileViewer {
   static styles = [
-    ...EpkApp.styles,
-    buttonStyle2,
+    ...BaseFileViewer.styles,
     css`
-      #backButton, #forwardButton, #treeView {
-        align-items: center;
-        display: flex;
-        gap: 8px;
-        margin: 2px 4px;
-      }
-
       #closeButton {
         height: 18px;
         width: 18px;
       }
 
       #goButton {
-        display: flex;
-        gap: 4px;
-        height: 100%;
         padding: 0 8px 0 4px;
       }
 
@@ -60,16 +47,26 @@ export class FileExplorer extends EpkApp {
         }
       }
 
-      #pathInput {
-        flex-grow: 1;
-      }
-
       .address {
         opacity: 0.5;
         padding: 0 4px;
       }
 
-      .file-explorer {
+      .explorer {
+        background-color: #ffffff;
+        display: flex;
+        height: 100%;
+      }
+
+      .explorer-divider {
+        background-color: #eee9d5;
+        cursor: col-resize;
+        min-width: 5px;
+        max-width: 5px;
+        width: 5px;
+      }
+
+      .file-list {
         display: flex;
         flex-direction: column;
         flex-grow: 1;
@@ -94,13 +91,6 @@ export class FileExplorer extends EpkApp {
         button {
           padding: 9px 7px;
           margin: 1px;
-        }
-
-        .divider {
-          background-color: #ccc8b6;
-          height: 85%;
-          margin: 2px;
-          width: 1px;
         }
       }
 
@@ -139,22 +129,12 @@ export class FileExplorer extends EpkApp {
         }
       }
 
-      .primary-content {
-        display: flex;
-        height: 100%;
-      }
-
-      .primary-divider {
-        background-color: #eee9d5;
-        cursor: col-resize;
-        min-width: 5px;
-        max-width: 5px;
-        width: 5px;
+      .selected-sort {
+        background-color: #f7f7f7;
       }
 
       .viewport {
         -webkit-font-smoothing: none;
-        background-color: #ffffff;
         display: flex;
         flex-direction: column;
         font-family: "Pixelated MS Sans Serif", Arial;
@@ -169,11 +149,8 @@ export class FileExplorer extends EpkApp {
       }
 
       td, th {
+        padding: 0 4px;
         white-space: nowrap;
-
-        &:not(.divider) {
-          padding: 0 4px;
-        }
       }
 
       th {
@@ -231,41 +208,26 @@ export class FileExplorer extends EpkApp {
 
   static fileTreeWidth = 160
 
-  @property({type: String})
-  windowTitle = 'File Explorer'
-
-  @property({type: String})
-  windowIcon = '/img/file-explorer-small.ico'
-
-  @property({type: String})
-  folderNodeJsonPath!: string
-
-  @queryAll('.epk-icon')
-  icons!: EpkIcon[]
-
   @queryAll('th')
   headers!: HTMLTableCellElement[]
 
   @query('#fileTree')
   fileTree!: HTMLDivElement
 
-  @query('#pathInput')
-  pathInput!: HTMLInputElement
+  @property({type: String})
+  windowTitle = 'File Explorer'
 
-  @state()
-  folderNode: FolderNode = {path: '', folderLinks: [], fileLinks: []}
-
-  @state()
-  sortColumn = SortColumn.Filename
+  @property({type: String})
+  windowIcon = '/img/file-explorer-small.ico'
 
   @state()
   sortAsc = true
 
   @state()
-  showFileTree = true
+  sortColumn = SortColumn.Filename
 
-  private pathStack: string[] = []
-  private pathStackIdx = 0
+  @state()
+  showFileTree = true
 
   private treeOpenPaths: { [path: string]: boolean } = {}
 
@@ -297,11 +259,12 @@ export class FileExplorer extends EpkApp {
   ]
 
   private treeLoaderTask = new Task(this, {
-    task: async ([src], {signal}) => {
-      const treeResponse = await fetch(src, {signal})
+    task: async ([src]) => {
+      const treeResponse = await fetch(src)
 
       if (!treeResponse.ok) {
-        alert('Failed to load file tree')
+        alertDialog(this, 'Error', 'Failed to load file system tree.')
+        return {}
       }
 
       return treeResponse.json()
@@ -311,10 +274,10 @@ export class FileExplorer extends EpkApp {
 
   private iconLoaderTask = new Task(this, {
     task: async ([tree, src]) => {
-      try {
-        this.folderNode = await loadFolderNode(src)
-      } catch (ex: unknown) {
-        alertDialog(this, 'Address Bar', `Windows cannot find '${src}'. Check the spelling and try again.`)
+      const icons = await this.loadIcons(src)
+
+      if (icons) {
+        this.folderNode = icons
       }
 
       return [tree, this.folderNode]
@@ -322,7 +285,7 @@ export class FileExplorer extends EpkApp {
     args: () => [this.treeLoaderTask.value, this.folderNodeJsonPath]
   })
 
-  private buildIcon(path: LinkNode) {
+  private buildIcon(path: LinkNode): EpkIcon {
     const icon = linkNodeToIcon(path)
 
     if (icon instanceof GalleryIcon) {
@@ -335,27 +298,6 @@ export class FileExplorer extends EpkApp {
     return icon
   }
 
-  private navigate(newPath: string) {
-    if (this.folderNodeJsonPath.replace(/\\$/, '') === newPath.replace(/\\$/, '')) {
-      return
-    }
-
-    this.folderNodeJsonPath = newPath
-    this.pathStackIdx++
-
-    if (newPath !== this.pathStack[this.pathStackIdx]) {
-      this.pathStack.length = this.pathStackIdx
-      this.pathStack.push(newPath)
-    }
-  }
-
-  private goBack() {
-    if (this.pathStackIdx > 0) {
-      this.pathStackIdx--
-      this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
-    }
-  }
-
   private goForward() {
     if (this.pathStackIdx < this.pathStack.length - 1) {
       this.pathStackIdx++
@@ -363,20 +305,14 @@ export class FileExplorer extends EpkApp {
     }
   }
 
-  connectedCallback() {
-    super.connectedCallback()
-    this.pathStack.push(this.folderNodeJsonPath)
-  }
-
   handleClick(event: Event) {
     super.handleClick(event)
-    const target = event.target as HTMLElement
-
-    Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
     const selectedTreeItem = this.shadowRoot?.querySelector('.tree-item.selected')
 
     if (selectedTreeItem) {
-      if (selectedTreeItem === target || selectedTreeItem.contains(target)) {
+      const target = event.target as HTMLElement
+
+      if (selectedTreeItem === event.target || selectedTreeItem.contains(target)) {
         selectedTreeItem.classList.remove('unfocused')
       } else {
         if (target.classList.contains('tree-item')) {
@@ -455,13 +391,10 @@ export class FileExplorer extends EpkApp {
 
   handleDividerDrag(mouseDownEvent: MouseEvent) {
     const divider = mouseDownEvent.target as HTMLElement
-    let precedingHeader: HTMLTableCellElement
 
-    if (divider.tagName === 'div') {
-      precedingHeader = divider.parentElement!.previousElementSibling as HTMLTableCellElement
-    } else {
-      precedingHeader = divider.previousElementSibling as HTMLTableCellElement
-    }
+    const precedingHeader = (divider.tagName.toLowerCase() === 'div'
+      ? divider.parentElement!.previousElementSibling
+      : divider.previousElementSibling) as HTMLTableCellElement
 
     if (!precedingHeader) {
       return
@@ -476,11 +409,6 @@ export class FileExplorer extends EpkApp {
       // Subtract 15 to account for padding within the <th> element
       precedingHeader.style.width = `${startWidth + deltaX - 15}px`
     })
-  }
-
-  handlePathInputSubmit(event: SubmitEvent) {
-    event.preventDefault()
-    this.navigate(this.pathInput.value)
   }
 
   buildFileTree(tree: any, currentPath: string): TemplateResult<1> | TemplateResult<1>[] {
@@ -535,7 +463,7 @@ export class FileExplorer extends EpkApp {
                   @click="${() => this.navigate(nextPath)}">
                 <div>
                   <img src="/img/file-explorer/${icon}.ico"/>
-                  <span>${folder}</span>
+                  <span>${folder === 'C:' ? 'Local Disk (C:)' : folder}</span>
                 </div>
               </summary>
               <ul>
@@ -554,9 +482,7 @@ export class FileExplorer extends EpkApp {
           <div class="content"></div>
         </div>`,
       complete: ([tree, folderNode]: readonly [any, FolderNode]) => {
-        const colStyle = {backgroundColor: '#f7f7f7'}
         const parentPath = getParentFolder(folderNode)
-
         const fileTreeStyle: any = {width: `${FileExplorer.fileTreeWidth}px`}
         const primaryDividerStyle: any = {}
 
@@ -602,7 +528,7 @@ export class FileExplorer extends EpkApp {
                     <span>Go</span>
                   </button>
                 </form>
-                <div class="primary-content">
+                <div class="explorer">
                   <div id="fileTree" style="${styleMap(fileTreeStyle)}">
                     <div class="file-tree-header">
                       Folders
@@ -615,16 +541,16 @@ export class FileExplorer extends EpkApp {
                       ${this.buildFileTree(tree, '')}
                     </ul>
                   </div>
-                  <div class="primary-divider" style="${styleMap(primaryDividerStyle)}"
+                  <div class="explorer-divider" style="${styleMap(primaryDividerStyle)}"
                        @mousedown="${this.handlePrimaryDividerDrag}"></div>
-                  <div class="file-explorer">
+                  <div class="file-list">
                     <table>
                       <colgroup>
                         <col
-                            style="${this.sortColumn === SortColumn.Filename ? styleMap(colStyle) : ''}"/>
+                            class="${this.sortColumn === SortColumn.Filename ? 'selected-sort' : ''}"/>
                         <col/>
                         <col
-                            style="${this.sortColumn === SortColumn.Modified ? styleMap(colStyle) : ''}"/>
+                            class="${this.sortColumn === SortColumn.Modified ? 'selected-sort' : ''}"/>
                       </colgroup>
                       <thead>
                       <tr>
