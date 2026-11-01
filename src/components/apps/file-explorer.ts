@@ -1,14 +1,13 @@
 import {type EpkIcon, IconViewMode} from "../icon.ts";
 import {customElement, property, query, queryAll, state} from "lit/decorators.js";
-import type {ToolbarMenu} from "../../lib/toolbar.ts";
 import {css, html, type TemplateResult} from "lit";
 import {
   type FolderNode,
   getFormattedTimestamp,
   getLinkName,
-  getParentFolder,
   type LinkNode,
-  linkNodeToIcon
+  linkNodeToIcon,
+  LinkNodeType
 } from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {styleMap} from "lit/directives/style-map.js";
@@ -16,6 +15,9 @@ import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
 import {alertDialog} from "../../lib/os.ts";
 import {BaseFileViewer} from "./file-viewer.ts";
+import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
+import {AppAbout} from "./about.ts";
+import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -94,6 +96,10 @@ export class FileExplorer extends BaseFileViewer {
         }
       }
 
+      .hidden {
+        display: none;
+      }
+
       .tree-item {
         list-style-type: none;
         width: fit-content;
@@ -147,9 +153,14 @@ export class FileExplorer extends BaseFileViewer {
         border-collapse: collapse;
         table-layout: fixed;
       }
+      
+      td > div.spacer {
+        height: 1px;
+        width: 20ch;
+      }
 
       td, th {
-        padding: 0 4px;
+        padding: 0 2px;
         white-space: nowrap;
       }
 
@@ -187,15 +198,16 @@ export class FileExplorer extends BaseFileViewer {
         &.sort {
           &::after {
             color: #aca797;
+            margin-left: 1ch;
             white-space: pre;
           }
 
           &.asc::after {
-            content: "    \\25BC";
+            content: "\\25BC";
           }
 
           &.desc::after {
-            content: "    \\25B2";
+            content: "\\25B2";
           }
         }
       }
@@ -229,32 +241,142 @@ export class FileExplorer extends BaseFileViewer {
   @state()
   showFileTree = true
 
+  @state()
+  showStandardButtons = true
+
+  @state()
+  showAddressBar = true
+
+  @state()
+  showStatusBar = true
+
   private treeOpenPaths: { [path: string]: boolean } = {}
+  private selectedIcon: EpkIcon | null = null
 
   private toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
-      items: [],
-    },
-    {
-      text: 'Edit',
-      items: [],
+      items: [
+        {
+          text: 'Open',
+          bold: () => this.selectedIcon !== null,
+          disabled: () => !this.selectedIcon,
+          action: () => {
+            const linkNode = this.selectedIcon!.fileLinkNode!
+
+            if (linkNode.type === LinkNodeType.File) {
+              this.selectedIcon!.handleDblClick()
+            } else {
+              this.navigate(linkNode.path)
+            }
+          }
+        },
+        {
+          text: 'Explore',
+          disabled: () => this.selectedIcon?.fileLinkNode?.type !== LinkNodeType.Folder,
+          action: () => {
+            const fileExplorer = new FileExplorer()
+            fileExplorer.folderNodeJsonPath = this.selectedIcon!.fileLinkNode!.path
+            this.dispatchEvent(launchEvent(() => new Promise<FileExplorer>(resolve => resolve(fileExplorer))))
+          }
+        },
+        ToolbarUiElement.DIVIDER,
+        {text: 'Delete', disabled: true},
+        {text: 'Rename', disabled: true},
+        ToolbarUiElement.DIVIDER,
+        {text: 'Close', action: () => this.dispatchEvent(closeWindowEvent())},
+      ],
     },
     {
       text: 'View',
-      items: [],
-    },
-    {
-      text: 'Favorites',
-      items: [],
-    },
-    {
-      text: 'Tools',
-      items: [],
+      items: [
+        {
+          text: 'Toolbars',
+          items: [
+            {
+              text: 'Standard Buttons',
+              selected: () => this.showStandardButtons,
+              action: () => this.showStandardButtons = !this.showStandardButtons,
+            },
+            {
+              text: 'Address Bar',
+              selected: () => this.showAddressBar,
+              action: () => this.showAddressBar = !this.showAddressBar,
+            },
+          ],
+        },
+        {
+          text: 'Status Bar',
+          selected: () => this.showStatusBar,
+          action: () => this.showStatusBar = !this.showStatusBar,
+        },
+        ToolbarUiElement.DIVIDER,
+        {
+          text: 'Arrange Icons by',
+          selectedStyle: ToolbarSelectionStyle.RADIO,
+          items: [
+            {
+              text: 'Name',
+              selected: () => this.sortColumn === SortColumn.Filename,
+              action: () => this.sortFiles({target: this.shadowRoot!.querySelector('th[data-column=filename]')!})
+            },
+            {
+              text: 'Modified',
+              selected: () => this.sortColumn === SortColumn.Modified,
+              action: () => this.sortFiles({target: this.shadowRoot!.querySelector('th[data-column=modified]')!})
+            }
+          ],
+        },
+        ToolbarUiElement.DIVIDER,
+        {
+          text: 'Go To',
+          items: [
+            {
+              text: 'Back',
+              disabled: () => !this.canGoBack(),
+              action: () => this.goBack(),
+              shortcut: 'Alt+Left Arrow',
+            },
+            {
+              text: 'Forward',
+              disabled: () => !this.canGoForward(),
+              action: () => this.goForward(),
+              shortcut: 'Alt+Right Arrow',
+            },
+            {
+              text: 'Up One Level',
+              disabled: () => !this.canGoUp(),
+              action: () => this.goUp(),
+            },
+          ]
+        },
+        {
+          text: 'Refresh',
+          action: () => this.requestUpdate(),
+        }
+      ],
     },
     {
       text: 'Help',
-      items: [],
+      items: [
+        {
+          text: 'About Windows',
+          action: (event: Event) => {
+            event.stopPropagation()
+            this.toolbar!.closeAll()
+
+            const about = new AppAbout()
+            about.appName = 'Microsoft &reg; Windows'
+            about.windowTitle = 'About Windows'
+
+            this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
+              width: 419,
+              height: 350,
+              disallowFlags: DisallowFlags.DisallowAll,
+            }))
+          },
+        },
+      ],
     }
   ]
 
@@ -295,6 +417,12 @@ export class FileExplorer extends BaseFileViewer {
     }
 
     icon.viewMode = IconViewMode.ListView
+
+    icon.onclick = () => {
+      this.selectedIcon = icon
+      this.toolbar?.requestUpdate()
+    }
+
     return icon
   }
 
@@ -307,6 +435,16 @@ export class FileExplorer extends BaseFileViewer {
 
   handleClick(event: Event) {
     super.handleClick(event)
+
+    if (!Array.from(this.icons).some(icon => icon.selected)) {
+      const wasNull = this.selectedIcon !== null
+      this.selectedIcon = null
+
+      if (wasNull) {
+        this.toolbar?.requestUpdate()
+      }
+    }
+
     const selectedTreeItem = this.shadowRoot?.querySelector('.tree-item.selected')
 
     if (selectedTreeItem) {
@@ -324,7 +462,7 @@ export class FileExplorer extends BaseFileViewer {
     }
   }
 
-  sortFiles(event: Event) {
+  sortFiles(event: { target: EventTarget | HTMLTableCellElement }) {
     const target = event.target as HTMLTableCellElement
 
     if (target.classList.contains('sort')) {
@@ -475,6 +613,10 @@ export class FileExplorer extends BaseFileViewer {
     }).flat()
   }
 
+  canGoForward() {
+    return this.pathStackIdx !== this.pathStack.length - 1
+  }
+
   render() {
     return this.iconLoaderTask.render({
       pending: () => html`
@@ -482,7 +624,6 @@ export class FileExplorer extends BaseFileViewer {
           <div class="content"></div>
         </div>`,
       complete: ([tree, folderNode]: readonly [any, FolderNode]) => {
-        const parentPath = getParentFolder(folderNode)
         const fileTreeStyle: any = {width: `${FileExplorer.fileTreeWidth}px`}
         const primaryDividerStyle: any = {}
 
@@ -496,20 +637,18 @@ export class FileExplorer extends BaseFileViewer {
             <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
             <section class="content">
               <div class="viewport">
-                <div class="navigation">
+                <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">
                   <button type="button" id="backButton" class="style-2"
-                          ?disabled="${this.pathStackIdx === 0}" @click="${this.goBack}">
+                          ?disabled="${!this.canGoBack()}" @click="${this.goBack}">
                     <img src="/img/file-explorer/back.png"/>
                     <span>Back</span>
                   </button>
                   <button type="button" id="forwardButton" class="style-2"
-                          ?disabled="${this.pathStackIdx === this.pathStack.length - 1}"
-                          @click="${this.goForward}">
+                          ?disabled="${!this.canGoForward()}" @click="${this.goForward}">
                     <img src="/img/file-explorer/forward.png"/>
                   </button>
-                  <button type="button" id="upButton" class="style-2"
-                          ?disabled="${!parentPath}"
-                          @click="${() => this.navigate(parentPath)}">
+                  <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"
+                          @click="${this.goUp}">
                     <img src="/img/file-explorer/up.png"/>
                   </button>
                   <div class="divider"></div>
@@ -520,7 +659,8 @@ export class FileExplorer extends BaseFileViewer {
                     <span>Folders</span>
                   </button>
                 </div>
-                <form class="navigation" @submit="${this.handlePathInputSubmit}">
+                <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
+                      @submit="${this.handlePathInputSubmit}">
                   <span class="address">Address</span>
                   <input type="text" value="${folderNode.path}" id="pathInput"/>
                   <button type="submit" id="goButton" class="style-2">
@@ -562,7 +702,7 @@ export class FileExplorer extends BaseFileViewer {
                           <div></div>
                         </th>
                         <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
-                          Last Modified
+                          Date Modified
                         </th>
                       </tr>
                       </thead>
@@ -571,15 +711,16 @@ export class FileExplorer extends BaseFileViewer {
                         <tr>
                           <td>${this.buildIcon(linkNode)}</td>
                           <td class="divider"></td>
-                          <td></td>
+                          <td>
+                            <div class="spacer"></div>
+                          </td>
                         </tr>
                       `)}
                       ${folderNode.fileLinks.map(linkNode => html`
                         <tr>
                           <td>${this.buildIcon(linkNode)}</td>
                           <td class="divider"></td>
-                          <td>${getFormattedTimestamp(linkNode)}
-                          </td>
+                          <td>${getFormattedTimestamp(linkNode)}</td>
                         </tr>
                       `)}
                       </tbody>
@@ -588,7 +729,7 @@ export class FileExplorer extends BaseFileViewer {
                 </div>
               </div>
             </section>
-            <div class="status-bar">
+            <div class="status-bar ${this.showStatusBar ? '' : 'hidden'}">
               <p class="status-bar-field">
                 ${folderNode.folderLinks.length + folderNode.fileLinks.length} item(s)
               </p>

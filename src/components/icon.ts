@@ -110,8 +110,12 @@ export abstract class EpkIcon extends LitElement {
     return {}
   }
 
-  handleClick() {
+  handleClick(event: PointerEvent) {
     this.selected = true
+
+    if (this.onclick) {
+      this.onclick(event)
+    }
   }
 
   handleDblClick() {

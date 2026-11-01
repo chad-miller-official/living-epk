@@ -1,6 +1,5 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html, nothing} from "lit";
-import {type ToolbarMenu, ToolbarUiElement} from "../../lib/toolbar.ts";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import dayjs from "dayjs";
@@ -8,6 +7,7 @@ import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts"
 import {AppAbout} from "./about.ts";
 import {FilePicker} from "./file-picker.ts";
 import type {LinkNode} from "../../lib/fs.ts";
+import {type ToolbarMenu, ToolbarUiElement} from "../ui.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
@@ -79,10 +79,10 @@ export class Notepad extends EpkApp {
           },
         },
         {
-          text: 'Save', shortcut: 'Ctrl+S',
+          text: 'Save', shortcut: 'Ctrl+S', disabled: true,
         },
         {
-          text: 'Save As...', shortcut: 'Ctrl+Shift+S',
+          text: 'Save As...', shortcut: 'Ctrl+Shift+S', disabled: true,
         },
         ToolbarUiElement.DIVIDER,
         {

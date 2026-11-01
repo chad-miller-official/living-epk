@@ -1,7 +1,7 @@
 import {EpkApp} from "../app.ts";
 import {buttonStyle2} from "../ui.ts";
 import {property, query, queryAll, state} from "lit/decorators.js";
-import {type FolderNode, loadFolderNode} from "../../lib/fs.ts";
+import {type FolderNode, getParentFolder, loadFolderNode} from "../../lib/fs.ts";
 import {alertDialog} from "../../lib/os.ts";
 import type {EpkIcon} from "../icon.ts";
 import {css} from "lit";
@@ -69,11 +69,23 @@ export abstract class BaseFileViewer extends EpkApp {
     }
   }
 
+  canGoBack() {
+    return this.pathStackIdx !== 0
+  }
+
+  canGoUp() {
+    return getParentFolder(this.folderNode) !== ''
+  }
+
   goBack() {
     if (this.pathStackIdx > 0) {
       this.pathStackIdx--
       this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
     }
+  }
+
+  goUp() {
+    this.navigate(getParentFolder(this.folderNode))
   }
 
   handlePathInputSubmit(event: SubmitEvent) {

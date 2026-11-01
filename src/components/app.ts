@@ -35,6 +35,10 @@ export abstract class EpkApp extends LitElement {
         src: local('Verdana'), url('/font/Verdana-Bold.ttf') format('ttf');
       }
       
+      #toolbar {
+        z-index: 10000;
+      }
+      
       .app {
         display: flex;
         flex-direction: column;

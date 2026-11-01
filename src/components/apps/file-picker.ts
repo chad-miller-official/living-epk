@@ -4,7 +4,6 @@ import {Task} from "@lit/task";
 import {
   type FolderNode,
   getLinkName,
-  getParentFolder,
   type LinkNode,
   linkNodeToIcon,
   LinkNodeType
@@ -216,8 +215,6 @@ export class FilePicker extends BaseFileViewer {
           files = files.filter(path => this.filterRegex!.test(path.path))
         }
 
-        const parentPath = getParentFolder(folderNode)
-
         return html`
           <div class="app" @click="${this.handleClick}">
             <div class="content">
@@ -231,11 +228,11 @@ export class FilePicker extends BaseFileViewer {
                   </button>
                   <div class="divider"></div>
                   <button type="button" id="backButton" class="style-2"
-                          ?disabled="${this.pathStackIdx === 0}" @click="${this.goBack}">
+                          ?disabled="${!this.canGoBack()}" @click="${this.goBack}">
                     <img src="/img/file-explorer/back.png"/>
                   </button>
-                  <button type="button" id="upButton" class="style-2" ?disabled="${!parentPath}"
-                          @click="${() => this.navigate(parentPath)}">
+                  <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"
+                          @click="${this.goUp}">
                     <img src="/img/file-explorer/up.png"/>
                   </button>
                 </form>

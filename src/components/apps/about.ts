@@ -48,17 +48,22 @@ export class AppAbout extends EpkApp {
 
         p {
           margin: 0 0 6px 0;
+
+          &.eula-user {
+            margin: 10px 0 18px 14px;
+          }
         }
+      }
+      
+      .app-icon {
+        height: 48px;
+        width: 48px;
       }
 
       .eula {
         color: #082ea2;
         cursor: pointer;
         text-decoration: underline;
-      }
-
-      .eula-user {
-        margin: 10px 0 18px 14px;
       }
 
       .memory {
@@ -76,7 +81,7 @@ export class AppAbout extends EpkApp {
   ]
 
   @property({type: String})
-  appIcon!: string
+  appIcon?: string
 
   @property({type: String})
   appName!: string
@@ -104,7 +109,8 @@ export class AppAbout extends EpkApp {
           <div class="about">
             <img src="/img/banner.png" width="413" alt="Banner"/>
             <div class="about-wrapper">
-              <img src="${this.appIcon}" alt="${this.appName}"/>
+              ${this.appIcon ? html`<img src="${this.appIcon}" alt="${this.appName}"/>` : html`
+                <div class="app-icon"></div>`}
               <div class="about-text">
                 <div class="upper">
                   <div>

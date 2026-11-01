@@ -1,7 +1,6 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {EpkApp} from "../app.ts";
-import {type ToolbarMenu, ToolbarUiElement} from "../../lib/toolbar.ts";
 import {
   closeWindowEvent,
   DisallowFlags,
@@ -15,6 +14,7 @@ import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {FilePicker} from "./file-picker.ts";
 import {AppAbout} from "./about.ts";
 import {getFileExtension, getLinkName, type LinkNode} from "../../lib/fs.ts";
+import {type ToolbarMenu, ToolbarUiElement} from "../ui.ts";
 
 @customElement('audio-player')
 export class AudioPlayer extends EpkApp {

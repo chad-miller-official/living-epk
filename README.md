@@ -141,7 +141,6 @@ windowIcon = '/img/my-app.ico'
 2. Begin with a `div` with `app` as its class.
 
 ```html
-
 <div class="app">
 </div>
 ```
@@ -157,24 +156,19 @@ Example 1:
 ```typescript
 const toolbarSpec: ToolbarSpec[] = [
   {
-    ... // see: lib/toolbar.ts for type definitions
+    ... // see: components/ui.ts for type definitions
   }
 ]
 
-...
+// ...
 
-handleClick(event
-:
-Event
-)
-{
+handleClick(event: Event) {
   super.handleClick(event)
   // Additional click-handling logic
 }
 ```
 
 ```html
-
 <div class="app" @click="${this.handleClick}">
   <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
 </div>
@@ -183,7 +177,6 @@ Event
 4. Define the content. Give it `content` as its class.
 
 ```html
-
 <div class="app">
   <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
   <div class="content">
@@ -196,7 +189,6 @@ Event
    bar [as specified in the docs for XP.css](https://botoxparty.github.io/XP.css/#status-bar).
 
 ```html
-
 <div class="app">
   <epk-toolbar class="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
   <div class="content">
