@@ -14,7 +14,6 @@ export class UnknownIcon extends EpkIcon {
       const alert = new EpkAlert()
       alert.windowTitle = 'Windows'
       alert.message = `Windows cannot open this file: '${getLinkName(this.fileLinkNode!)}'`
-      alert.playSound = false
       alert.alertGraphic = '/img/search-file.ico'
       return resolve(alert)
     })

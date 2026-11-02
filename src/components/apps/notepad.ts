@@ -6,8 +6,8 @@ import dayjs from "dayjs";
 import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
 import {AppAbout} from "./about.ts";
 import {FilePicker} from "./file-picker.ts";
-import type {LinkNode} from "../../lib/fs.ts";
-import {type ToolbarMenu, ToolbarUiElement} from "../ui.ts";
+import {type LinkNode} from "../../lib/fs.ts";
+import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
@@ -50,6 +50,9 @@ export class Notepad extends EpkApp {
       items: [
         {
           text: 'New', shortcut: 'Ctrl+N', action: () => {
+            const notepad = new Notepad()
+            notepad.windowTitle = 'Notepad - Untitled'
+            this.dispatchEvent(launchEvent(() => new Promise<Notepad>(resolve => resolve(notepad))))
           },
         },
         {

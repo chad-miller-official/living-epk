@@ -1,5 +1,5 @@
 import {MusicIcon} from "../components/icons/music-icon.ts";
-import {MarkdownIcon} from "../components/icons/markdown-icon.ts";
+import {DocumentReaderIcon} from "../components/icons/document-reader-icon.ts";
 import {GalleryIcon} from "../components/icons/gallery-icon.ts";
 import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
 import {EpkIcon} from "../components/icon.ts";
@@ -184,8 +184,8 @@ export function linkNodeToIcon(linkNode: LinkNode) {
       case 'wav':
         icon = new MusicIcon()
         break
-      case 'md':
-        icon = new MarkdownIcon()
+      case 'html':
+        icon = new DocumentReaderIcon()
         break
       case 'jpg':
         icon = new GalleryIcon()

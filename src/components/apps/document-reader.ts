@@ -2,24 +2,28 @@ import {customElement, property} from "lit/decorators.js";
 import {css, html} from "lit";
 import {Task} from "@lit/task";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
-import {marked} from "marked";
 import {EpkApp} from "../app.ts";
+import {alertDialog} from "../../lib/os.ts";
 
-@customElement('markdown-reader')
-export class MarkdownReader extends EpkApp {
+@customElement('document-reader')
+export class DocumentReader extends EpkApp {
   static styles = [
     ...EpkApp.styles,
     css`
-      .markdown {
+      .container {
+        box-sizing: border-box;
         font-family: 'Tahoma';
-        padding: 8px;
-      }
-      
-      .markdown-container {
-        background-color: #ffffff;
+        font-size: medium;
         height: 100%;
         overflow-y: scroll;
         
+        & > * {
+          background-repeat: repeat;
+          box-sizing: border-box;
+          height: fit-content;
+          min-height: 100%;
+        }
+
         h1, h2, h3, h4, h5, h6 {
           font-size: revert;
         }
@@ -31,7 +35,7 @@ export class MarkdownReader extends EpkApp {
   windowTitle = 'Document Viewer'
 
   @property({type: String})
-  windowIcon = '/img/markdown-reader-small.ico'
+  windowIcon = '/img/document-reader.ico'
 
   @property({type: String})
   srcDocument: string = ''
@@ -41,7 +45,8 @@ export class MarkdownReader extends EpkApp {
       const response = await fetch(src, {signal})
 
       if (!response.ok) {
-        alert('Error') // TODO XXX FIXME
+        alertDialog(this, 'Error', `Failed to load '${src}': ${response.statusText}`)
+        return ''
       }
 
       return await response.text()
@@ -49,22 +54,28 @@ export class MarkdownReader extends EpkApp {
     args: () => [this.srcDocument]
   })
 
+
+
   render() {
     return this.documentTask.render({
       pending: () => html`
-        <div class="app content"></div>`,
+        <div class="app">
+          <div class="content">
+            Loading...
+          </div>
+        </div>`,
       complete: (documentBody) => html`
         <div class="app">
           <div class="content">
-            <div class="markdown-container">
-              <div class="markdown">
-                ${unsafeHTML(marked.parse(documentBody) as string)}
-              </div>
+            <div class="container">
+              ${unsafeHTML(documentBody as string)}
             </div>
           </div>
         </div>`,
       error: () => html`
-        <div class="app content">Error</div>`
+        <div class="app">
+          <div class="content">Error</div>
+        </div>`
     })
   }
 }

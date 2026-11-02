@@ -1,7 +1,7 @@
 import {css, LitElement, unsafeCSS} from "lit"
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import {query} from "lit/decorators.js";
-import {EpkToolbar} from "./ui.ts";
+import {EpkToolbar} from "./ui/toolbar.ts";
 
 export abstract class EpkApp extends LitElement {
   static styles = [

@@ -156,7 +156,7 @@ Example 1:
 ```typescript
 const toolbarSpec: ToolbarSpec[] = [
   {
-    ... // see: components/ui.ts for type definitions
+    ... // see: components/toolbar.ts for type definitions
   }
 ]
 

@@ -6,7 +6,7 @@ import {Task, TaskStatus} from "@lit/task";
 import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
 import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
-import {buttonStyle2} from "../ui.ts";
+import {buttonStyle2} from "../../lib/ui.ts";
 
 const buttonStyle = css`
   .buttons {

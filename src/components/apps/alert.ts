@@ -20,6 +20,7 @@ export class EpkAlert extends EpkApp {
         align-items: center;
         display: flex;
         flex-direction: column;
+        font-family: "Pixelated MS Sans Serif", Arial;
         gap: 16px;
         overflow-wrap: anywhere;
       }
@@ -35,9 +36,6 @@ export class EpkAlert extends EpkApp {
   @property({type: String})
   windowTitle = 'Error'
 
-  @property({type: Boolean})
-  playSound = true
-
   windowIcon = null
   doNotTrackLastPosition = true
 
@@ -46,10 +44,6 @@ export class EpkAlert extends EpkApp {
   }
 
   render() {
-    if (this.playSound) {
-      new Audio('/audio/error.wav').play()
-    }
-
     return html`
       <div class="app">
         <div class="content">

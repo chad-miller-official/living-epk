@@ -1,13 +1,13 @@
 import {EpkIcon} from "../icon.ts";
 import {customElement} from "lit/decorators.js";
-import {MarkdownReader} from "../apps/markdown-reader.ts";
+import {DocumentReader} from "../apps/document-reader.ts";
 import type {LaunchOptions} from "../../lib/events.ts";
 import type {EpkApp} from "../app.ts";
 import {getLinkName} from "../../lib/fs.ts";
 
-@customElement('markdown-icon')
-export class MarkdownIcon extends EpkIcon {
-  icon = '/img/markdown-reader.ico'
+@customElement('document-reader-icon')
+export class DocumentReaderIcon extends EpkIcon {
+  icon = '/img/document.ico'
 
   getLaunchOptions(): LaunchOptions {
     return {
@@ -17,8 +17,8 @@ export class MarkdownIcon extends EpkIcon {
   }
 
   getAppInstance(): Promise<EpkApp> {
-    return new Promise<MarkdownReader>(resolve => {
-      const markdownReader = new MarkdownReader()
+    return new Promise<DocumentReader>(resolve => {
+      const markdownReader = new DocumentReader()
 
       if (this.fileLinkNode) {
         markdownReader.srcDocument = this.fileLinkNode.path

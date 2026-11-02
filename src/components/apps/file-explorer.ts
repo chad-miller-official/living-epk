@@ -17,7 +17,7 @@ import {alertDialog} from "../../lib/os.ts";
 import {BaseFileViewer} from "./file-viewer.ts";
 import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
 import {AppAbout} from "./about.ts";
-import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui.ts";
+import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -153,7 +153,7 @@ export class FileExplorer extends BaseFileViewer {
         border-collapse: collapse;
         table-layout: fixed;
       }
-      
+
       td > div.spacer {
         height: 1px;
         width: 20ch;
@@ -428,8 +428,10 @@ export class FileExplorer extends BaseFileViewer {
 
   private goForward() {
     if (this.pathStackIdx < this.pathStack.length - 1) {
-      this.pathStackIdx++
-      this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
+      this.playClick().then(() => {
+        this.pathStackIdx++
+        this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
+      })
     }
   }
 

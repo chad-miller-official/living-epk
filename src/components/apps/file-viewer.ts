@@ -1,10 +1,10 @@
 import {EpkApp} from "../app.ts";
-import {buttonStyle2} from "../ui.ts";
 import {property, query, queryAll, state} from "lit/decorators.js";
 import {type FolderNode, getParentFolder, loadFolderNode} from "../../lib/fs.ts";
 import {alertDialog} from "../../lib/os.ts";
 import type {EpkIcon} from "../icon.ts";
 import {css} from "lit";
+import {buttonStyle2} from "../../lib/ui.ts";
 
 /*
  * This class contains everything common to file-explorer.ts and file-picker.ts
@@ -60,13 +60,15 @@ export abstract class BaseFileViewer extends EpkApp {
       return
     }
 
-    this.folderNodeJsonPath = newPath
-    this.pathStackIdx++
+    this.playClick().then(() => {
+      this.folderNodeJsonPath = newPath
+      this.pathStackIdx++
 
-    if (newPath !== this.pathStack[this.pathStackIdx]) {
-      this.pathStack.length = this.pathStackIdx
-      this.pathStack.push(newPath)
-    }
+      if (newPath !== this.pathStack[this.pathStackIdx]) {
+        this.pathStack.length = this.pathStackIdx
+        this.pathStack.push(newPath)
+      }
+    })
   }
 
   canGoBack() {
@@ -77,15 +79,25 @@ export abstract class BaseFileViewer extends EpkApp {
     return getParentFolder(this.folderNode) !== ''
   }
 
+  playClick() {
+    return new Audio('/audio/click.wav').play()
+  }
+
   goBack() {
     if (this.pathStackIdx > 0) {
-      this.pathStackIdx--
-      this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
+      this.playClick().then(() => {
+        this.pathStackIdx--
+        this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
+      })
     }
   }
 
   goUp() {
-    this.navigate(getParentFolder(this.folderNode))
+    const parentFolder = getParentFolder(this.folderNode)
+
+    if (parentFolder) {
+      this.navigate(parentFolder)
+    }
   }
 
   handlePathInputSubmit(event: SubmitEvent) {

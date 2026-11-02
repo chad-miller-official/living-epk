@@ -2,11 +2,11 @@ import 'xp.css/dist/XP.css'
 
 import './components/desktop.ts'
 import './components/icon.ts'
-import './components/ui.ts'
+import './components/ui/toolbar.ts'
 import './components/window.ts'
 
 import './components/icons/file-explorer-icon.ts'
-import './components/icons/markdown-icon.ts'
+import './components/icons/document-reader-icon.ts'
 import './components/icons/music-icon.ts'
 import './components/icons/plaintext-icon.ts'
 

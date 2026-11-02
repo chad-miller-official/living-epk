@@ -6,7 +6,8 @@ export function alertDialog(alerter: Element, title: string, message: string) {
     const alert = new EpkAlert()
     alert.windowTitle = title
     alert.message = message
-    resolve(alert)
+
+    new Audio('/audio/error.wav').play().then(() => resolve(alert))
   }), {
     width: Math.min(message.length * 6, 500),
     disallowFlags: DisallowFlags.DisallowAll,

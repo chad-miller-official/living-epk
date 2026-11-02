@@ -24,6 +24,10 @@ export class EpkWindow extends LitElement {
   static styles = [
     unsafeCSS(xpStyle),
     css`
+      .resizing {
+        user-select: none;
+      }
+      
       .title {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -39,6 +43,7 @@ export class EpkWindow extends LitElement {
       }
 
       .title-bar-icon {
+        background-size: contain;
         flex-shrink: 0;
         height: 16px;
         width: 16px;
@@ -162,6 +167,9 @@ export class EpkWindow extends LitElement {
   @state()
   minimized = false
 
+  @state()
+  resizing = false
+
   private interact: Interactable | null = null
 
   /*
@@ -198,13 +206,15 @@ export class EpkWindow extends LitElement {
   }
 
   private resetDimensions(overrideHeight?: string, overrideWidth?: string) {
-    if (overrideHeight || this.height) {
-      this.style.height = overrideHeight || `${this.height}px`
-    }
+    const heightToUse = overrideHeight || `${this.height}px`
+
+    this.style.height = heightToUse
+    this.app[0].style.height = `calc(${heightToUse} - 28px)`
 
     if (overrideWidth || this.width) {
       this.style.width = overrideWidth || `${this.width}px`
     }
+
   }
 
   firstUpdated() {
@@ -245,7 +255,11 @@ export class EpkWindow extends LitElement {
             bottom: !this.noHorizontalResize,
             left: !this.noVerticalResize,
           },
-          listeners: {move: this.handleResize.bind(this)},
+          listeners: {
+            start: () => this.resizing = true,
+            move: this.handleResize.bind(this),
+            end: () => this.resizing = false,
+          },
           modifiers: [
             interact.modifiers.restrictSize({
               min: {
@@ -263,6 +277,8 @@ export class EpkWindow extends LitElement {
     this.updateLastPosition()
 
     this.style.transform = `translate(${this.x}px, ${this.y}px)`
+    this.app[0].style.height = `calc(${this.height}px - 28px)`
+
     EpkWindow.instanceCount++
   }
 
@@ -444,7 +460,7 @@ export class EpkWindow extends LitElement {
             </div>
           </div>
           <div class="${viewportClass}">
-            <slot></slot>
+            <slot class="${this.resizing ? 'resizing' : ''}"></slot>
           </div>
         </div>
       </div>

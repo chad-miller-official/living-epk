@@ -14,7 +14,7 @@ import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {FilePicker} from "./file-picker.ts";
 import {AppAbout} from "./about.ts";
 import {getFileExtension, getLinkName, type LinkNode} from "../../lib/fs.ts";
-import {type ToolbarMenu, ToolbarUiElement} from "../ui.ts";
+import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 
 @customElement('audio-player')
 export class AudioPlayer extends EpkApp {
