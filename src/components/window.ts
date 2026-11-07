@@ -27,7 +27,7 @@ export class EpkWindow extends LitElement {
       .resizing {
         user-select: none;
       }
-      
+
       .title {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -119,6 +119,9 @@ export class EpkWindow extends LitElement {
   @query('.window')
   window!: HTMLElement
 
+  @query('.window-wrapper')
+  windowWrapper!: HTMLElement
+
   @queryAssignedElements({selector: '.epk-app'})
   app!: EpkApp[]
 
@@ -129,22 +132,22 @@ export class EpkWindow extends LitElement {
   thumbnail = ''
 
   @property()
-  x: number | null = null
+  x?: number
 
   @property()
-  y: number | null = null
+  y?: number
 
   @property()
-  width: number | null = null
+  width?: number
 
   @property()
-  height: number | null = null
+  height?: number
 
   @property()
-  minWidth: number | null = null
+  minWidth!: number
 
   @property()
-  minHeight: number | null = null
+  minHeight!: number
 
   @property({type: Boolean})
   noHorizontalResize = false
@@ -170,7 +173,7 @@ export class EpkWindow extends LitElement {
   @state()
   resizing = false
 
-  private interact: Interactable | null = null
+  private interact?: Interactable
 
   /*
    * When closing a Window, two events are triggered:
@@ -221,16 +224,21 @@ export class EpkWindow extends LitElement {
     this.addEventListener('close-window', this.handleCloseWindow)
     this.addEventListener('window-property-change', this.handleWindowPropertyChange)
 
-    const epkWindow = this.shadowRoot?.querySelector('.window-wrapper') as HTMLDivElement
-
-    if (epkWindow) {
+    /*
+     * Problem: we sometimes need to calculate the X and Y coordinates of the window after it's
+     * already been rendered, for example, when centering the window on open. However, directly
+     * setting X and Y inside firstUpdated() causes Lit to emit a warning about touching a prop
+     * mid-update.
+     *
+     * To mitigate this, we declare a ResizeObserver inside firstUpdated(), which itself is (for
+     * all intents and purposes) triggered by firstUpdated(). And then at the end of its first
+     * invocation it disconnects itself.
+     */
+    const loaderObserver = new ResizeObserver(_ => {
       const bodyStyle = window.getComputedStyle(this.window!)
 
       const literalWidth = parseInt(bodyStyle.width.replace(/px$/, ''))
       const literalHeight = parseInt(bodyStyle.height.replace(/px$/, ''))
-
-      const minWidth = this.minWidth || literalWidth
-      const minHeight = this.minHeight || literalHeight
 
       if (!this.x) {
         this.x = Math.floor((window.innerWidth - literalWidth) / 2)
@@ -240,54 +248,55 @@ export class EpkWindow extends LitElement {
         this.y = Math.floor((window.innerHeight - literalHeight) / 2)
       }
 
-      this.interact = interact(epkWindow)
+      this.resetDimensions()
+      this.setActive()
+      this.updateLastPosition()
 
-      this.interact.draggable({
-        allowFrom: '.title-bar',
-        listeners: {move: this.handleDrag.bind(this)},
+      this.style.transform = `translate(${this.x}px, ${this.y}px)`
+      this.app[0].style.height = `calc(${this.height}px - 28px)`
+
+      loaderObserver.disconnect()
+    })
+
+    this.interact = interact(this.windowWrapper)
+
+    this.interact.draggable({
+      allowFrom: '.title-bar',
+      listeners: {move: this.handleDrag.bind(this)},
+    })
+
+    if (!(this.noHorizontalResize && this.noVerticalResize)) {
+      this.interact.resizable({
+        edges: {
+          top: false,
+          right: !this.noVerticalResize,
+          bottom: !this.noHorizontalResize,
+          left: !this.noVerticalResize,
+        },
+        listeners: {
+          start: () => this.resizing = true,
+          move: this.handleResize.bind(this),
+          end: () => this.resizing = false,
+        },
+        modifiers: [
+          interact.modifiers.restrictSize({
+            min: {
+              width: this.minWidth,
+              height: this.minHeight,
+            }
+          })
+        ]
       })
-
-      if (!(this.noHorizontalResize && this.noVerticalResize)) {
-        this.interact.resizable({
-          edges: {
-            top: false,
-            right: !this.noVerticalResize,
-            bottom: !this.noHorizontalResize,
-            left: !this.noVerticalResize,
-          },
-          listeners: {
-            start: () => this.resizing = true,
-            move: this.handleResize.bind(this),
-            end: () => this.resizing = false,
-          },
-          modifiers: [
-            interact.modifiers.restrictSize({
-              min: {
-                width: minWidth,
-                height: minHeight,
-              }
-            })
-          ]
-        })
-      }
     }
 
-    this.resetDimensions()
-    this.setActive()
-    this.updateLastPosition()
-
-    this.style.transform = `translate(${this.x}px, ${this.y}px)`
-    this.app[0].style.height = `calc(${this.height}px - 28px)`
-
+    loaderObserver.observe(this.window)
     EpkWindow.instanceCount++
   }
 
   disconnectedCallback() {
     super.disconnectedCallback()
 
-    if (this.interact) {
-      this.interact.unset()
-    }
+    this.interact?.unset()
 
     EpkWindow.instanceCount--
   }

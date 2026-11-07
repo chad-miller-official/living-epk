@@ -1,5 +1,5 @@
 import {MusicIcon} from "../components/icons/music-icon.ts";
-import {DocumentReaderIcon} from "../components/icons/document-reader-icon.ts";
+import {InternetExplorerIcon} from "../components/icons/internet-explorer-icon.ts";
 import {GalleryIcon} from "../components/icons/gallery-icon.ts";
 import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
 import {EpkIcon} from "../components/icon.ts";
@@ -14,7 +14,8 @@ export enum LinkNodeType {
 
 export type LinkNode = {
   type: LinkNodeType
-  path: string
+  physicalPath: string
+  logicalPath: string,
   timestamp?: number
 }
 
@@ -108,12 +109,17 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
   const folders = record.folders
 
   if (folders) {
-    folderLinks = folders.map(folder => ({
-      type: LinkNodeType.Folder,
-      path: `${path}\\${folder}`
-    }))
+    folderLinks = record.folders
+      .sort((a, b) => a.localeCompare(b))
+      .map(folder => {
+        const fullPath = `${path}\\${folder}`
 
-    folderLinks.sort((a, b) => a.path.localeCompare(b.path))
+        return {
+          type: LinkNodeType.Folder,
+          physicalPath: fullPath,
+          logicalPath: fullPath,
+        }
+      })
   }
 
   let fileLinks: LinkNode[] = []
@@ -126,9 +132,23 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
       throw new FsError(`Failed to load files data: ${record.files}`)
     }
 
-    fileLinks = (await filesResponse.json())['paths'] as LinkNode[]
-    fileLinks.sort((a, b) => a.path.localeCompare(b.path))
-    fileLinks.forEach(linkNode => linkNode.type = LinkNodeType.File)
+    type ProtoLinkNode = {
+      path: string,
+      timestamp: number,
+    }
+
+    const protoNodes = (await filesResponse.json())['paths'] as ProtoLinkNode[]
+
+    fileLinks = protoNodes
+      .sort((a, b) => a.path.localeCompare(b.path))
+      .map(n => {
+        return {
+          type: LinkNodeType.File,
+          physicalPath: n.path,
+          logicalPath: `${path}\\${n.path.split('/').pop()}`,
+          timestamp: n.timestamp,
+        }
+      })
   }
 
   return {
@@ -142,20 +162,20 @@ export function getLinkName(linkNode: LinkNode, withExtension = true) {
   let fileName
 
   if (linkNode.type === LinkNodeType.File) {
-    fileName = linkNode.path.split('/').pop() || ''
+    fileName = linkNode.physicalPath.split('/').pop() || ''
 
     if (!withExtension) {
-      fileName = fileName?.split(/\.(?=[^.]+$)/)[0]
+      fileName = fileName?.replace(/\.[^.]+$/, '')
     }
   } else {
-    fileName = linkNode.path.split('\\').pop() || ''
+    fileName = linkNode.physicalPath.split('\\').pop() || ''
   }
 
   return fileName
 }
 
 export function getFileExtension(linkNode: LinkNode) {
-  return linkNode.path.split('.').pop()
+  return linkNode.physicalPath.split('.').pop()
 }
 
 const _dateTimeFormat = new Intl.DateTimeFormat('en-US', {
@@ -185,7 +205,7 @@ export function linkNodeToIcon(linkNode: LinkNode) {
         icon = new MusicIcon()
         break
       case 'html':
-        icon = new DocumentReaderIcon()
+        icon = new InternetExplorerIcon()
         break
       case 'jpg':
         icon = new GalleryIcon()

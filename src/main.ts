@@ -6,7 +6,7 @@ import './components/ui/toolbar.ts'
 import './components/window.ts'
 
 import './components/icons/file-explorer-icon.ts'
-import './components/icons/document-reader-icon.ts'
+import './components/icons/internet-explorer-icon.ts'
 import './components/icons/music-icon.ts'
 import './components/icons/plaintext-icon.ts'
 
@@ -24,7 +24,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notepad = new Notepad()
         notepad.fileLinkNode = {
           type: LinkNodeType.File,
-          path: '/fs/plaintext/Welcome to my zone.txt'
+          physicalPath: '/fs/plaintext/Welcome to my zone.txt',
+          logicalPath: 'C:\\Users\\Chad\\My Documents\\Welcome to my zone.txt',
         }
         notepad.windowTitle = 'Notepad - Welcome to my zone'
         resolve(notepad)

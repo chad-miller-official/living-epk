@@ -10,7 +10,7 @@ import {
 } from "../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../icon.ts";
 import {closeWindowEvent} from "../../lib/events.ts";
-import {BaseFileViewer} from "./file-viewer.ts";
+import {FileViewer} from "./common/file-viewer.ts";
 
 export type FileTypeFilter = {
   regex: string,
@@ -19,9 +19,9 @@ export type FileTypeFilter = {
 }
 
 @customElement('file-picker')
-export class FilePicker extends BaseFileViewer {
+export class FilePicker extends FileViewer {
   static styles = [
-    ...BaseFileViewer.styles,
+    ...FileViewer.styles,
     css`
       #backButton, #upButton {
         img {
@@ -184,7 +184,7 @@ export class FilePicker extends BaseFileViewer {
   handleFileTypeFilterChange(event: Event) {
     this.filterRegex = new RegExp((event.target as HTMLOptionElement).value)
 
-    if (this.selectedFileLinkNode && !this.filterRegex.test(this.selectedFileLinkNode.path)) {
+    if (this.selectedFileLinkNode && !this.filterRegex.test(this.selectedFileLinkNode.physicalPath)) {
       this.selectedFileLinkNode = undefined
     }
   }
@@ -193,11 +193,11 @@ export class FilePicker extends BaseFileViewer {
     const icon = linkNodeToIcon(path)
 
     icon.viewMode = IconViewMode.ListView
-    icon.selected = path.path === this.selectedFileLinkNode?.path
+    icon.selected = path.physicalPath === this.selectedFileLinkNode?.physicalPath
 
     icon.handleDblClick = path.type === LinkNodeType.File
       ? () => this.handleFilePick(icon.fileLinkNode)
-      : () => this.navigate(path.path)
+      : () => this.navigate(path.physicalPath)
 
     return icon
   }
@@ -212,7 +212,7 @@ export class FilePicker extends BaseFileViewer {
         let files = folderNode.fileLinks
 
         if (this.filterRegex) {
-          files = files.filter(path => this.filterRegex!.test(path.path))
+          files = files.filter(path => this.filterRegex!.test(path.physicalPath))
         }
 
         return html`

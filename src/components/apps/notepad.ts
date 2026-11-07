@@ -198,7 +198,7 @@ export class Notepad extends EpkApp {
         return ''
       }
 
-      const response = await fetch(path!.path, {signal})
+      const response = await fetch(path!.physicalPath, {signal})
 
       if (!response.ok) {
         alert('Error') // TODO XXX FIXME

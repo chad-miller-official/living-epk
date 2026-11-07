@@ -73,13 +73,13 @@ export abstract class EpkApp extends LitElement {
 
   doNotTrackLastPosition = false
 
+  getMinimumDimensions(): [number | null, number | null] {
+    return [null, null]
+  }
+
   handleClick(event: Event) {
     if (event.target !== this.toolbar) {
       this.toolbar?.closeAll()
     }
-  }
-
-  getMinimumDimensions(): [number | null, number | null] {
-    return [null, null]
   }
 }

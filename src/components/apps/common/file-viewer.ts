@@ -1,15 +1,15 @@
-import {EpkApp} from "../app.ts";
+import {EpkApp} from "../../app.ts";
 import {property, query, queryAll, state} from "lit/decorators.js";
-import {type FolderNode, getParentFolder, loadFolderNode} from "../../lib/fs.ts";
-import {alertDialog} from "../../lib/os.ts";
-import type {EpkIcon} from "../icon.ts";
+import {type FolderNode, getParentFolder, loadFolderNode} from "../../../lib/fs.ts";
+import {alertDialog} from "../../../lib/os.ts";
+import type {EpkIcon} from "../../icon.ts";
 import {css} from "lit";
-import {buttonStyle2} from "../../lib/ui.ts";
+import {buttonStyle2} from "../../../lib/ui.ts";
 
 /*
  * This class contains everything common to file-explorer.ts and file-picker.ts
  */
-export abstract class BaseFileViewer extends EpkApp {
+export abstract class FileViewer extends EpkApp {
   static styles = [
     ...EpkApp.styles,
     buttonStyle2,

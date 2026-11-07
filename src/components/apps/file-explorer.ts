@@ -14,7 +14,7 @@ import {styleMap} from "lit/directives/style-map.js";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
 import {alertDialog} from "../../lib/os.ts";
-import {BaseFileViewer} from "./file-viewer.ts";
+import {FileViewer} from "./common/file-viewer.ts";
 import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
 import {AppAbout} from "./about.ts";
 import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
@@ -25,9 +25,9 @@ enum SortColumn {
 }
 
 @customElement('file-explorer')
-export class FileExplorer extends BaseFileViewer {
+export class FileExplorer extends FileViewer {
   static styles = [
-    ...BaseFileViewer.styles,
+    ...FileViewer.styles,
     css`
       #closeButton {
         height: 18px;
@@ -267,7 +267,7 @@ export class FileExplorer extends BaseFileViewer {
             if (linkNode.type === LinkNodeType.File) {
               this.selectedIcon!.handleDblClick()
             } else {
-              this.navigate(linkNode.path)
+              this.navigate(linkNode.physicalPath)
             }
           }
         },
@@ -276,7 +276,7 @@ export class FileExplorer extends BaseFileViewer {
           disabled: () => this.selectedIcon?.fileLinkNode?.type !== LinkNodeType.Folder,
           action: () => {
             const fileExplorer = new FileExplorer()
-            fileExplorer.folderNodeJsonPath = this.selectedIcon!.fileLinkNode!.path
+            fileExplorer.folderNodeJsonPath = this.selectedIcon!.fileLinkNode!.physicalPath
             this.dispatchEvent(launchEvent(() => new Promise<FileExplorer>(resolve => resolve(fileExplorer))))
           }
         },
@@ -413,7 +413,7 @@ export class FileExplorer extends BaseFileViewer {
     if (icon instanceof GalleryIcon) {
       (icon as GalleryIcon).fsSpecPath = this.folderNodeJsonPath
     } else if (icon instanceof FileExplorerIcon) {
-      icon.handleDblClick = () => this.navigate(icon.fileLinkNode!.path)
+      icon.handleDblClick = () => this.navigate(icon.fileLinkNode!.physicalPath)
     }
 
     icon.viewMode = IconViewMode.ListView

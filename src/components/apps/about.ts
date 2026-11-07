@@ -54,7 +54,7 @@ export class AppAbout extends EpkApp {
           }
         }
       }
-      
+
       .app-icon {
         height: 48px;
         width: 48px;
@@ -91,13 +91,23 @@ export class AppAbout extends EpkApp {
 
   windowIcon = null
 
+  getMinimumDimensions(): [number, number] {
+    return [419, 350]
+  }
+
   handleEulaClick(event: Event) {
     event.stopPropagation()
 
     this.dispatchEvent(launchEvent(() => new Promise<Notepad>(resolve => {
       const notepad = new Notepad()
       notepad.windowTitle = `Notepad - eula`
-      notepad.fileLinkNode = {type: LinkNodeType.File, path: '/fs/plaintext/eula.txt'}
+
+      notepad.fileLinkNode = {
+        type: LinkNodeType.File,
+        physicalPath: '/fs/plaintext/eula.txt',
+        logicalPath: 'C:\\Windows\\eula.txt'
+      }
+
       resolve(notepad)
     })))
   }

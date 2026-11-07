@@ -39,7 +39,7 @@ export class EpkAlert extends EpkApp {
   windowIcon = null
   doNotTrackLastPosition = true
 
-  getMinimumDimensions(): [number | null, number | null] {
+  getMinimumDimensions(): [number, null] {
     return [356, null]
   }
 

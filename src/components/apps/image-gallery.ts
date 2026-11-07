@@ -74,7 +74,7 @@ export class ImageGallery extends EpkApp {
       try {
         return loadFolderNode(src, signal).then((data) => {
           if (this.fileLinkNode) {
-            this.currentIndex = data.fileLinks.map(path => path.path).indexOf(this.fileLinkNode.path)
+            this.currentIndex = data.fileLinks.map(path => path.physicalPath).indexOf(this.fileLinkNode.physicalPath)
           }
 
           return data
@@ -111,7 +111,7 @@ export class ImageGallery extends EpkApp {
   }
 
   getCurrentImage() {
-    return this.pathLoaderTask.value!.fileLinks[this.currentIndex].path
+    return this.pathLoaderTask.value!.fileLinks[this.currentIndex].physicalPath
   }
 
   handleSlideshowClick() {
@@ -159,7 +159,7 @@ export class ImageGallery extends EpkApp {
           <div class="content"></div>
         </div>`,
       complete: (folderNode: FolderNode) => {
-        const wrapperStyle = {backgroundImage: `url('${folderNode.fileLinks[this.currentIndex].path}')`}
+        const wrapperStyle = {backgroundImage: `url('${folderNode.fileLinks[this.currentIndex].physicalPath}')`}
 
         return html`
           <div class="app">
