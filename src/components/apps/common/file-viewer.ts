@@ -63,11 +63,8 @@ export abstract class FileViewer extends EpkApp {
     this.playClick().then(() => {
       this.folderNodeJsonPath = newPath
       this.pathStackIdx++
-
-      if (newPath !== this.pathStack[this.pathStackIdx]) {
-        this.pathStack.length = this.pathStackIdx
-        this.pathStack.push(newPath)
-      }
+      this.pathStack.length = this.pathStackIdx
+      this.pathStack.push(newPath)
     })
   }
 

@@ -664,7 +664,7 @@ export class FileExplorer extends FileViewer {
                 <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
                       @submit="${this.handlePathInputSubmit}">
                   <span class="address">Address</span>
-                  <input type="text" value="${folderNode.path}" id="pathInput"/>
+                  <input type="text" .value="${folderNode.path}" id="pathInput"/>
                   <button type="submit" id="goButton" class="style-2">
                     <img src="/img/file-explorer/go.png"/>
                     <span>Go</span>

@@ -9,7 +9,7 @@ import {alertDialog} from "../../lib/os.ts";
 
 const HOME = 'https://web.archive.org/web/20080422002359/http://www.msn.com/'
 
-@customElement('document-reader')
+@customElement('internet-explorer')
 export class InternetExplorer extends EpkApp {
   static styles = [
     ...FileViewer.styles,
@@ -65,7 +65,7 @@ export class InternetExplorer extends EpkApp {
         user-select: none;
       }
 
-      .webpage {
+      iframe {
         border: 1px groove rgb(199, 197, 178);
         color-scheme: light;
         width: 100%;
@@ -75,6 +75,9 @@ export class InternetExplorer extends EpkApp {
 
   @query('#pathInput')
   pathInput!: HTMLInputElement
+
+  @query('iframe')
+  frame!: HTMLIFrameElement
 
   @property()
   url: string | LinkNode = HOME
@@ -142,22 +145,24 @@ export class InternetExplorer extends EpkApp {
         {
           text: 'Copy',
           shortcut: 'Ctrl+C',
-          action: () => navigator.clipboard.writeText(window.getSelection()?.toString() || ''),
+          action: () => navigator.clipboard.writeText(this.frame.contentWindow?.getSelection()?.toString() || ''),
         },
         {
           text: 'Paste',
           shortcut: 'Ctrl+V',
-          action: () => navigator.clipboard.readText().then(text => document.execCommand('insertText', false, text)),
+          action: () => navigator.clipboard.readText().then(text => this.getFrameDocument().execCommand('insertText', false, text)),
         },
         ToolbarUiElement.DIVIDER,
         {
           text: 'Select All',
           shortcut: 'Ctrl+A',
           action: () => {
-            const selection = window.getSelection()
-            const range = document.createRange()
-            range.selectNodeContents(document.body)
+            const selection = this.frame.contentWindow?.getSelection()
+            const range = this.getFrameDocument().createRange()
+
             selection?.removeAllRanges()
+
+            range.selectNodeContents(this.getFrameDocument().body)
             selection?.addRange(range)
           }
         }
@@ -270,6 +275,10 @@ export class InternetExplorer extends EpkApp {
     this.pathStack.push(this.url)
   }
 
+  getFrameDocument() {
+    return this.frame.contentDocument || this.frame.contentWindow?.document!
+  }
+
   playClick() {
     return new Audio('/audio/click.wav').play()
   }
@@ -299,11 +308,8 @@ export class InternetExplorer extends EpkApp {
 
       this.url = newUrlToUse!
       this.pathStackIdx++
-
-      if (newUrlToUse !== this.pathStack[this.pathStackIdx]) {
-        this.pathStack.length = this.pathStackIdx
-        this.pathStack.push(newUrlToUse!)
-      }
+      this.pathStack.length = this.pathStackIdx
+      this.pathStack.push(newUrlToUse!)
     })
   }
 
@@ -338,7 +344,7 @@ export class InternetExplorer extends EpkApp {
     this.navigate(this.pathInput.value)
   }
 
-  getTrueUrl(logical?: boolean) {
+  getTrueUrl(logical: boolean) {
     return typeof this.url === 'string' ? this.url : logical ? this.url.logicalPath : this.url.physicalPath
   }
 
@@ -362,8 +368,7 @@ export class InternetExplorer extends EpkApp {
             <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
                   @submit="${this.handlePathInputSubmit}">
               <span class="address">Address</span>
-              <input type="text" value="${this.getTrueUrl(true)}"
-                     id="pathInput"/>
+              <input type="text" .value="${this.getTrueUrl(true)}" id="pathInput"/>
               <button type="submit" id="goButton" class="style-2">
                 <img src="/img/file-explorer/go.png"/>
                 <span>Go</span>
@@ -371,7 +376,7 @@ export class InternetExplorer extends EpkApp {
               <!-- TODO XXX FIXME ADD LINKS -->
             </form>
             <div class="explorer">
-              <iframe class="webpage" src="${this.getTrueUrl()}"></iframe>
+              <iframe src="${this.getTrueUrl(false)}"></iframe>
             </div>
           </div>
         </section>
