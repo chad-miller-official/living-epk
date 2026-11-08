@@ -1,13 +1,20 @@
-<style>
-  .root {
-    padding: 16px;
-
-    & > :first-child {
-      margin-top: 0;
+<html lang="en">
+<head>
+  <title>Hello, world!</title>
+  <style>
+    body {
+      background-image: url(/fs/img/document-backgrounds/Image20.jpg);
     }
-  }
-</style>
-<div style="background-image: url(/fs/img/document-backgrounds/Image20.jpg)" class="root">
+
+    .root {
+      & > :first-child {
+        margin-top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="root">
   <h1>This is a test</h1>
   <p>
     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam pellentesque mollis maximus.
@@ -79,3 +86,5 @@
     vel congue arcu.
   </p>
 </div>
+</body>
+</html>

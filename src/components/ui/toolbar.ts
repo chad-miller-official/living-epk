@@ -38,7 +38,6 @@ export class EpkToolbar extends LitElement {
       }
 
       menu {
-        border-bottom: 1px groove #c7c5b2;
         display: flex;
         font-family: "Pixelated MS Sans Serif", ui-sans-serif;
         font-style: normal;
@@ -46,6 +45,20 @@ export class EpkToolbar extends LitElement {
         margin: 0;
         padding: 1px 2px;
         user-select: none;
+      }
+
+      .logo-container {
+        background-color: #ffffff;
+        border-left: 1px groove #c7c5b2;
+        padding: 0 10px;
+        user-select: none;
+      }
+
+      .toolbar-container {
+        align-items: center;
+        border-bottom: 1px groove #c7c5b2;
+        display: flex;
+        justify-content: space-between;
       }
 
       .toolbar-menu {
@@ -145,6 +158,9 @@ export class EpkToolbar extends LitElement {
       }
     `
   ]
+
+  @property({type: String})
+  logo?: string
 
   @property({attribute: false})
   toolbarSpec!: ToolbarMenu[]
@@ -259,9 +275,18 @@ export class EpkToolbar extends LitElement {
 
   render() {
     return html`
-      <menu @click="${() => this.closeAll()}">
-        ${this.toolbarSpec.map(item => this.buildMenu(item))}
-      </menu>
+      <div class="toolbar-container">
+        <menu @click="${() => this.closeAll()}">
+          ${this.toolbarSpec.map(item => this.buildMenu(item))}
+        </menu>
+        ${this.logo
+            ? html`
+              <div class="logo-container">
+                <img src="${this.logo}"/>
+              </div>`
+            : nothing}
+
+      </div>
     `
   }
 }

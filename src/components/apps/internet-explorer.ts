@@ -1,18 +1,19 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
-import {FileViewer} from "./common/file-viewer.ts";
-import {closeWindowEvent} from "../../lib/events.ts";
+import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 import {EpkApp} from "../app.ts";
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
 import {alertDialog} from "../../lib/os.ts";
+import {buttonStyle2} from "../../lib/ui.ts";
 
 const HOME = 'https://web.archive.org/web/20080422002359/http://www.msn.com/'
 
 @customElement('internet-explorer')
 export class InternetExplorer extends EpkApp {
   static styles = [
-    ...FileViewer.styles,
+    ...EpkApp.styles,
+    buttonStyle2,
     css`
       #closeButton {
         height: 18px;
@@ -77,7 +78,7 @@ export class InternetExplorer extends EpkApp {
   pathInput!: HTMLInputElement
 
   @query('iframe')
-  frame!: HTMLIFrameElement
+  frame?: HTMLIFrameElement
 
   @property()
   url: string | LinkNode = HOME
@@ -100,6 +101,9 @@ export class InternetExplorer extends EpkApp {
   @state()
   showStatusBar = true
 
+  @state()
+  showFavorites = false
+
   pathStack: (string | LinkNode)[] = []
   pathStackIdx = 0
 
@@ -114,7 +118,18 @@ export class InternetExplorer extends EpkApp {
               text: 'Window',
               shortcut: 'Ctrl+N',
               action: () => {
-                // TODO FIXME XXX
+                const internetExplorer = new InternetExplorer()
+
+                internetExplorer.url = this.url
+                internetExplorer.showAddressBar = this.showAddressBar
+                internetExplorer.showLinks = this.showLinks
+                internetExplorer.showStandardButtons = this.showStandardButtons
+                internetExplorer.showStatusBar = this.showStatusBar
+                internetExplorer.pathStack = this.pathStack
+                internetExplorer.pathStack.pop()
+                internetExplorer.pathStackIdx = this.pathStackIdx
+
+                this.dispatchEvent(launchEvent(() => new Promise<InternetExplorer>(resolve => resolve(internetExplorer))))
               }
             },
           ],
@@ -145,7 +160,7 @@ export class InternetExplorer extends EpkApp {
         {
           text: 'Copy',
           shortcut: 'Ctrl+C',
-          action: () => navigator.clipboard.writeText(this.frame.contentWindow?.getSelection()?.toString() || ''),
+          action: () => navigator.clipboard.writeText(this.frame?.contentWindow?.getSelection()?.toString() || ''),
         },
         {
           text: 'Paste',
@@ -157,7 +172,7 @@ export class InternetExplorer extends EpkApp {
           text: 'Select All',
           shortcut: 'Ctrl+A',
           action: () => {
-            const selection = this.frame.contentWindow?.getSelection()
+            const selection = this.frame?.contentWindow?.getSelection()
             const range = this.getFrameDocument().createRange()
 
             selection?.removeAllRanges()
@@ -216,18 +231,18 @@ export class InternetExplorer extends EpkApp {
             {
               text: 'Home Page',
               shortcut: 'Alt+Home',
-              action: () => this.url = HOME
+              action: () => this.goHome(),
             }
           ]
         },
         {
           text: 'Stop',
           shortcut: 'Esc',
-          action: () => window.stop(),
+          action: this.stop,
         },
         {
           text: 'Refresh',
-          action: () => this.requestUpdate(),
+          action: this.refresh,
         },
         ToolbarUiElement.DIVIDER,
         {
@@ -275,8 +290,30 @@ export class InternetExplorer extends EpkApp {
     this.pathStack.push(this.url)
   }
 
+  firstUpdated() {
+    window.addEventListener('blur', () => {
+      if (this.shadowRoot?.activeElement === this.frame) {
+        this.toolbar?.closeAll()
+      }
+    })
+  }
+
+  stop() {
+    this.frame?.contentWindow?.stop()
+  }
+
+  refresh() {
+    if (this.frame) {
+      this.frame.src = this.frame.src
+    }
+  }
+
+  goHome() {
+    this.playClick().then(() => this.navigate(HOME))
+  }
+
   getFrameDocument() {
-    return this.frame.contentDocument || this.frame.contentWindow?.document!
+    return this.frame?.contentDocument || this.frame?.contentWindow?.document!
   }
 
   playClick() {
@@ -344,6 +381,10 @@ export class InternetExplorer extends EpkApp {
     this.navigate(this.pathInput.value)
   }
 
+  handleLoad() {
+    // TODO FIXME XXX
+  }
+
   getTrueUrl(logical: boolean) {
     return typeof this.url === 'string' ? this.url : logical ? this.url.logicalPath : this.url.physicalPath
   }
@@ -351,7 +392,8 @@ export class InternetExplorer extends EpkApp {
   render() {
     return html`
       <div class="app" @click="${this.handleClick}">
-        <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+        <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"
+                     logo="/img/internet-explorer/logo.png"></epk-toolbar>
         <section class="content">
           <div class="viewport">
             <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">
@@ -363,6 +405,26 @@ export class InternetExplorer extends EpkApp {
               <button type="button" id="forwardButton" class="style-2"
                       ?disabled="${!this.canGoForward()}" @click="${this.goForward}">
                 <img src="/img/file-explorer/forward.png"/>
+              </button>
+              <button type="button" class="style-2" @click="${this.stop}">
+                <img src="/img/internet-explorer/stop.png"/>
+              </button>
+              <button type="button" class="style-2" @click="${this.refresh}">
+                <img src="/img/internet-explorer/refresh.png"/>
+              </button>
+              <button type="button" class="style-2" @click="${this.goHome}">
+                <img src="/img/internet-explorer/home.png"/>
+              </button>
+              <div class="divider"></div>
+              <button type="button" class="style-2 ${this.showFavorites ? 'active' : ''}"
+                      @click="${() => this.showFavorites = !this.showFavorites}">
+                <img src="/img/internet-explorer/favorites.png"/>
+                <span>Favorites</span>
+              </button>
+              <div class="divider"></div>
+              <button type="button" class="style-2"
+                      @click="${() => window.print()}">
+                <img src="/img/internet-explorer/print.png"/>
               </button>
             </div>
             <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
@@ -376,7 +438,7 @@ export class InternetExplorer extends EpkApp {
               <!-- TODO XXX FIXME ADD LINKS -->
             </form>
             <div class="explorer">
-              <iframe src="${this.getTrueUrl(false)}"></iframe>
+              <iframe src="${this.getTrueUrl(false)}" @load="${this.handleLoad}"></iframe>
             </div>
           </div>
         </section>
