@@ -1,13 +1,62 @@
 import {customElement, property, query, state} from "lit/decorators.js";
-import {css, html} from "lit";
+import {css, html, nothing} from "lit";
 import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
-import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
+import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../ui/toolbar.ts";
 import {EpkApp} from "../app.ts";
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
 import {alertDialog} from "../../lib/os.ts";
 import {buttonStyle2} from "../../lib/ui.ts";
+import {styleMap} from "lit/directives/style-map.js";
 
 const HOME = 'https://web.archive.org/web/20080422002359/http://www.msn.com/'
+
+type Favorite = {
+  url: string,
+  title: string,
+  icon?: string,
+}
+
+type FavoriteFolder = {
+  title: string,
+  favorites: Favorite[],
+}
+
+const FAVORITES: (FavoriteFolder | Favorite)[] = [
+  {
+    title: "My Friends' Websites",
+    favorites: [
+      {
+        url: 'https://www.handsomekrish.live/',
+        title: 'DJ Handsome Krish',
+      },
+      {
+        url: 'https://jackmcintoshthomson.com/',
+        title: 'Jack McIntosh Thomson',
+      },
+      {
+        url: 'https://matthewritch.com/',
+        title: 'Matthew Ritch',
+      },
+    ],
+  },
+  {
+    title: 'Websites I Like',
+    favorites: [
+      {
+        url: 'https://toshihak.lolipop.jp/index.html',
+        title: "Someone in Japan's website that's been online since 1997",
+      },
+      {
+        url: 'https://speech.seedy.cc/',
+        title: 'Speech synthesizer',
+      },
+      {
+        url: 'https://compend.org/',
+        title: 'Rate everything',
+      },
+    ]
+  }
+]
 
 @customElement('internet-explorer')
 export class InternetExplorer extends EpkApp {
@@ -18,6 +67,12 @@ export class InternetExplorer extends EpkApp {
       #closeButton {
         height: 18px;
         width: 18px;
+      }
+
+      #favorites {
+        flex-shrink: 0;
+        min-width: 12ch;
+        overflow: auto;
       }
 
       #goButton {
@@ -32,11 +87,44 @@ export class InternetExplorer extends EpkApp {
         opacity: 0.5;
         padding: 0 4px;
       }
+      
+      .address-bar {
+        align-items: center;
+        background-color: #ffffff;
+        border: 1px solid #7f9db9;
+        display: flex;
+        padding-left: 3px;
+        width: 100%;
+        
+        & > input {
+          border: none;
+        }
+      }
 
       .explorer {
         background-color: #ffffff;
         display: flex;
         height: 100%;
+      }
+
+      .explorer-divider {
+        background-color: #eee9d5;
+        cursor: col-resize;
+        min-width: 5px;
+        max-width: 5px;
+        width: 5px;
+      }
+
+      .favorites-header {
+        align-items: center;
+        background: linear-gradient(to right, #f3f4f7, #eee9d5);
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 7px;
+      }
+
+      .hidden {
+        display: none;
       }
 
       .navigation {
@@ -52,8 +140,22 @@ export class InternetExplorer extends EpkApp {
         }
       }
 
-      .hidden {
-        display: none;
+      .status-bar-field {
+        align-items: center;
+        display: flex;
+        gap: 1ch;
+
+        &.blank {
+          max-width: 18px;
+        }
+
+        &.internet {
+          max-width: 150px;
+        }
+
+        &.loading-bar {
+          max-width: fit-content;
+        }
       }
 
       .viewport {
@@ -74,6 +176,11 @@ export class InternetExplorer extends EpkApp {
     `
   ]
 
+  static favoritesWidth = 160
+
+  @query('#favorites')
+  favorites!: HTMLDivElement
+
   @query('#pathInput')
   pathInput!: HTMLInputElement
 
@@ -88,6 +195,9 @@ export class InternetExplorer extends EpkApp {
 
   @property({type: String})
   windowIcon = '/img/internet-explorer.ico'
+
+  @state()
+  isLoading = true
 
   @state()
   showStandardButtons = true
@@ -106,6 +216,23 @@ export class InternetExplorer extends EpkApp {
 
   pathStack: (string | LinkNode)[] = []
   pathStackIdx = 0
+
+  buildFavoritesMenuItems(favorites: (Favorite | FavoriteFolder)[]): (ToolbarMenuItem | ToolbarMenu)[] {
+    return favorites.map(f => {
+      if ('url' in f) {
+        return {
+          text: f.title,
+          icon: f.icon || '/img/internet-explorer/default.ico',
+          action: () => this.url = f.url,
+        }
+      } else {
+        return {
+          text: f.title,
+          items: this.buildFavoritesMenuItems(f.favorites)
+        }
+      }
+    })
+  }
 
   private toolbarSpec: ToolbarMenu[] = [
     {
@@ -256,9 +383,7 @@ export class InternetExplorer extends EpkApp {
     },
     {
       text: 'Favorites',
-      items: [
-        // TODO XXX FIXME
-      ],
+      items: this.buildFavoritesMenuItems(FAVORITES),
     },
     {
       text: 'Help',
@@ -291,6 +416,10 @@ export class InternetExplorer extends EpkApp {
   }
 
   firstUpdated() {
+    this.frame?.addEventListener('load', () => {
+      this.isLoading = false
+    })
+
     window.addEventListener('blur', () => {
       if (this.shadowRoot?.activeElement === this.frame) {
         this.toolbar?.closeAll()
@@ -309,7 +438,7 @@ export class InternetExplorer extends EpkApp {
   }
 
   goHome() {
-    this.playClick().then(() => this.navigate(HOME))
+    this.navigate(HOME)
   }
 
   getFrameDocument() {
@@ -322,6 +451,7 @@ export class InternetExplorer extends EpkApp {
 
   navigate(newUrl: string) {
     this.playClick().then(async () => {
+      this.isLoading = true
       let newUrlToUse: string | LinkNode | undefined
 
       if (newUrl.startsWith('C:')) {
@@ -381,15 +511,40 @@ export class InternetExplorer extends EpkApp {
     this.navigate(this.pathInput.value)
   }
 
-  handleLoad() {
-    // TODO FIXME XXX
-  }
-
   getTrueUrl(logical: boolean) {
     return typeof this.url === 'string' ? this.url : logical ? this.url.logicalPath : this.url.physicalPath
   }
 
+  private connectDividerDragListeners(handleMouseMove: (mouseMoveEvent: MouseEvent) => void) {
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  handlePrimaryDividerDrag(mouseDownEvent: MouseEvent) {
+    const startX = mouseDownEvent.clientX
+    const startWidth = this.favorites.offsetWidth
+
+    this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
+      const deltaX = mouseMoveEvent.clientX - startX
+      InternetExplorer.favoritesWidth = startWidth + deltaX
+      this.requestUpdate()
+    })
+  }
+
   render() {
+    const favoritesStyle: any = {width: `${InternetExplorer.favoritesWidth}px`}
+    const primaryDividerStyle: any = {}
+
+    if (!this.showFavorites) {
+      favoritesStyle.display = 'none'
+      primaryDividerStyle.display = 'none'
+    }
+
     return html`
       <div class="app" @click="${this.handleClick}">
         <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"
@@ -430,7 +585,10 @@ export class InternetExplorer extends EpkApp {
             <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
                   @submit="${this.handlePathInputSubmit}">
               <span class="address">Address</span>
-              <input type="text" .value="${this.getTrueUrl(true)}" id="pathInput"/>
+              <div class="address-bar">
+                <img src="/img/internet-explorer/default.ico"/>
+                <input type="text" .value="${this.getTrueUrl(true)}" id="pathInput"/>
+              </div>
               <button type="submit" id="goButton" class="style-2">
                 <img src="/img/file-explorer/go.png"/>
                 <span>Go</span>
@@ -438,20 +596,43 @@ export class InternetExplorer extends EpkApp {
               <!-- TODO XXX FIXME ADD LINKS -->
             </form>
             <div class="explorer">
-              <iframe src="${this.getTrueUrl(false)}" @load="${this.handleLoad}"></iframe>
+              <div id="favorites" style="${styleMap(favoritesStyle)}">
+                <div class="favorites-header">
+                  Favorites
+                  <button type="button" id="closeButton" class="style-2"
+                          @click="${() => this.showFavorites = false}">
+                    <img src="/img/file-explorer/x.png"/>
+                  </button>
+                </div>
+                <div class="favorites-icons">
+
+                </div>
+              </div>
+              <div class="explorer-divider" style="${styleMap(primaryDividerStyle)}"
+                   @mousedown="${this.handlePrimaryDividerDrag}"></div>
+              <iframe src="${this.getTrueUrl(false)}"></iframe>
             </div>
           </div>
         </section>
         <div class="status-bar ${this.showStatusBar ? '' : 'hidden'}">
           <p class="status-bar-field">
-            Done.
+            <img src="/img/internet-explorer/default.ico"/>
+            <span>${this.isLoading ? `Opening page ${this.getTrueUrl(true)}...` : 'Done.'}</span>
           </p>
-          <p class="status-bar-field"></p>
-          <p class="status-bar-field"></p>
-          <p class="status-bar-field"></p>
-          <p class="status-bar-field"></p>
-          <p class="status-bar-field"></p>
-          <p class="status-bar-field">Internet</p>
+          ${this.isLoading ? html`
+            <p class="status-bar-field loading-bar">
+              <progress max="100" value="${Math.floor(Math.random() * 100)}"></progress>
+            </p>
+          ` : nothing}
+          <p class="status-bar-field blank"></p>
+          <p class="status-bar-field blank"></p>
+          <p class="status-bar-field blank"></p>
+          <p class="status-bar-field blank"></p>
+          <p class="status-bar-field blank"></p>
+          <p class="status-bar-field internet">
+            <img src="/img/internet-explorer/internet.ico"/>
+            <span>Internet</span>
+          </p>
         </div>
       </div>`
   }

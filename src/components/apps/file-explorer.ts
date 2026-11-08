@@ -636,7 +636,8 @@ export class FileExplorer extends FileViewer {
 
         return html`
           <div class="app" @click="${this.handleClick}">
-            <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+            <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"
+                         logo="/img/internet-explorer/logo.png"></epk-toolbar>
             <section class="content">
               <div class="viewport">
                 <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">

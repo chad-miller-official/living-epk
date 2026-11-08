@@ -19,6 +19,7 @@ export type ToolbarMenuItem = {
   disabled?: boolean | (() => boolean),
   action?: (event: Event) => void,
   bold?: boolean | (() => boolean),
+  icon?: string,
 }
 
 export type ToolbarMenu = {
@@ -86,6 +87,11 @@ export class EpkToolbar extends LitElement {
         list-style-type: none;
         margin: 1px;
         padding: 4px calc(7px + 1ch);
+
+        &.with-icon {
+          align-items: center;
+          padding: 2px;
+        }
 
         & > span {
           display: flex;
@@ -259,10 +265,12 @@ export class EpkToolbar extends LitElement {
               }
 
               return html`
-                <li class="toolbar-menu-item ${disabled ? 'disabled' : ''} ${selected ? 'selected' : ''} ${menu.selectedStyle}"
+                <li class="toolbar-menu-item ${disabled ? 'disabled' : ''} ${selected ? 'selected' : ''} ${menu.selectedStyle} ${item.icon ? 'with-icon' : ''}"
                     @click="${disabled ? nothing : onClick}">
+                  ${item.icon ? html`<img src="${item.icon}"/>` : nothing}
                   <span data-command="${item.shortcut || nothing}"
-                        class="${bold ? 'bold' : ''}">${item.text}
+                        class="${bold ? 'bold' : ''}">
+                    ${item.text}
                   </span>
                 </li>
               `
