@@ -4,9 +4,11 @@ import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
 import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../ui/toolbar.ts";
 import {EpkApp} from "../app.ts";
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
-import {alertDialog} from "../../lib/os.ts";
+import {alertDialog, warnDialog} from "../../lib/os.ts";
 import {buttonStyle2} from "../../lib/ui.ts";
 import {styleMap} from "lit/directives/style-map.js";
+
+const COOKIE_EXPERIMENTAL_WARNING = 'quietIeExperimentalWarning'
 
 const HOME = 'https://web.archive.org/web/20080422002359/http://www.msn.com/'
 
@@ -87,7 +89,7 @@ export class InternetExplorer extends EpkApp {
         opacity: 0.5;
         padding: 0 4px;
       }
-      
+
       .address-bar {
         align-items: center;
         background-color: #ffffff;
@@ -95,7 +97,7 @@ export class InternetExplorer extends EpkApp {
         display: flex;
         padding-left: 3px;
         width: 100%;
-        
+
         & > input {
           border: none;
         }
@@ -223,7 +225,7 @@ export class InternetExplorer extends EpkApp {
         return {
           text: f.title,
           icon: f.icon || '/img/internet-explorer/default.ico',
-          action: () => this.url = f.url,
+          action: () => this.navigate(f.url),
         }
       } else {
         return {
@@ -451,7 +453,6 @@ export class InternetExplorer extends EpkApp {
 
   navigate(newUrl: string) {
     this.playClick().then(async () => {
-      this.isLoading = true
       let newUrlToUse: string | LinkNode | undefined
 
       if (newUrl.startsWith('C:')) {
@@ -471,6 +472,21 @@ export class InternetExplorer extends EpkApp {
         if (!newUrlToUse.match(/^https?:\/\//)) {
           newUrlToUse = `https://${newUrlToUse}`
         }
+
+        if (newUrlToUse.startsWith('http')) {
+          cookieStore.get(COOKIE_EXPERIMENTAL_WARNING).then(cookie => {
+            if (cookie?.value !== 'true') {
+              warnDialog(
+                this,
+                'Microsoft Internet Explorer',
+                'Support for external webpages is experimental. Some external webpages may not function correctly.',
+                {silenceId: COOKIE_EXPERIMENTAL_WARNING, buttonPosition: 'right'},
+              )
+            }
+          })
+        }
+
+        this.isLoading = true
       }
 
       this.url = newUrlToUse!
