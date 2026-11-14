@@ -16,11 +16,10 @@ From bottom to top:
 
 The Desktop is the core component. It is the single component within which everything lives.
 
-The Desktop has three `slots`:
+The Desktop has two `slots`:
 
 * One for Icons
 * One for Windows
-* One for fullscreen Apps
 
 The Desktop also contains logic to handle mouse clicks and manipulate Icons and Windows according to
 what is being
@@ -53,7 +52,7 @@ A Window is NOT an Application. A Window is a component that contains an instanc
 
 A Window consists of a title bar and a slot for an Application.
 
-Windows also contain logic to handle resizing, fullscreening, minimizing, etc.
+Windows also contain logic to handle resizing, maximizing, minimizing, etc.
 
 ### File System
 

@@ -57,6 +57,7 @@ export class EpkToolbar extends LitElement {
 
       .toolbar-container {
         align-items: center;
+        background-color: #ece9d8;
         border-bottom: 1px groove #c7c5b2;
         display: flex;
         justify-content: space-between;

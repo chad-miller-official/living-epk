@@ -114,60 +114,55 @@ export class EpkDesktop extends LitElement {
       const instanceCount = this.appInstanceCount.get(appName) || 0
       this.appInstanceCount.set(appName, instanceCount + 1)
 
-      if (launchData.windowDimensions === 'fullscreen') {
-        app.slot = 'fullscreen'
-        this.append(app)
-      } else {
-        const epkWindow = new EpkWindow()
+      const epkWindow = new EpkWindow()
 
-        const appLastPosition = app.doNotTrackLastPosition ? {
-          x: null,
-          y: null,
-          height: null,
-          width: null,
-        } : EpkWindow.lastAppPositions.get(appName)
+      const appLastPosition = app.doNotTrackLastPosition ? {
+        x: null,
+        y: null,
+        height: null,
+        width: null,
+      } : EpkWindow.lastAppPositions.get(appName)
 
-        epkWindow.slot = 'windows'
-        epkWindow.title = app.windowTitle
+      epkWindow.slot = 'windows'
+      epkWindow.title = app.windowTitle
 
-        if (app.windowIcon) {
-          epkWindow.thumbnail = app.windowIcon
-        }
-
-        epkWindow.noHorizontalResize = (launchData.disallowFlags & DisallowFlags.DisallowHorizontalResize) > 0
-        epkWindow.noVerticalResize = (launchData.disallowFlags & DisallowFlags.DisallowVerticalResize) > 0
-        epkWindow.noFullscreen = (launchData.disallowFlags & DisallowFlags.DisallowMaximize) > 0
-        epkWindow.noMinimize = (launchData.disallowFlags & DisallowFlags.DisallowMinimize) > 0
-
-        const [lastWidth, lastHeight] = [appLastPosition?.width, appLastPosition?.height]
-        const [minWidth, minHeight] = app.getMinimumDimensions()
-        const [eventWidth, eventHeight] = launchData.windowDimensions
-
-        let [widthToUse, heightToUse] = [
-          lastWidth || eventWidth || minWidth || undefined,
-          lastHeight || eventHeight || minHeight || undefined,
-        ]
-
-        epkWindow.minWidth = minWidth || 32
-        epkWindow.minHeight = minHeight || 32
-        epkWindow.width = widthToUse
-        epkWindow.height = heightToUse
-
-        const position = launchData.position
-
-        if (position !== 'center') {
-          epkWindow.x = appLastPosition?.x || (position[0] as number) || 0
-          epkWindow.y = appLastPosition?.y || (position[1] as number) || 0
-
-          if (instanceCount > 0) {
-            epkWindow.x += 16
-            epkWindow.y += 16
-          }
-        }
-
-        epkWindow.append(app)
-        this.append(epkWindow)
+      if (app.windowIcon) {
+        epkWindow.thumbnail = app.windowIcon
       }
+
+      epkWindow.noHorizontalResize = (launchData.disallowFlags & DisallowFlags.DisallowHorizontalResize) > 0
+      epkWindow.noVerticalResize = (launchData.disallowFlags & DisallowFlags.DisallowVerticalResize) > 0
+      epkWindow.noMaximize = (launchData.disallowFlags & DisallowFlags.DisallowMaximize) > 0
+      epkWindow.noMinimize = (launchData.disallowFlags & DisallowFlags.DisallowMinimize) > 0
+
+      const [lastWidth, lastHeight] = [appLastPosition?.width, appLastPosition?.height]
+      const [minWidth, minHeight] = app.getMinimumDimensions()
+      const [eventWidth, eventHeight] = launchData.windowDimensions
+
+      let [widthToUse, heightToUse] = [
+        lastWidth || eventWidth || minWidth || undefined,
+        lastHeight || eventHeight || minHeight || undefined,
+      ]
+
+      epkWindow.minWidth = minWidth || 32
+      epkWindow.minHeight = minHeight || 32
+      epkWindow.width = widthToUse
+      epkWindow.height = heightToUse
+
+      const position = launchData.position
+
+      if (position !== 'center') {
+        epkWindow.x = appLastPosition?.x || (position[0] as number) || 0
+        epkWindow.y = appLastPosition?.y || (position[1] as number) || 0
+
+        if (instanceCount > 0) {
+          epkWindow.x += 16
+          epkWindow.y += 16
+        }
+      }
+
+      epkWindow.append(app)
+      this.append(epkWindow)
     })
   }
 
@@ -178,7 +173,6 @@ export class EpkDesktop extends LitElement {
           <slot name="icons"></slot>
         </div>
         <slot name="windows"></slot>
-        <slot name="fullscreen"></slot>
       </main>
     `
   }

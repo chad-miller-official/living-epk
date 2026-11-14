@@ -49,10 +49,9 @@ export abstract class EpkApp extends LitElement {
         flex-grow: 1;
         height: 100%;
       }
-
-      .content, #toolbar {
-        margin: 0 auto;
-        width: calc(100% - 6px);
+      
+      .status-bar {
+        margin: 0;
       }
       
       .status-bar-field {

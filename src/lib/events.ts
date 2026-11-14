@@ -15,19 +15,19 @@ export type LaunchOptions = {
   x?: number,
   y?: number,
   disallowFlags?: number,
-  fullscreen?: boolean,
   centered?: boolean,
 }
 
 export type Launch = {
   init: () => Promise<EpkApp>,
-  windowDimensions: [number | null, number | null] | 'fullscreen', // width, height
+  windowDimensions: [number | null, number | null], // width, height
   position: [number | null, number | null] | 'center', // x, y
   disallowFlags: number,
 }
 
 export type WindowProperties = {
   title?: string,
+  fullscreen?: boolean,
 }
 
 export function launchEvent(
@@ -37,7 +37,7 @@ export function launchEvent(
   return new CustomEvent<Launch>('launch', {
     detail: {
       init: appInit,
-      windowDimensions: launchOptions.fullscreen ? 'fullscreen' : [launchOptions.width || null, launchOptions.height || null],
+      windowDimensions: [launchOptions.width || null, launchOptions.height || null],
       position: launchOptions.centered ? 'center' : [launchOptions.x || null, launchOptions.y || null],
       disallowFlags: launchOptions.disallowFlags || 0,
     },

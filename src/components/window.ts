@@ -16,6 +16,12 @@ type WindowPosition = {
   height: number,
 }
 
+enum WindowState {
+  MINIMIZED,
+  MAXIMIZED,
+  FULLSCREEN,
+}
+
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
   private static instanceCount = 0
@@ -56,12 +62,6 @@ export class EpkWindow extends LitElement {
         min-width: 0;
       }
 
-      .window-wrapper {
-        height: 100%;
-        padding: 6px 6px 9px 6px;
-        width: 100%;
-      }
-
       .window {
         display: flex;
         flex-direction: column;
@@ -81,8 +81,13 @@ export class EpkWindow extends LitElement {
             filter: contrast(0.4) brightness(1.2);
           }
         }
-
+        
         &.fullscreen {
+          box-shadow: none;
+          width: 100%;
+        }
+
+        &.maximized {
           border-top-left-radius: 0;
           border-top-right-radius: 0;
           box-shadow: initial;
@@ -108,10 +113,25 @@ export class EpkWindow extends LitElement {
       }
 
       .window-viewport {
+        background-color: #eceadb;
         flex-grow: 1;
+        
+        &:not(.fullscreen) {
+          margin: 0 auto;
+          width: calc(100% - 6px);
+        }
 
         &.minimized {
           display: none;
+        }
+      }
+
+      .window-wrapper {
+        height: 100%;
+        width: 100%;
+
+        &:not(.fullscreen) {
+          padding: 6px 6px 9px 6px;
         }
       }
     `]
@@ -159,16 +179,13 @@ export class EpkWindow extends LitElement {
   noMinimize = false
 
   @property({type: Boolean})
-  noFullscreen = false
+  noMaximize = false
 
   @state()
   active = true
 
   @state()
-  fullscreen = false
-
-  @state()
-  minimized = false
+  state: WindowState | null = null
 
   @state()
   resizing = false
@@ -212,7 +229,7 @@ export class EpkWindow extends LitElement {
     const heightToUse = overrideHeight || `${this.height}px`
 
     this.style.height = heightToUse
-    this.app[0].style.height = `calc(${heightToUse} - 28px)`
+    this.app[0].style.height = this.state === WindowState.FULLSCREEN ? heightToUse : `calc(${heightToUse} - 28px)`
 
     if (overrideWidth || this.width) {
       this.style.width = overrideWidth || `${this.width}px`
@@ -312,6 +329,10 @@ export class EpkWindow extends LitElement {
     if (detail.title) {
       this.title = detail.title
     }
+
+    if (Object.hasOwn(detail, 'fullscreen')) {
+      this.setFullscreen(detail.fullscreen!)
+    }
   }
 
   setActive() {
@@ -329,7 +350,7 @@ export class EpkWindow extends LitElement {
   }
 
   handleDblClick() {
-    this.toggleFullscreen()
+    this.toggleMaximized()
   }
 
   updateLastPosition() {
@@ -346,7 +367,7 @@ export class EpkWindow extends LitElement {
   }
 
   handleDrag(event: InteractEvent) {
-    if (this.fullscreen) {
+    if (this.state === WindowState.MAXIMIZED) {
       return
     }
 
@@ -360,7 +381,7 @@ export class EpkWindow extends LitElement {
   }
 
   handleResize(event: ResizeEvent) {
-    if (this.fullscreen || this.minimized) {
+    if (this.state !== null) {
       return
     }
 
@@ -381,17 +402,18 @@ export class EpkWindow extends LitElement {
     this.updateLastPosition()
   }
 
-  toggleFullscreen() {
-    if (this.noFullscreen) {
+  toggleMaximized() {
+    if (this.noMaximize) {
       return
     }
 
-    if (this.minimized) {
+    if (this.state === WindowState.MINIMIZED) {
+      this.state = null
       this.resetDimensions(this.height ? `${this.height}px` : undefined)
     } else {
-      this.fullscreen = !this.fullscreen
+      this.state = this.state === null ? WindowState.MAXIMIZED : null
 
-      if (this.fullscreen) {
+      if (this.state === WindowState.MAXIMIZED) {
         this.resetCoordinates('0', '0')
         this.resetDimensions('100vh', '100vw')
         this.maximizeWindow()
@@ -401,8 +423,6 @@ export class EpkWindow extends LitElement {
         this.restoreWindow()
       }
     }
-
-    this.minimized = false
   }
 
   toggleMinimized() {
@@ -410,15 +430,28 @@ export class EpkWindow extends LitElement {
       return
     }
 
-    this.minimized = !this.minimized
-    this.fullscreen = false
+    this.state = this.state === null ? WindowState.MINIMIZED : null
 
-    if (this.minimized) {
+    if (this.state === WindowState.MINIMIZED) {
       this.resetCoordinates()
       this.resetDimensions('28px')
       this.restoreWindow()
     } else {
       this.resetDimensions(this.height ? `${this.height}px` : undefined)
+    }
+  }
+
+  setFullscreen(fullscreen: boolean) {
+    if (fullscreen) {
+      this.state = WindowState.FULLSCREEN
+      this.resetCoordinates('0', '0')
+      this.resetDimensions('100vh', '100vw')
+      this.maximizeWindow()
+    } else {
+      this.state = null
+      this.resetCoordinates()
+      this.resetDimensions()
+      this.restoreWindow()
     }
   }
 
@@ -430,44 +463,56 @@ export class EpkWindow extends LitElement {
     }
 
     let viewportClass = 'window-viewport'
+    let wrapperClass = 'window-wrapper'
+
     const windowStyle: any = {}
 
-    if (this.fullscreen) {
+    if (this.state === WindowState.FULLSCREEN) {
       windowClass += ' fullscreen'
+      viewportClass += ' fullscreen'
+      wrapperClass += ' fullscreen'
     } else {
-      if (this.minimized) {
-        windowClass += ' minimized'
-        viewportClass += ' minimized'
-      } else if (this.height) {
-        windowStyle['height'] = `${this.height}px`
-      }
+      windowClass += ' window'
 
-      if (this.width) {
-        windowStyle['width'] = `${this.width}px`
+      if (this.state === WindowState.MAXIMIZED) {
+        windowClass += ' maximized'
+      } else {
+        if (this.state === WindowState.MINIMIZED) {
+          windowClass += ' minimized'
+          viewportClass += ' minimized'
+        } else if (this.height) {
+          windowStyle['height'] = `${this.height}px`
+        }
+
+        if (this.width) {
+          windowStyle['width'] = `${this.width}px`
+        }
       }
     }
 
     const iconStyle = {'backgroundImage': `url(${this.thumbnail})`}
 
     return html`
-      <div class="window-wrapper">
+      <div class="${wrapperClass}">
         <div class="${windowClass}" style="${styleMap(windowStyle)}" @click="${this.handleClick}">
-          <div class="title-bar" @dblclick="${this.handleDblClick}">
-            <div class="title-bar-text">
-              ${this.thumbnail ? html`
-                <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>` : nothing}
-              <div class="title">${this.title}</div>
-            </div>
-            <div class="title-bar-controls">
-              ${this.noMinimize ? nothing : html`
-                <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>`}
-              ${this.noFullscreen ? nothing : html`
-                <button aria-label="${this.fullscreen ? 'Restore' : 'Maximize'}"
-                        @click="${this.toggleFullscreen}"></button>`}
-              <button aria-label="Close"
-                      @click="${() => this.dispatchEvent(closeWindowEvent())}"></button>
-            </div>
-          </div>
+          ${this.state === WindowState.FULLSCREEN ? nothing : html`
+            <div class="title-bar" @dblclick="${this.handleDblClick}">
+              <div class="title-bar-text">
+                ${this.thumbnail ? html`
+                  <div class="title-bar-icon" style="${styleMap(iconStyle)}"></div>` : nothing}
+                <div class="title">${this.title}</div>
+              </div>
+              <div class="title-bar-controls">
+                ${this.noMinimize ? nothing : html`
+                  <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>`}
+                ${this.noMaximize ? nothing : html`
+                  <button
+                      aria-label="${this.state === WindowState.MAXIMIZED ? 'Restore' : 'Maximize'}"
+                      @click="${this.toggleMaximized}"></button>`}
+                <button aria-label="Close"
+                        @click="${() => this.dispatchEvent(closeWindowEvent())}"></button>
+              </div>
+            </div>`}
           <div class="${viewportClass}">
             <slot class="${this.resizing ? 'resizing' : ''}"></slot>
           </div>

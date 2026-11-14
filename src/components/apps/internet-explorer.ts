@@ -1,6 +1,6 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html, nothing} from "lit";
-import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
+import {closeWindowEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../ui/toolbar.ts";
 import {EpkApp} from "../app.ts";
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
@@ -202,6 +202,9 @@ export class InternetExplorer extends EpkApp {
   isLoading = true
 
   @state()
+  isFullscreen = false
+
+  @state()
   showStandardButtons = true
 
   @state()
@@ -215,6 +218,9 @@ export class InternetExplorer extends EpkApp {
 
   @state()
   showFavorites = false
+
+  @state()
+  showExperimentalWarning = true
 
   pathStack: (string | LinkNode)[] = []
   pathStackIdx = 0
@@ -377,8 +383,10 @@ export class InternetExplorer extends EpkApp {
         {
           text: 'Full Screen',
           shortcut: 'F11',
+          selected: () => this.isFullscreen,
           action: () => {
-            // TODO XXX FIXME
+            this.isFullscreen = !this.isFullscreen
+            this.dispatchEvent(windowPropertyChangeEvent({fullscreen: this.isFullscreen}))
           }
         }
       ],
@@ -473,15 +481,19 @@ export class InternetExplorer extends EpkApp {
           newUrlToUse = `https://${newUrlToUse}`
         }
 
-        if (newUrlToUse.startsWith('http')) {
+        if (newUrlToUse.startsWith('http') && this.showExperimentalWarning) {
           cookieStore.get(COOKIE_EXPERIMENTAL_WARNING).then(cookie => {
             if (cookie?.value !== 'true') {
               warnDialog(
                 this,
                 'Microsoft Internet Explorer',
-                'Support for external webpages is experimental. Some external webpages may not function correctly.',
+                `Support for external webpages is experimental. The address bar may not
+                reflect clicked links and the Back button may not behave as expected. Some external
+                webpages additionally may not function correctly.`,
                 {silenceId: COOKIE_EXPERIMENTAL_WARNING, buttonPosition: 'right'},
               )
+
+              this.showExperimentalWarning = false
             }
           })
         }
@@ -562,7 +574,7 @@ export class InternetExplorer extends EpkApp {
     }
 
     return html`
-      <div class="app" @click="${this.handleClick}">
+      <div class="app ${this.isFullscreen ? 'fullscreen' : ''}" @click="${this.handleClick}">
         <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"
                      logo="/img/internet-explorer/logo.png"></epk-toolbar>
         <section class="content">

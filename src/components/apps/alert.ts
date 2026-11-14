@@ -67,7 +67,6 @@ export class EpkAlert extends EpkApp {
   }
 
   async handleOkClick() {
-
     if (this.silenceId && this.silencer?.checked) {
       await cookieStore.set(this.silenceId, 'true')
     }
