@@ -112,6 +112,11 @@ export class AppAbout extends EpkApp {
     })))
   }
 
+  close(event: SubmitEvent) {
+    event.preventDefault()
+    this.dispatchEvent(closeWindowEvent())
+  }
+
   render() {
     return html`
       <div class="app">
@@ -138,7 +143,7 @@ export class AppAbout extends EpkApp {
                     <p class="eula-user">chad</p>
                   </div>
                 </div>
-                <div class="lower">
+                <form class="lower" @submit="${this.close}">
                   <div class="memory">
                     <hr/>
                     <div>
@@ -146,8 +151,8 @@ export class AppAbout extends EpkApp {
                       <span class="memory">196,080 KB</span>
                     </div>
                   </div>
-                  <button @click="${() => this.dispatchEvent(closeWindowEvent())}">OK</button>
-                </div>
+                  <button type="submit">OK</button>
+                </form>
               </div>
             </div>
           </div>

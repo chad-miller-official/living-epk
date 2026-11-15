@@ -101,10 +101,6 @@ export class EpkWindow extends LitElement {
             border-top-right-radius: 0;
             padding-right: 2px;
           }
-
-          & .window-viewport {
-            margin: 0 -3px;
-          }
         }
 
         &.minimized {
@@ -115,10 +111,19 @@ export class EpkWindow extends LitElement {
       .window-viewport {
         background-color: #eceadb;
         flex-grow: 1;
+        margin: 0 auto;
+        width: calc(100% - 6px);
         
-        &:not(.fullscreen) {
-          margin: 0 auto;
-          width: calc(100% - 6px);
+        &.fullscreen {
+          height: 100vh;
+        }
+        
+        &.fullscreen, &.maximized {
+          width: 100%;
+        }
+        
+        &.maximized {
+          height: 100%;
         }
 
         &.minimized {
@@ -226,15 +231,11 @@ export class EpkWindow extends LitElement {
   }
 
   private resetDimensions(overrideHeight?: string, overrideWidth?: string) {
-    const heightToUse = overrideHeight || `${this.height}px`
-
-    this.style.height = heightToUse
-    this.app[0].style.height = this.state === WindowState.FULLSCREEN ? heightToUse : `calc(${heightToUse} - 28px)`
+    this.style.height = overrideHeight || `${this.height}px`
 
     if (overrideWidth || this.width) {
       this.style.width = overrideWidth || `${this.width}px`
     }
-
   }
 
   firstUpdated() {
@@ -270,7 +271,6 @@ export class EpkWindow extends LitElement {
       this.updateLastPosition()
 
       this.style.transform = `translate(${this.x}px, ${this.y}px)`
-      this.app[0].style.height = `calc(${this.height}px - 28px)`
 
       loaderObserver.disconnect()
     })
@@ -476,6 +476,7 @@ export class EpkWindow extends LitElement {
 
       if (this.state === WindowState.MAXIMIZED) {
         windowClass += ' maximized'
+        viewportClass += ' maximized'
       } else {
         if (this.state === WindowState.MINIMIZED) {
           windowClass += ' minimized'

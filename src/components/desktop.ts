@@ -47,6 +47,7 @@ export class EpkDesktop extends LitElement {
 
     this.windows?.forEach(w => {
       if ((w === event.target || (event.target instanceof Node && w.contains(event.target)))) {
+        w.active = true
         return
       } else {
         w.active = false

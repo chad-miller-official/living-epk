@@ -11,7 +11,7 @@ export class MusicIcon extends EpkIcon {
 
   getLaunchOptions(): LaunchOptions {
     return {
-      height: 144,
+      height: 148,
       width: 400,
       disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowHorizontalResize,
     }

@@ -1,5 +1,5 @@
 import {css, html, LitElement, nothing, type TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, queryAll} from "lit/decorators.js";
+import {customElement, property, query, queryAll} from "lit/decorators.js";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 
@@ -166,6 +166,9 @@ export class EpkToolbar extends LitElement {
     `
   ]
 
+  @query('#menuBar')
+  menuBar!: HTMLMenuElement
+
   @property({type: String})
   logo?: string
 
@@ -176,8 +179,6 @@ export class EpkToolbar extends LitElement {
   toolbarItems: NodeListOf<HTMLLIElement> | undefined
 
   handleItemClick(event: Event) {
-    event.stopPropagation()
-
     let targetLi = event.target as HTMLElement
 
     if (targetLi.tagName.toLowerCase() === 'span') {
@@ -278,14 +279,19 @@ export class EpkToolbar extends LitElement {
             }
           })}
         </ul>
-      </li>
-    `
+      </li>`
+  }
+
+  handleClick(event: Event) {
+    if (event.target !== this.menuBar && !this.menuBar.contains(event.target as Element)) {
+      this.closeAll()
+    }
   }
 
   render() {
     return html`
-      <div class="toolbar-container">
-        <menu @click="${() => this.closeAll()}">
+      <div class="toolbar-container" @click="${this.handleClick}">
+        <menu id="menuBar">
           ${this.toolbarSpec.map(item => this.buildMenu(item))}
         </menu>
         ${this.logo
