@@ -81,7 +81,7 @@ export class EpkWindow extends LitElement {
             filter: contrast(0.4) brightness(1.2);
           }
         }
-        
+
         &.fullscreen {
           box-shadow: none;
           width: 100%;
@@ -113,15 +113,15 @@ export class EpkWindow extends LitElement {
         flex-grow: 1;
         margin: 0 auto;
         width: calc(100% - 6px);
-        
+
         &.fullscreen {
           height: 100vh;
         }
-        
+
         &.fullscreen, &.maximized {
           width: 100%;
         }
-        
+
         &.maximized {
           height: 100%;
         }
@@ -241,6 +241,7 @@ export class EpkWindow extends LitElement {
   firstUpdated() {
     this.addEventListener('close-window', this.handleCloseWindow)
     this.addEventListener('window-property-change', this.handleWindowPropertyChange)
+    this.addEventListener('focus-window', this.handleFocusWindow)
 
     /*
      * Problem: we sometimes need to calculate the X and Y coordinates of the window after it's
@@ -321,6 +322,12 @@ export class EpkWindow extends LitElement {
   handleCloseWindow() {
     this.remove()
     this.isClosing = true
+  }
+
+  handleFocusWindow(event: Event) {
+    if (this.contains(event.target as Element)) {
+      this.setActive()
+    }
   }
 
   handleWindowPropertyChange(event: Event) {

@@ -60,6 +60,13 @@ export function closeWindowEvent(): CustomEvent {
   })
 }
 
+export function focusWindowEvent(): CustomEvent {
+  return new CustomEvent('focus-window', {
+    bubbles: true,
+    composed: true,
+  })
+}
+
 export function windowPropertyChangeEvent(props: WindowProperties): CustomEvent<WindowProperties> {
   return new CustomEvent('window-property-change', {
     detail: props,

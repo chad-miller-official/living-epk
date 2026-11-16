@@ -35,7 +35,7 @@ export class FileExplorer extends FileViewer {
       }
 
       #goButton {
-        padding: 0 8px 0 4px;
+        padding: 0 16px 0 8px;
       }
 
       #fileTree {
@@ -50,8 +50,22 @@ export class FileExplorer extends FileViewer {
       }
 
       .address {
+        align-self: center;
         opacity: 0.5;
         padding: 0 4px;
+      }
+
+      .address-bar {
+        align-items: center;
+        background-color: #ffffff;
+        border: 1px solid #7f9db9;
+        display: flex;
+        padding-left: 3px;
+        width: 100%;
+
+        & > input {
+          border: none;
+        }
       }
 
       .explorer {
@@ -84,7 +98,7 @@ export class FileExplorer extends FileViewer {
       }
 
       .navigation {
-        align-items: center;
+        align-items: stretch;
         background-color: #eceadb;
         border-bottom: 1px groove #c7c5b2;
         display: flex;
@@ -665,7 +679,10 @@ export class FileExplorer extends FileViewer {
                 <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
                       @submit="${this.handlePathInputSubmit}">
                   <span class="address">Address</span>
-                  <input type="text" .value="${folderNode.path}" id="pathInput"/>
+                  <div class="address-bar">
+                    <img src="${this.windowIcon}"/>
+                    <input type="text" .value="${folderNode.path}" id="pathInput"/>
+                  </div>
                   <button type="submit" id="goButton" class="style-2">
                     <img src="/img/file-explorer/go.png"/>
                     <span>Go</span>
