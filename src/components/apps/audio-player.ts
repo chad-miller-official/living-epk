@@ -240,7 +240,7 @@ export class AudioPlayer extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
-            filePicker.folderNodeJsonPath = 'C:\\Users\\Chad\\My Music'
+            filePicker.path = 'C:\\Users\\Chad\\My Music'
             filePicker.onFilePick = this.loadFile.bind(this)
 
             const soundFilterRegex = '[.](mp3|wav)$'

@@ -61,7 +61,7 @@ export class Notepad extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
-            filePicker.folderNodeJsonPath = 'C:\\Users\\Chad\\My Documents'
+            filePicker.path = 'C:\\Users\\Chad\\My Documents'
             filePicker.onFilePick = (path) => this.fileLinkNode = path
 
             const plaintextFilterRegex = '[.]txt$'

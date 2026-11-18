@@ -1,23 +1,24 @@
 import {type EpkIcon, IconViewMode} from "../icon.ts";
-import {customElement, property, query, queryAll, state} from "lit/decorators.js";
+import {customElement, property, queryAll, state} from "lit/decorators.js";
 import {css, html, type TemplateResult} from "lit";
 import {
   type FolderNode,
   getFormattedTimestamp,
   getLinkName,
+  getParentFolder,
   type LinkNode,
   linkNodeToIcon,
-  LinkNodeType
+  LinkNodeType,
+  loadFolderNode
 } from "../../lib/fs.ts";
 import {Task} from "@lit/task";
-import {styleMap} from "lit/directives/style-map.js";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
-import {alertDialog} from "../../lib/os.ts";
-import {FileViewer} from "./common/file-viewer.ts";
-import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
+import {alertDialog, playClick} from "../../lib/os.ts";
+import {launchEvent} from "../../lib/events.ts";
 import {AppAbout} from "./about.ts";
 import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
+import {Explorer} from "./common/explorer.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -25,61 +26,13 @@ enum SortColumn {
 }
 
 @customElement('file-explorer')
-export class FileExplorer extends FileViewer {
+export class FileExplorer extends Explorer<string> {
   static styles = [
-    ...FileViewer.styles,
+    ...Explorer.styles,
     css`
-      #closeButton {
-        height: 18px;
-        width: 18px;
-      }
-
-      #goButton {
-        padding: 0 16px 0 8px;
-      }
-
-      #fileTree {
-        flex-shrink: 0;
-        min-width: 12ch;
-        overflow: auto;
-
-        & > ul {
-          border: none;
-          width: max-content;
-        }
-      }
-
-      .address {
-        align-self: center;
-        opacity: 0.5;
-        padding: 0 4px;
-      }
-
-      .address-bar {
-        align-items: center;
-        background-color: #ffffff;
-        border: 1px solid #7f9db9;
-        display: flex;
-        padding-left: 3px;
-        width: 100%;
-
-        & > input {
-          border: none;
-        }
-      }
-
-      .explorer {
-        background-color: #ffffff;
-        display: flex;
-        height: 100%;
-      }
-
-      .explorer-divider {
-        background-color: #eee9d5;
-        cursor: col-resize;
-        min-width: 5px;
-        max-width: 5px;
-        width: 5px;
+      #sidebar > ul {
+        border: none;
+        width: max-content;
       }
 
       .file-list {
@@ -87,31 +40,6 @@ export class FileExplorer extends FileViewer {
         flex-direction: column;
         flex-grow: 1;
         overflow: auto;
-      }
-
-      .file-tree-header {
-        align-items: center;
-        background: linear-gradient(to right, #f3f4f7, #eee9d5);
-        display: flex;
-        justify-content: space-between;
-        padding: 3px 7px;
-      }
-
-      .navigation {
-        align-items: stretch;
-        background-color: #eceadb;
-        border-bottom: 1px groove #c7c5b2;
-        display: flex;
-        width: 100%;
-
-        button {
-          padding: 9px 7px;
-          margin: 1px;
-        }
-      }
-
-      .hidden {
-        display: none;
       }
 
       .tree-item {
@@ -151,16 +79,6 @@ export class FileExplorer extends FileViewer {
 
       .selected-sort {
         background-color: #f7f7f7;
-      }
-
-      .viewport {
-        -webkit-font-smoothing: none;
-        display: flex;
-        flex-direction: column;
-        font-family: "Pixelated MS Sans Serif", Arial;
-        font-size: 11px;
-        height: 100%;
-        user-select: none;
       }
 
       table {
@@ -232,13 +150,11 @@ export class FileExplorer extends FileViewer {
     `
   ]
 
-  static fileTreeWidth = 160
+  @queryAll('.epk-icon')
+  icons!: EpkIcon[]
 
   @queryAll('th')
   headers!: HTMLTableCellElement[]
-
-  @query('#fileTree')
-  fileTree!: HTMLDivElement
 
   @property({type: String})
   windowTitle = 'File Explorer'
@@ -247,27 +163,21 @@ export class FileExplorer extends FileViewer {
   windowIcon = '/img/file-explorer-small.ico'
 
   @state()
+  folderNode: FolderNode = {path: '', folderLinks: [], fileLinks: []}
+
+  @state()
   sortAsc = true
 
   @state()
   sortColumn = SortColumn.Filename
 
   @state()
-  showFileTree = true
-
-  @state()
-  showStandardButtons = true
-
-  @state()
-  showAddressBar = true
-
-  @state()
-  showStatusBar = true
+  tree?: object
 
   private treeOpenPaths: { [path: string]: boolean } = {}
   private selectedIcon: EpkIcon | null = null
 
-  private toolbarSpec: ToolbarMenu[] = [
+  toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
       items: [
@@ -290,7 +200,7 @@ export class FileExplorer extends FileViewer {
           disabled: () => this.selectedIcon?.fileLinkNode?.type !== LinkNodeType.Folder,
           action: () => {
             const fileExplorer = new FileExplorer()
-            fileExplorer.folderNodeJsonPath = this.selectedIcon!.fileLinkNode!.physicalPath
+            fileExplorer.path = this.selectedIcon!.fileLinkNode!.physicalPath
             this.dispatchEvent(launchEvent(() => new Promise<FileExplorer>(resolve => resolve(fileExplorer))))
           }
         },
@@ -298,32 +208,14 @@ export class FileExplorer extends FileViewer {
         {text: 'Delete', disabled: true},
         {text: 'Rename', disabled: true},
         ToolbarUiElement.DIVIDER,
-        {text: 'Close', action: () => this.dispatchEvent(closeWindowEvent())},
+        this.toolbarCloseItem,
       ],
     },
     {
       text: 'View',
       items: [
-        {
-          text: 'Toolbars',
-          items: [
-            {
-              text: 'Standard Buttons',
-              selected: () => this.showStandardButtons,
-              action: () => this.showStandardButtons = !this.showStandardButtons,
-            },
-            {
-              text: 'Address Bar',
-              selected: () => this.showAddressBar,
-              action: () => this.showAddressBar = !this.showAddressBar,
-            },
-          ],
-        },
-        {
-          text: 'Status Bar',
-          selected: () => this.showStatusBar,
-          action: () => this.showStatusBar = !this.showStatusBar,
-        },
+        this.toolbarViewToolbarsItem,
+        this.toolbarViewStatusBarItem,
         ToolbarUiElement.DIVIDER,
         {
           text: 'Arrange Icons by',
@@ -342,56 +234,23 @@ export class FileExplorer extends FileViewer {
           ],
         },
         ToolbarUiElement.DIVIDER,
-        {
-          text: 'Go To',
-          items: [
-            {
-              text: 'Back',
-              disabled: () => !this.canGoBack(),
-              action: () => this.goBack(),
-              shortcut: 'Alt+Left Arrow',
-            },
-            {
-              text: 'Forward',
-              disabled: () => !this.canGoForward(),
-              action: () => this.goForward(),
-              shortcut: 'Alt+Right Arrow',
-            },
-            {
-              text: 'Up One Level',
-              disabled: () => !this.canGoUp(),
-              action: () => this.goUp(),
-            },
-          ]
-        },
+        this.toolbarViewGoToItems([{
+          text: 'Up One Level',
+          disabled: () => !this.canGoUp(),
+          action: () => this.goUp(),
+        }]),
         {
           text: 'Refresh',
           action: () => this.requestUpdate(),
         }
       ],
     },
-    {
-      text: 'Help',
-      items: [
-        {
-          text: 'About Windows',
-          action: (event: Event) => {
-            event.stopPropagation()
-            this.toolbar!.closeAll()
-
-            const about = new AppAbout()
-            about.appName = 'Microsoft &reg; Windows'
-            about.windowTitle = 'About Windows'
-
-            this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
-              width: 419,
-              height: 350,
-              disallowFlags: DisallowFlags.DisallowAll,
-            }))
-          },
-        },
-      ],
-    }
+    this.toolbarHelpMenu(() => {
+      const about = new AppAbout()
+      about.appName = 'Microsoft &reg; Windows'
+      about.windowTitle = 'About Windows'
+      return about
+    })
   ]
 
   private treeLoaderTask = new Task(this, {
@@ -416,16 +275,27 @@ export class FileExplorer extends FileViewer {
         this.folderNode = icons
       }
 
-      return [tree, this.folderNode]
+      this.tree = tree
+      return [this.tree, this.folderNode]
     },
-    args: () => [this.treeLoaderTask.value, this.folderNodeJsonPath]
+    args: () => [this.treeLoaderTask.value, this.path]
   })
+
+  protected async loadIcons(path: string) {
+    try {
+      return await loadFolderNode(path)
+    } catch (ex: unknown) {
+      alertDialog(this, 'Address Bar', `Windows cannot find '${path}'. Check the spelling and try again.`)
+    }
+
+    return null
+  }
 
   private buildIcon(path: LinkNode): EpkIcon {
     const icon = linkNodeToIcon(path)
 
     if (icon instanceof GalleryIcon) {
-      (icon as GalleryIcon).fsSpecPath = this.folderNodeJsonPath
+      (icon as GalleryIcon).fsSpecPath = this.path
     } else if (icon instanceof FileExplorerIcon) {
       icon.handleDblClick = () => this.navigate(icon.fileLinkNode!.physicalPath)
     }
@@ -440,17 +310,21 @@ export class FileExplorer extends FileViewer {
     return icon
   }
 
-  private goForward() {
-    if (this.pathStackIdx < this.pathStack.length - 1) {
-      this.playClick().then(() => {
-        this.pathStackIdx++
-        this.folderNodeJsonPath = this.pathStack[this.pathStackIdx]
-      })
+  navigate(newPath: string) {
+    if (this.path.replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
+      return
     }
+
+    playClick().then(() => {
+      this.path = newPath
+      this.pathStack.push(newPath)
+    })
   }
 
   handleClick(event: Event) {
     super.handleClick(event)
+
+    Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
 
     if (!Array.from(this.icons).some(icon => icon.selected)) {
       const wasNull = this.selectedIcon !== null
@@ -475,6 +349,18 @@ export class FileExplorer extends FileViewer {
           selectedTreeItem.classList.add('unfocused')
         }
       }
+    }
+  }
+
+  canGoUp() {
+    return getParentFolder(this.folderNode) !== ''
+  }
+
+  goUp() {
+    const parentFolder = getParentFolder(this.folderNode)
+
+    if (parentFolder) {
+      this.navigate(parentFolder)
     }
   }
 
@@ -522,27 +408,6 @@ export class FileExplorer extends FileViewer {
     }
   }
 
-  private connectDividerDragListeners(handleMouseMove: (mouseMoveEvent: MouseEvent) => void) {
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-  }
-
-  handlePrimaryDividerDrag(mouseDownEvent: MouseEvent) {
-    const startX = mouseDownEvent.clientX
-    const startWidth = this.fileTree.offsetWidth
-
-    this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
-      const deltaX = mouseMoveEvent.clientX - startX
-      FileExplorer.fileTreeWidth = startWidth + deltaX
-      this.requestUpdate()
-    })
-  }
-
   handleDividerDrag(mouseDownEvent: MouseEvent) {
     const divider = mouseDownEvent.target as HTMLElement
 
@@ -576,7 +441,7 @@ export class FileExplorer extends FileViewer {
       nextPath += folder
 
       const nextIsString = typeof tree[folder] === 'string'
-      const cwdIsNext = this.folderNodeJsonPath.replace(/\\$/, '') === nextPath.replace(/\\$/, '')
+      const cwdIsNext = this.path.replace(/\\$/, '') === nextPath.replace(/\\$/, '')
 
       let icon: string
 
@@ -610,7 +475,7 @@ export class FileExplorer extends FileViewer {
         return html`
           <li class="tree-item">
             <details
-                ?open="${this.treeOpenPaths[nextPath] || this.folderNodeJsonPath.startsWith(`${nextPath}\\`) || cwdIsNext}"
+                ?open="${this.treeOpenPaths[nextPath] || this.path.startsWith(`${nextPath}\\`) || cwdIsNext}"
                 @toggle="${(event: ToggleEvent) => this.treeOpenPaths[nextPath] = event.newState === 'open'}">
               <summary
                   class="tree-item ${cwdIsNext ? 'selected' : ''}"
@@ -629,8 +494,86 @@ export class FileExplorer extends FileViewer {
     }).flat()
   }
 
-  canGoForward() {
-    return this.pathStackIdx !== this.pathStack.length - 1
+  getNavigationButtons() {
+    return html`
+      <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"
+              @click="${this.goUp}">
+        <img src="/img/file-explorer/up.png"/>
+      </button>
+      <div class="divider"></div>
+      <button type="button" id="treeView"
+              class="style-2 ${this.showSidebar ? 'active' : ''}"
+              @click="${() => this.showSidebar = !this.showSidebar}">
+        <img src="/img/file-explorer/tree-view.png"/>
+        <span>Folders</span>
+      </button>`
+  }
+
+  getAddressBar() {
+    return html`
+      <img src="${this.windowIcon}"/>
+      <input type="text" .value="${this.folderNode.path}" id="pathInput"/>`
+  }
+
+  getSidebarContent() {
+    return html`
+      <ul class="tree-view">
+        ${this.buildFileTree(this.tree, '')}
+      </ul>`
+  }
+
+  getMainContent() {
+    return html`
+      <div class="file-list">
+        <table>
+          <colgroup>
+            <col
+                class="${this.sortColumn === SortColumn.Filename ? 'selected-sort' : ''}"/>
+            <col/>
+            <col
+                class="${this.sortColumn === SortColumn.Modified ? 'selected-sort' : ''}"/>
+          </colgroup>
+          <thead>
+          <tr>
+            <th class="sort asc" data-column="${SortColumn.Filename}"
+                @click="${this.sortFiles}">
+              File Name
+            </th>
+            <th class="divider" @mousedown="${this.handleDividerDrag}">
+              <div></div>
+            </th>
+            <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
+              Date Modified
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          ${this.folderNode.folderLinks.map(linkNode => html`
+            <tr>
+              <td>${this.buildIcon(linkNode)}</td>
+              <td class="divider"></td>
+              <td>
+                <div class="spacer"></div>
+              </td>
+            </tr>
+          `)}
+          ${this.folderNode.fileLinks.map(linkNode => html`
+            <tr>
+              <td>${this.buildIcon(linkNode)}</td>
+              <td class="divider"></td>
+              <td>${getFormattedTimestamp(linkNode)}</td>
+            </tr>
+          `)}
+          </tbody>
+        </table>
+      </div>`
+  }
+
+  getStatusBarFields() {
+    return html`
+      <p class="status-bar-field">
+        ${this.folderNode.folderLinks.length + this.folderNode.fileLinks.length} item(s)
+      </p>`
   }
 
   render() {
@@ -639,127 +582,11 @@ export class FileExplorer extends FileViewer {
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: ([tree, folderNode]: readonly [any, FolderNode]) => {
-        const fileTreeStyle: any = {width: `${FileExplorer.fileTreeWidth}px`}
-        const primaryDividerStyle: any = {}
-
-        if (!this.showFileTree) {
-          fileTreeStyle.display = 'none'
-          primaryDividerStyle.display = 'none'
-        }
-
-        return html`
-          <div class="app" @click="${this.handleClick}">
-            <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"
-                         logo="/img/internet-explorer/logo.png"></epk-toolbar>
-            <section class="content">
-              <div class="viewport">
-                <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">
-                  <button type="button" id="backButton" class="style-2"
-                          ?disabled="${!this.canGoBack()}" @click="${this.goBack}">
-                    <img src="/img/file-explorer/back.png"/>
-                    <span>Back</span>
-                  </button>
-                  <button type="button" id="forwardButton" class="style-2"
-                          ?disabled="${!this.canGoForward()}" @click="${this.goForward}">
-                    <img src="/img/file-explorer/forward.png"/>
-                  </button>
-                  <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"
-                          @click="${this.goUp}">
-                    <img src="/img/file-explorer/up.png"/>
-                  </button>
-                  <div class="divider"></div>
-                  <button type="button" id="treeView"
-                          class="style-2 ${this.showFileTree ? 'active' : ''}"
-                          @click="${() => this.showFileTree = !this.showFileTree}">
-                    <img src="/img/file-explorer/tree-view.png"/>
-                    <span>Folders</span>
-                  </button>
-                </div>
-                <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
-                      @submit="${this.handlePathInputSubmit}">
-                  <span class="address">Address</span>
-                  <div class="address-bar">
-                    <img src="${this.windowIcon}"/>
-                    <input type="text" .value="${folderNode.path}" id="pathInput"/>
-                  </div>
-                  <button type="submit" id="goButton" class="style-2">
-                    <img src="/img/file-explorer/go.png"/>
-                    <span>Go</span>
-                  </button>
-                </form>
-                <div class="explorer">
-                  <div id="fileTree" style="${styleMap(fileTreeStyle)}">
-                    <div class="file-tree-header">
-                      Folders
-                      <button type="button" id="closeButton" class="style-2"
-                              @click="${() => this.showFileTree = false}">
-                        <img src="/img/file-explorer/x.png"/>
-                      </button>
-                    </div>
-                    <ul class="tree-view">
-                      ${this.buildFileTree(tree, '')}
-                    </ul>
-                  </div>
-                  <div class="explorer-divider" style="${styleMap(primaryDividerStyle)}"
-                       @mousedown="${this.handlePrimaryDividerDrag}"></div>
-                  <div class="file-list">
-                    <table>
-                      <colgroup>
-                        <col
-                            class="${this.sortColumn === SortColumn.Filename ? 'selected-sort' : ''}"/>
-                        <col/>
-                        <col
-                            class="${this.sortColumn === SortColumn.Modified ? 'selected-sort' : ''}"/>
-                      </colgroup>
-                      <thead>
-                      <tr>
-                        <th class="sort asc" data-column="${SortColumn.Filename}"
-                            @click="${this.sortFiles}">
-                          File Name
-                        </th>
-                        <th class="divider" @mousedown="${this.handleDividerDrag}">
-                          <div></div>
-                        </th>
-                        <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
-                          Date Modified
-                        </th>
-                      </tr>
-                      </thead>
-                      <tbody>
-                      ${folderNode.folderLinks.map(linkNode => html`
-                        <tr>
-                          <td>${this.buildIcon(linkNode)}</td>
-                          <td class="divider"></td>
-                          <td>
-                            <div class="spacer"></div>
-                          </td>
-                        </tr>
-                      `)}
-                      ${folderNode.fileLinks.map(linkNode => html`
-                        <tr>
-                          <td>${this.buildIcon(linkNode)}</td>
-                          <td class="divider"></td>
-                          <td>${getFormattedTimestamp(linkNode)}</td>
-                        </tr>
-                      `)}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <div class="status-bar ${this.showStatusBar ? '' : 'hidden'}">
-              <p class="status-bar-field">
-                ${folderNode.folderLinks.length + folderNode.fileLinks.length} item(s)
-              </p>
-            </div>
-          </div>`
-      },
+      complete: () => super.render(),
       error: () => html`
         <div class="app">
           <div class="content">Error</div>
         </div>`
-    })
+    })!
   }
 }

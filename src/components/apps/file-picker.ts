@@ -4,13 +4,18 @@ import {Task} from "@lit/task";
 import {
   type FolderNode,
   getLinkName,
+  getParentFolder,
   type LinkNode,
   linkNodeToIcon,
-  LinkNodeType
+  LinkNodeType,
+  loadFolderNode
 } from "../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../icon.ts";
 import {closeWindowEvent} from "../../lib/events.ts";
-import {FileViewer} from "./common/file-viewer.ts";
+import {EpkApp} from "../app.ts";
+import {alertDialog, playClick} from "../../lib/os.ts";
+import {PathStack} from "../../lib/path-stack.ts";
+import {buttonStyle2} from "../../lib/ui.ts";
 
 export type FileTypeFilter = {
   regex: string,
@@ -19,9 +24,10 @@ export type FileTypeFilter = {
 }
 
 @customElement('file-picker')
-export class FilePicker extends FileViewer {
+export class FilePicker extends EpkApp {
   static styles = [
-    ...FileViewer.styles,
+    ...EpkApp.styles,
+    buttonStyle2,
     css`
       #backButton, #upButton {
         img {
@@ -48,6 +54,7 @@ export class FilePicker extends FileViewer {
       }
 
       #pathInput {
+        flex-grow: 1;
         margin-right: 10px;
       }
 
@@ -128,8 +135,14 @@ export class FilePicker extends FileViewer {
   @query('#fileExplorer')
   fileExplorer!: HTMLDivElement
 
+  @query('#pathInput')
+  pathInput!: HTMLInputElement
+
   @property({type: Object})
   fileTypeFilters?: FileTypeFilter[]
+
+  @property()
+  path!: string
 
   @property({type: String})
   windowTitle = 'Open'
@@ -138,12 +151,16 @@ export class FilePicker extends FileViewer {
   windowIcon = null
 
   @state()
+  folderNode: FolderNode = {path: '', folderLinks: [], fileLinks: []}
+
+  @state()
   filterRegex?: RegExp
 
   @state()
   selectedFileLinkNode?: LinkNode
 
   onFilePick!: (fileLinkNode: LinkNode) => void
+  pathStack = new PathStack<string>()
 
   private iconLoaderTask = new Task(this, {
     task: async ([src]) => {
@@ -155,8 +172,18 @@ export class FilePicker extends FileViewer {
 
       return this.folderNode
     },
-    args: () => [this.folderNodeJsonPath]
+    args: () => [this.path]
   })
+
+  protected async loadIcons(path: string) {
+    try {
+      return await loadFolderNode(path)
+    } catch (ex: unknown) {
+      alertDialog(this, 'Address Bar', `Windows cannot find '${path}'. Check the spelling and try again.`)
+    }
+
+    return null
+  }
 
   getMinimumDimensions(): [number, number] {
     return [400, 300]
@@ -189,6 +216,17 @@ export class FilePicker extends FileViewer {
     }
   }
 
+  navigate(newPath: string) {
+    if (this.path.replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
+      return
+    }
+
+    playClick().then(() => {
+      this.path = newPath
+      this.pathStack.push(newPath)
+    })
+  }
+
   private buildIcon(path: LinkNode): EpkIcon {
     const icon = linkNodeToIcon(path)
 
@@ -200,6 +238,23 @@ export class FilePicker extends FileViewer {
       : () => this.navigate(path.physicalPath)
 
     return icon
+  }
+
+  canGoUp() {
+    return getParentFolder(this.folderNode) !== ''
+  }
+
+  goUp() {
+    const parentFolder = getParentFolder(this.folderNode)
+
+    if (parentFolder) {
+      this.navigate(parentFolder)
+    }
+  }
+
+  handlePathInputSubmit(event: SubmitEvent) {
+    event.preventDefault()
+    this.navigate(this.pathInput.value)
   }
 
   render() {
@@ -228,7 +283,8 @@ export class FilePicker extends FileViewer {
                   </button>
                   <div class="divider"></div>
                   <button type="button" id="backButton" class="style-2"
-                          ?disabled="${!this.canGoBack()}" @click="${this.goBack}">
+                          ?disabled="${!this.pathStack.canGoBack()}"
+                          @click="${this.pathStack.goBack}">
                     <img src="/img/file-explorer/back.png"/>
                   </button>
                   <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"

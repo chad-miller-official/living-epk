@@ -42,3 +42,7 @@ export function warnDialog(alerter: Element, title: string, message: string, arg
     )
   )
 }
+
+export function playClick() {
+  return new Audio('/audio/click.wav').play()
+}

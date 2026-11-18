@@ -20,7 +20,7 @@ export class InternetExplorerIcon extends EpkIcon {
       const internetExplorer = new InternetExplorer()
 
       if (this.fileLinkNode) {
-        internetExplorer.url = this.fileLinkNode
+        internetExplorer.path = this.fileLinkNode
       }
 
       return resolve(internetExplorer)
