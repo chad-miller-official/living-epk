@@ -299,6 +299,7 @@ export class MediaPlayer extends EpkApp {
             about.appName = 'Microsoft &reg; Media Player'
             about.appIcon = '/img/media-player.ico'
             about.windowTitle = 'About Media Player'
+            about.delegatingAppId = this.getAppId()
 
             this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
               width: 419,

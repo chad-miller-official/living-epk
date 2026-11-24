@@ -241,6 +241,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
       const about = new AppAbout()
       about.appName = 'Microsoft &reg; Windows'
       about.windowTitle = 'About Windows'
+      about.delegatingAppId = this.getAppId()
       return about
     })
   ]

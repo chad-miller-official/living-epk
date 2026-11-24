@@ -47,13 +47,11 @@ export class EpkDesktop extends LitElement {
 
   handleFilePicked(event: Event) {
     const detail = (event as CustomEvent<FilePicked>).detail
-    const targetWindow = this.windows.find(w => w.app[0].getAppId() === detail.receivingAppId)
+    this.getWindowByAppId(detail.targetAppId)?.app[0].handleFilePicked(detail.fileLinkNode)
+  }
 
-    if (targetWindow) {
-      const targetApp = targetWindow.app[0]
-      targetApp.handleFilePicked(detail.fileLinkNode)
-      targetWindow.setActive()
-    }
+  getWindowByAppId(appId: string) {
+    return this.windows.find(w => w.app[0].getAppId() === appId)
   }
 
   handleClick(event: Event) {
@@ -90,15 +88,19 @@ export class EpkDesktop extends LitElement {
     })
   }
 
-  private getSortedWindows(event: Event) {
-    return this.windows
-      ?.filter(w => w !== event.target)
-      .toSorted((a, b) => parseInt(a.style.zIndex) - parseInt(b.style.zIndex))
-  }
-
   handleActiveWindowChange(event: Event) {
-    this.getSortedWindows(event)
-      ?.forEach((w, index) => {
+    const targetAppId = (event as CustomEvent).detail.targetAppId
+
+    const targetWindow = (targetAppId ? this.getWindowByAppId(targetAppId) : null)
+      || (event.target as EpkWindow)
+
+    targetWindow.active = true
+    targetWindow.style.zIndex = EpkWindow.instanceCount.toString()
+
+    this.windows
+      .filter(w => w !== targetWindow)
+      .toSorted((a, b) => parseInt(a.style.zIndex) - parseInt(b.style.zIndex))
+      .forEach((w, index) => {
         w.active = false
         w.style.zIndex = index.toString()
       })

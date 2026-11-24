@@ -2,7 +2,7 @@ import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {type FolderNode, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../icon.ts";
-import {closeWindowEvent, filePickedEvent} from "../../lib/events.ts";
+import {activeWindowChangeEvent, closeWindowEvent, filePickedEvent} from "../../lib/events.ts";
 import {EpkApp} from "../app.ts";
 import {playClick} from "../../lib/os.ts";
 import {PathStack} from "../../lib/path-stack.ts";
@@ -171,6 +171,7 @@ export class FilePicker extends FileViewer(EpkApp) {
     }
 
     this.dispatchEvent(filePickedEvent(this.delegatingAppId, this.selectedFileLinkNode))
+    this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
     this.dispatchEvent(closeWindowEvent())
   }
 

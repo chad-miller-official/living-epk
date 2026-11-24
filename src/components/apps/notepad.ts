@@ -180,6 +180,7 @@ export class Notepad extends EpkApp {
             about.appName = 'Microsoft &reg; Notepad'
             about.appIcon = '/img/notepad.ico'
             about.windowTitle = 'About Notepad'
+            about.delegatingAppId = this.getAppId()
 
             this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
               width: 419,

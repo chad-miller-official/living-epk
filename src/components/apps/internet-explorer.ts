@@ -283,7 +283,11 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
       text: 'Favorites',
       items: this.buildFavoritesMenuItems(FAVORITES),
     },
-    this.toolbarHelpMenu(() => new InternetExplorerAbout()),
+    this.toolbarHelpMenu(() => {
+      const about = new InternetExplorerAbout()
+      about.delegatingAppId = this.getAppId()
+      return about
+    }),
   ]
 
   firstUpdated() {
@@ -577,11 +581,17 @@ class InternetExplorerAbout extends EpkApp {
     `
   ]
 
+  @property({type: String})
   windowIcon = '/img/internet-explorer.ico'
+
+  @property({type: String})
   windowTitle = 'About Internet Explorer'
+
+  delegatingAppId!: string
 
   handleSubmit(event: SubmitEvent) {
     event.preventDefault()
+    this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
     this.dispatchEvent(closeWindowEvent())
   }
 

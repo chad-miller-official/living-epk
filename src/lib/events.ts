@@ -28,7 +28,7 @@ export type Launch = {
 }
 
 export type FilePicked = {
-  receivingAppId: string,
+  targetAppId: string,
   fileLinkNode?: LinkNode,
 }
 
@@ -55,8 +55,9 @@ export function launchEvent(
   })
 }
 
-export function activeWindowChangeEvent(): CustomEvent {
+export function activeWindowChangeEvent(targetAppId?: string): CustomEvent {
   return new CustomEvent('active-window-change', {
+    detail: {targetAppId},
     bubbles: true,
     composed: true,
   })
@@ -77,11 +78,11 @@ export function windowPropertyChangeEvent(props: WindowProperties): CustomEvent<
   })
 }
 
-export function filePickedEvent(receivingAppId: string, linkNode?: LinkNode): CustomEvent<FilePicked> {
+export function filePickedEvent(targetAppId: string, linkNode?: LinkNode): CustomEvent<FilePicked> {
   return new CustomEvent('file-picked', {
     detail: {
-      receivingAppId,
-      fileLinkNode: linkNode,
+      targetAppId,
+      fileLinkNode: linkNode
     },
     bubbles: true,
     composed: true,

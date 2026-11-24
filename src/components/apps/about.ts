@@ -1,7 +1,7 @@
 import {customElement, property} from "lit/decorators.js";
 import {EpkApp} from "../app.ts";
 import {css, html} from "lit";
-import {closeWindowEvent, launchEvent} from "../../lib/events.ts";
+import {activeWindowChangeEvent, closeWindowEvent, launchEvent} from "../../lib/events.ts";
 import {Notepad} from "./notepad.ts";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {LinkNodeType} from "../../lib/fs.ts";
@@ -89,7 +89,10 @@ export class AppAbout extends EpkApp {
   @property({type: String})
   windowTitle = 'About'
 
+  @property({type: String})
   windowIcon = null
+
+  delegatingAppId!: string
 
   getMinimumDimensions(): [number, number] {
     return [419, 350]
@@ -114,6 +117,7 @@ export class AppAbout extends EpkApp {
 
   close(event: SubmitEvent) {
     event.preventDefault()
+    this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
     this.dispatchEvent(closeWindowEvent())
   }
 

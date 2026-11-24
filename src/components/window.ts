@@ -24,7 +24,7 @@ enum WindowState {
 
 @customElement('epk-window')
 export class EpkWindow extends LitElement {
-  private static instanceCount = 0
+  static instanceCount = 0
   static lastAppPositions = new Map<string, WindowPosition>()
 
   static styles = [
@@ -268,8 +268,8 @@ export class EpkWindow extends LitElement {
         this.y = Math.floor((window.innerHeight - literalHeight) / 2)
       }
 
+      this.dispatchEvent(activeWindowChangeEvent())
       this.resetDimensions()
-      this.setActive()
       this.updateLastPosition()
 
       this.style.transform = `translate(${this.x}px, ${this.y}px)`
@@ -369,17 +369,11 @@ export class EpkWindow extends LitElement {
     }
   }
 
-  setActive() {
-    this.active = true
-    this.style.zIndex = EpkWindow.instanceCount.toString()
-    this.dispatchEvent(activeWindowChangeEvent())
-  }
-
   handleClick(event: Event) {
     if (this.isClosing) {
       event.stopPropagation()
     } else {
-      this.setActive()
+      this.dispatchEvent(activeWindowChangeEvent())
     }
   }
 
@@ -409,9 +403,8 @@ export class EpkWindow extends LitElement {
     this.y! += event.dy
 
     this.style.transform = `translate(${this.x}px, ${this.y}px)`
-    this.setActive()
-
     this.updateLastPosition()
+    this.dispatchEvent(activeWindowChangeEvent())
   }
 
   handleResize(event: ResizeEvent) {
@@ -431,9 +424,8 @@ export class EpkWindow extends LitElement {
 
     this.resetCoordinates()
     this.resetDimensions()
-    this.setActive()
-
     this.updateLastPosition()
+    this.dispatchEvent(activeWindowChangeEvent())
   }
 
   toggleMaximized() {
