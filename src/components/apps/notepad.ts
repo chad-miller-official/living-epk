@@ -3,10 +3,10 @@ import {css, html, nothing} from "lit";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import dayjs from "dayjs";
-import {closeWindowEvent, DisallowFlags, launchEvent} from "../../lib/events.ts";
+import {closeWindowEvent, DisallowFlags, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {AppAbout} from "./about.ts";
 import {FilePicker} from "./file-picker.ts";
-import {type LinkNode} from "../../lib/fs.ts";
+import {getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 
 @customElement('notepad-app')
@@ -61,8 +61,8 @@ export class Notepad extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
+            filePicker.delegatingAppId = this._appId
             filePicker.path = 'C:\\Users\\Chad\\My Documents'
-            filePicker.onFilePick = (path) => this.fileLinkNode = path
 
             const plaintextFilterRegex = '[.]txt$'
 
@@ -208,6 +208,17 @@ export class Notepad extends EpkApp {
     },
     args: () => [this.fileLinkNode],
   })
+
+  handleFilePicked(file?: LinkNode) {
+    this.fileLinkNode = file
+    let title = 'Notepad'
+
+    if (this.fileLinkNode) {
+      title += ` - ${getLinkName(this.fileLinkNode, false)}`
+    }
+
+    this.dispatchEvent(windowPropertyChangeEvent({title}))
+  }
 
   calculatePosition() {
     const lines = this.textArea.value

@@ -1,11 +1,6 @@
 import {customElement, property, query, queryAll, state} from "lit/decorators.js";
 import {css, html, nothing, type TemplateResult} from "lit";
-import {
-  closeWindowEvent,
-  focusWindowEvent,
-  launchEvent,
-  windowPropertyChangeEvent
-} from "../../lib/events.ts";
+import {activeWindowChangeEvent, closeWindowEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../ui/toolbar.ts";
 import {EpkApp} from "../app.ts";
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
@@ -294,7 +289,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
   firstUpdated() {
     this.frame?.addEventListener('load', () => {
       this.isLoading = false
-      this.getFrameDocument()?.addEventListener('click', () => this.dispatchEvent(focusWindowEvent()))
+      this.getFrameDocument()?.addEventListener('click', () => this.dispatchEvent(activeWindowChangeEvent()))
     })
 
     window.addEventListener('blur', () => {
@@ -446,7 +441,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         return html`
           <details class="favorites-folder">
             <summary class="favorite-icon" @click="${this.expandFavoritesFolder}">
-              <img src="/img/internet-explorer/folder-closed.png" />
+              <img src="/img/internet-explorer/folder-closed.png"/>
               <span>${f.title}</span>
             </summary>
             ${this.buildFavoritesPanel(f.favorites)}

@@ -2,6 +2,7 @@ import {css, LitElement, unsafeCSS} from "lit"
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import {query} from "lit/decorators.js";
 import {EpkToolbar} from "./ui/toolbar.ts";
+import type {LinkNode} from "../lib/fs.ts";
 
 export abstract class EpkApp extends LitElement {
   static styles = [
@@ -72,6 +73,12 @@ export abstract class EpkApp extends LitElement {
 
   doNotTrackLastPosition = false
 
+  protected _appId: string = crypto.randomUUID()
+
+  getAppId(): string {
+    return this._appId
+  }
+
   getMinimumDimensions(): [number | null, number | null] {
     return [null, null]
   }
@@ -84,5 +91,9 @@ export abstract class EpkApp extends LitElement {
     if (event.target !== this.toolbar) {
       this.toolbar?.closeAll()
     }
+  }
+
+  handleFilePicked(_file?: LinkNode) {
+    return
   }
 }

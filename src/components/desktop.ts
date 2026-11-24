@@ -1,7 +1,7 @@
 import {customElement, queryAssignedElements} from "lit/decorators.js";
 import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
-import {DisallowFlags, type Launch} from "../lib/events.ts";
+import {DisallowFlags, type FilePicked, type Launch} from "../lib/events.ts";
 import {EpkWindow} from "./window.ts";
 import {EpkApp} from "./app.ts";
 
@@ -24,7 +24,9 @@ export class EpkDesktop extends LitElement {
       align-items: center;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      flex-wrap: wrap;
+      max-height: 100%;
+      row-gap: 8px;
     }
   `
 
@@ -40,6 +42,18 @@ export class EpkDesktop extends LitElement {
     this.addEventListener('launch', this.handleLaunch)
     this.addEventListener('active-window-change', this.handleActiveWindowChange)
     this.addEventListener('close-window', this.handleCloseWindow)
+    this.addEventListener('file-picked', this.handleFilePicked)
+  }
+
+  handleFilePicked(event: Event) {
+    const detail = (event as CustomEvent<FilePicked>).detail
+    const targetWindow = this.windows.find(w => w.app[0].getAppId() === detail.receivingAppId)
+
+    if (targetWindow) {
+      const targetApp = targetWindow.app[0]
+      targetApp.handleFilePicked(detail.fileLinkNode)
+      targetWindow.setActive()
+    }
   }
 
   handleClick(event: Event) {

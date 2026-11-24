@@ -247,8 +247,8 @@ export class MediaPlayer extends EpkApp {
             this.toolbar!.closeAll()
 
             const filePicker = new FilePicker()
+            filePicker.delegatingAppId = this.getAppId()
             filePicker.path = 'C:\\Users\\Chad\\My Music'
-            filePicker.onFilePick = this.loadFile.bind(this)
 
             const soundFilterRegex = '[.](mp3|wav)$'
 
@@ -394,7 +394,7 @@ export class MediaPlayer extends EpkApp {
     this.dispatchEvent(windowPropertyChangeEvent(updatedProperties))
   }
 
-  loadFile(fileLinkNode: LinkNode) {
+  handleFilePicked(fileLinkNode: LinkNode) {
     this.isPlaying = false
     this.isPaused = false
     this.isStopped = true

@@ -2,7 +2,7 @@ import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {type FolderNode, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../icon.ts";
-import {closeWindowEvent} from "../../lib/events.ts";
+import {closeWindowEvent, filePickedEvent} from "../../lib/events.ts";
 import {EpkApp} from "../app.ts";
 import {playClick} from "../../lib/os.ts";
 import {PathStack} from "../../lib/path-stack.ts";
@@ -148,8 +148,8 @@ export class FilePicker extends FileViewer(EpkApp) {
   @state()
   selectedFileLinkNode?: LinkNode
 
+  delegatingAppId!: string
   pathStack = new PathStack<string>()
-  onFilePick!: (fileLinkNode: LinkNode) => void
 
   getMinimumDimensions(): [number, number] {
     return [400, 300]
@@ -170,7 +170,7 @@ export class FilePicker extends FileViewer(EpkApp) {
       return
     }
 
-    this.onFilePick(fileLinkNode)
+    this.dispatchEvent(filePickedEvent(this.delegatingAppId, this.selectedFileLinkNode))
     this.dispatchEvent(closeWindowEvent())
   }
 

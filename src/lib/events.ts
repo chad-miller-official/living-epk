@@ -1,4 +1,5 @@
 import type {EpkApp} from "../components/app.ts";
+import type {LinkNode} from "./fs.ts";
 
 export enum DisallowFlags {
   AllowAll = 0b0000,
@@ -24,6 +25,11 @@ export type Launch = {
   windowDimensions: [number | null, number | null], // width, height
   position: [number | null, number | null] | 'center', // x, y
   disallowFlags: number,
+}
+
+export type FilePicked = {
+  receivingAppId: string,
+  fileLinkNode?: LinkNode,
 }
 
 export type WindowProperties = {
@@ -63,16 +69,20 @@ export function closeWindowEvent(): CustomEvent {
   })
 }
 
-export function focusWindowEvent(): CustomEvent {
-  return new CustomEvent('focus-window', {
+export function windowPropertyChangeEvent(props: WindowProperties): CustomEvent<WindowProperties> {
+  return new CustomEvent('window-property-change', {
+    detail: props,
     bubbles: true,
     composed: true,
   })
 }
 
-export function windowPropertyChangeEvent(props: WindowProperties): CustomEvent<WindowProperties> {
-  return new CustomEvent('window-property-change', {
-    detail: props,
+export function filePickedEvent(receivingAppId: string, linkNode?: LinkNode): CustomEvent<FilePicked> {
+  return new CustomEvent('file-picked', {
+    detail: {
+      receivingAppId,
+      fileLinkNode: linkNode,
+    },
     bubbles: true,
     composed: true,
   })
