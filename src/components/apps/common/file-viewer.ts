@@ -22,15 +22,7 @@ export function FileViewer<T extends EpkAppConstructor>(Base: T) {
     }
 
     protected iconLoaderTask = new Task(this, {
-      task: async ([src]) => {
-        const icons = await this.loadIcons(src)
-
-        if (icons) {
-          this.folderNode = icons
-        }
-
-        return this.folderNode!
-      },
+      task: async ([src]) => (this.folderNode = await this.loadIcons(src))!,
       args: () => [this.path]
     })
 

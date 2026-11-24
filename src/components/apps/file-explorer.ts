@@ -155,6 +155,9 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
   windowIcon = '/img/file-explorer-small.ico'
 
   @state()
+  showSidebar = true
+
+  @state()
   sortAsc = true
 
   @state()
@@ -292,8 +295,11 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
   handleClick(event: Event) {
     super.handleClick(event)
+    const target = event.target as HTMLElement
 
-    Array.from(this.icons).filter(i => i !== event.target).forEach(i => i.selected = false)
+    if (target.id !== 'toolbar') {
+      Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
+    }
 
     if (!Array.from(this.icons).some(icon => icon.selected)) {
       const wasNull = this.selectedIcon !== null
@@ -307,8 +313,6 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
     const selectedTreeItem = this.shadowRoot?.querySelector('.tree-item.selected')
 
     if (selectedTreeItem) {
-      const target = event.target as HTMLElement
-
       if (selectedTreeItem === event.target || selectedTreeItem.contains(target)) {
         selectedTreeItem.classList.remove('unfocused')
       } else {

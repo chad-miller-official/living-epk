@@ -49,8 +49,11 @@ export class EpkToolbar extends LitElement {
       }
 
       .logo-container {
+        align-items: center;
         background-color: #ffffff;
         border-left: 1px groove #c7c5b2;
+        display: flex;
+        height: 100%;
         padding: 0 10px;
         user-select: none;
       }
@@ -60,6 +63,7 @@ export class EpkToolbar extends LitElement {
         background-color: #ece9d8;
         border-bottom: 1px groove #c7c5b2;
         display: flex;
+        height: 100%;
         justify-content: space-between;
       }
 
@@ -294,14 +298,10 @@ export class EpkToolbar extends LitElement {
         <menu id="menuBar">
           ${this.toolbarSpec.map(item => this.buildMenu(item))}
         </menu>
-        ${this.logo
-            ? html`
-              <div class="logo-container">
-                <img src="${this.logo}"/>
-              </div>`
-            : nothing}
-
-      </div>
-    `
+        ${this.logo ? html`
+          <div class="logo-container">
+            <img src="${this.logo}"/>
+          </div>` : nothing}
+      </div>`
   }
 }

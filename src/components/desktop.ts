@@ -122,7 +122,7 @@ export class EpkDesktop extends LitElement {
         y: null,
         height: null,
         width: null,
-      } : EpkWindow.lastAppPositions.get(appName)
+      } : EpkWindow.lastAppPositions.get(app.getPositionTrackingName())
 
       epkWindow.slot = 'windows'
       epkWindow.title = app.windowTitle

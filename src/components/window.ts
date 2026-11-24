@@ -251,9 +251,9 @@ export class EpkWindow extends LitElement {
      * setting X and Y inside firstUpdated() causes Lit to emit a warning about touching a prop
      * mid-update.
      *
-     * To mitigate this, we declare a ResizeObserver inside firstUpdated(), which itself is (for
-     * all intents and purposes) triggered by firstUpdated(). And then at the end of its first
-     * invocation it disconnects itself.
+     * To mitigate this, we declare a one-shot ResizeObserver inside firstUpdated(), which itself
+     * is (for all intents and purposes) triggered by firstUpdated(). And then at the end of its
+     * first invocation it disconnects itself.
      */
     const loaderObserver = new ResizeObserver(_ => {
       const bodyStyle = window.getComputedStyle(this.window!)
@@ -278,6 +278,19 @@ export class EpkWindow extends LitElement {
       loaderObserver.disconnect()
     })
 
+    this.resetInteract()
+
+    loaderObserver.observe(this.window)
+    EpkWindow.instanceCount++
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    this.interact?.unset()
+    EpkWindow.instanceCount--
+  }
+
+  resetInteract() {
     this.interact = interact(this.windowWrapper)
 
     this.interact.draggable({
@@ -308,17 +321,6 @@ export class EpkWindow extends LitElement {
         ]
       })
     }
-
-    loaderObserver.observe(this.window)
-    EpkWindow.instanceCount++
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback()
-
-    this.interact?.unset()
-
-    EpkWindow.instanceCount--
   }
 
   handleCloseWindow() {
@@ -351,10 +353,26 @@ export class EpkWindow extends LitElement {
       this.updateLastPosition()
     }
 
-    if (detail.disallowFlags === DisallowFlags.AllowAll) {
-      // TODO
-    } else if (detail.disallowFlags) {
-      // TODO
+    if (Object.hasOwn(detail, 'disallowFlags')) {
+      const disallowFlags = detail.disallowFlags!
+
+      this.noHorizontalResize = Boolean(disallowFlags & DisallowFlags.DisallowHorizontalResize)
+      this.noVerticalResize = Boolean(disallowFlags & DisallowFlags.DisallowVerticalResize)
+
+      const oldNoMinimize = this.noMinimize
+      const oldNoMaximize = this.noMaximize
+
+      this.noMinimize = Boolean(disallowFlags & DisallowFlags.DisallowMinimize)
+      this.noMaximize = Boolean(disallowFlags & DisallowFlags.DisallowMaximize)
+
+      if ((!oldNoMinimize && this.noMinimize) || (!oldNoMaximize && this.noMaximize)) {
+        this.state = null
+        this.resetCoordinates()
+        this.resetDimensions()
+        this.restoreWindow()
+      }
+
+      this.resetInteract()
     }
   }
 
@@ -377,7 +395,7 @@ export class EpkWindow extends LitElement {
   }
 
   updateLastPosition() {
-    const containedAppName = this.app[0].constructor.name
+    const containedAppName = this.app[0].getPositionTrackingName()
 
     if (containedAppName) {
       EpkWindow.lastAppPositions.set(containedAppName, {

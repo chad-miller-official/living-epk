@@ -202,10 +202,12 @@ export function linkNodeToIcon(linkNode: LinkNode) {
 
     switch (extension) {
       case 'wav':
+      case 'mp3':
         icon = new MediaIcon()
         icon.icon = '/img/audio.ico'
         break
       case 'mp4':
+      case 'webm':
         icon = new MediaIcon()
         icon.icon = '/img/video.ico'
         break

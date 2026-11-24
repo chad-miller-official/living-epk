@@ -215,6 +215,10 @@ export abstract class Explorer<T> extends EpkApp {
     this.pathStack.push(this.path, true)
   }
 
+  getPositionTrackingName() {
+    return 'explorer'
+  }
+
   goBack() {
     if (this.pathStack.canGoBack()) {
       playClick().then(() => this.path = this.pathStack.goBack())

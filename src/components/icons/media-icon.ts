@@ -10,7 +10,7 @@ export class MediaIcon extends EpkIcon {
   getLaunchOptions(): LaunchOptions {
     const fileType = (this.fileLinkNode ? getFileExtension(this.fileLinkNode) : null) || ''
 
-    if (fileType.match(/mp4/)) {
+    if (fileType.match(/mp4|webm/)) {
       return {
         height: 400,
         width: 600,

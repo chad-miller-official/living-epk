@@ -46,8 +46,8 @@ export abstract class EpkApp extends LitElement {
       }
 
       .content {
-        flex-grow: 1;
-        height: 100%;
+        flex: 1;
+        min-height: 0;
       }
       
       .status-bar {
@@ -74,6 +74,10 @@ export abstract class EpkApp extends LitElement {
 
   getMinimumDimensions(): [number | null, number | null] {
     return [null, null]
+  }
+
+  getPositionTrackingName(): string {
+    return this.constructor.name
   }
 
   handleClick(event: Event) {

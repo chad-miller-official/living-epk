@@ -129,18 +129,6 @@ export class MediaPlayer extends EpkApp {
         border-top: 1px solid black;
         display: flex;
       }
-      
-      .player-wrapper {
-        background-color: #000000;
-        display: flex;
-        flex-shrink: 1;
-        height: calc(100% - 118px);
-        
-        video {
-          height: 100%;
-          width: 100%;
-        }
-      }
 
       .progress-bar-container {
         align-items: flex-start;
@@ -192,6 +180,13 @@ export class MediaPlayer extends EpkApp {
         font-family: "Pixelated MS Sans Serif", Arial;
         margin: 6px;
         padding: 3px 1px;
+        width: 100%;
+      }
+
+      video {
+        background-color: #000000;
+        height: 100%;
+        min-height: 0;
         width: 100%;
       }
     `
@@ -257,11 +252,17 @@ export class MediaPlayer extends EpkApp {
 
             const soundFilterRegex = '[.](mp3|wav)$'
 
-            filePicker.fileTypeFilters = [{
-              regex: soundFilterRegex,
-              label: 'Sound (*.mp3, *.wav)',
-              selected: true
-            }]
+            filePicker.fileTypeFilters = [
+              {
+                regex: soundFilterRegex,
+                label: 'Sound (*.mp3, *.wav)',
+                selected: true
+              },
+              {
+                regex: '[.](mp4|webm)$',
+                label: 'Video (*.mp4, *.webm)',
+              },
+            ]
 
             filePicker.filterRegex = new RegExp(soundFilterRegex)
 
@@ -363,7 +364,7 @@ export class MediaPlayer extends EpkApp {
     }
   }
 
-  updateWindowProperties() {
+  updateWindowProperties(updateGeometry: boolean = false) {
     this.windowTitle = 'Media Player'
 
     if (this.fileLinkNode) {
@@ -380,12 +381,14 @@ export class MediaPlayer extends EpkApp {
 
     const updatedProperties: WindowProperties = {title: this.windowTitle}
 
-    if (this.mimeType?.startsWith('video')) {
-      updatedProperties.height = 600
-      updatedProperties.disallowFlags = DisallowFlags.AllowAll
-    } else {
-      updatedProperties.height = 146
-      updatedProperties.disallowFlags = DisallowFlags.DisallowVerticalResize | DisallowFlags.DisallowMaximize
+    if (updateGeometry) {
+      if (this.mimeType?.startsWith('video')) {
+        updatedProperties.height = 600
+        updatedProperties.disallowFlags = DisallowFlags.AllowAll
+      } else {
+        updatedProperties.height = 146
+        updatedProperties.disallowFlags = DisallowFlags.DisallowVerticalResize | DisallowFlags.DisallowMaximize
+      }
     }
 
     this.dispatchEvent(windowPropertyChangeEvent(updatedProperties))
@@ -401,7 +404,7 @@ export class MediaPlayer extends EpkApp {
     this.sliderPosition = '-5px'
 
     this.resetMimeType()
-    this.updateWindowProperties()
+    this.updateWindowProperties(true)
 
     this.player.load()
   }
@@ -525,12 +528,10 @@ export class MediaPlayer extends EpkApp {
         break
       case 'video':
         playerElement = html`
-          <div class="player-wrapper">
-            <video id="player" @timeupdate=${this.handleTimeUpdate} @loadedmetadata=${this.handleLoadedMetadata}
-                   @ended=${this.handleEnded}>
-              ${source}
-            </video>
-          </div>`
+          <video id="player" @timeupdate=${this.handleTimeUpdate} @loadedmetadata=${this.handleLoadedMetadata}
+                 @ended=${this.handleEnded}>
+            ${source}
+          </video>`
         break
       default:
         playerElement = html`
