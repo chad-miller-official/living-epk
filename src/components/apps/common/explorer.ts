@@ -27,9 +27,10 @@ export abstract class Explorer<T> extends EpkApp {
       }
 
       #sidebar {
+        display: flex;
+        flex-direction: column;
         flex-shrink: 0;
         min-width: 12ch;
-        overflow: auto;
       }
 
       .address {
@@ -124,7 +125,7 @@ export abstract class Explorer<T> extends EpkApp {
   @state()
   showSidebar = false
 
-  pathStack = new PathStack<T>()
+  protected pathStack = new PathStack<T>()
 
   protected toolbarCloseItem = {
     text: 'Close',
@@ -197,17 +198,17 @@ export abstract class Explorer<T> extends EpkApp {
 
   abstract toolbarSpec: ToolbarMenu[]
 
-  abstract navigate(to: string): void
+  protected abstract navigate(to: string): void
 
-  abstract getNavigationButtons(): TemplateResult
+  protected abstract getNavigationButtons(): TemplateResult
 
-  abstract getAddressBar(): TemplateResult
+  protected abstract getAddressBar(): TemplateResult
 
-  abstract getSidebarContent(): TemplateResult
+  protected abstract getSidebarContent(): TemplateResult
 
-  abstract getMainContent(): TemplateResult
+  protected abstract getMainContent(): TemplateResult
 
-  abstract getStatusBarFields(): TemplateResult
+  protected abstract getStatusBarFields(): TemplateResult
 
   connectedCallback() {
     super.connectedCallback()
@@ -226,12 +227,12 @@ export abstract class Explorer<T> extends EpkApp {
     }
   }
 
-  handlePathInputSubmit(event: SubmitEvent) {
+  private handlePathInputSubmit(event: SubmitEvent) {
     event.preventDefault()
     this.navigate(this.pathInput.value)
   }
 
-  connectDividerDragListeners(handleMouseMove: (mouseMoveEvent: MouseEvent) => void) {
+  protected connectDividerDragListeners(handleMouseMove: (mouseMoveEvent: MouseEvent) => void) {
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
@@ -241,7 +242,7 @@ export abstract class Explorer<T> extends EpkApp {
     document.addEventListener('mouseup', handleMouseUp)
   }
 
-  handlePrimaryDividerDrag(mouseDownEvent: MouseEvent) {
+  private handlePrimaryDividerDrag(mouseDownEvent: MouseEvent) {
     const startX = mouseDownEvent.clientX
     const startWidth = this.sidebar.offsetWidth
 
@@ -309,7 +310,6 @@ export abstract class Explorer<T> extends EpkApp {
         <div class="status-bar ${this.showStatusBar ? '' : 'hidden'}">
           ${this.getStatusBarFields()}
         </div>
-      </div>
-    `
+      </div>`
   }
 }

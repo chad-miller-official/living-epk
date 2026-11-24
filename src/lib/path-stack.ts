@@ -1,10 +1,8 @@
 export class PathStack<T> {
-
   private stack: T[] = []
   private idx = 0
 
   push(item: T, noInc = false) {
-
     if (!noInc) {
       this.idx++
     }

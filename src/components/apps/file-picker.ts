@@ -1,21 +1,13 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
-import {Task} from "@lit/task";
-import {
-  type FolderNode,
-  getLinkName,
-  getParentFolder,
-  type LinkNode,
-  linkNodeToIcon,
-  LinkNodeType,
-  loadFolderNode
-} from "../../lib/fs.ts";
+import {type FolderNode, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../icon.ts";
 import {closeWindowEvent} from "../../lib/events.ts";
 import {EpkApp} from "../app.ts";
-import {alertDialog, playClick} from "../../lib/os.ts";
+import {playClick} from "../../lib/os.ts";
 import {PathStack} from "../../lib/path-stack.ts";
 import {buttonStyle2} from "../../lib/ui.ts";
+import {FileViewer} from "./common/file-viewer.ts";
 
 export type FileTypeFilter = {
   regex: string,
@@ -24,7 +16,7 @@ export type FileTypeFilter = {
 }
 
 @customElement('file-picker')
-export class FilePicker extends EpkApp {
+export class FilePicker extends FileViewer(EpkApp) {
   static styles = [
     ...EpkApp.styles,
     buttonStyle2,
@@ -151,39 +143,13 @@ export class FilePicker extends EpkApp {
   windowIcon = null
 
   @state()
-  folderNode: FolderNode = {path: '', folderLinks: [], fileLinks: []}
-
-  @state()
   filterRegex?: RegExp
 
   @state()
   selectedFileLinkNode?: LinkNode
 
-  onFilePick!: (fileLinkNode: LinkNode) => void
   pathStack = new PathStack<string>()
-
-  private iconLoaderTask = new Task(this, {
-    task: async ([src]) => {
-      const icons = await this.loadIcons(src)
-
-      if (icons) {
-        this.folderNode = icons
-      }
-
-      return this.folderNode
-    },
-    args: () => [this.path]
-  })
-
-  protected async loadIcons(path: string) {
-    try {
-      return await loadFolderNode(path)
-    } catch (ex: unknown) {
-      alertDialog(this, 'Address Bar', `Windows cannot find '${path}'. Check the spelling and try again.`)
-    }
-
-    return null
-  }
+  onFilePick!: (fileLinkNode: LinkNode) => void
 
   getMinimumDimensions(): [number, number] {
     return [400, 300]
@@ -199,7 +165,7 @@ export class FilePicker extends EpkApp {
     }
   }
 
-  private handleFilePick(fileLinkNode?: LinkNode) {
+  handleFilePick(fileLinkNode?: LinkNode) {
     if (!fileLinkNode) {
       return
     }
@@ -238,18 +204,6 @@ export class FilePicker extends EpkApp {
       : () => this.navigate(path.physicalPath)
 
     return icon
-  }
-
-  canGoUp() {
-    return getParentFolder(this.folderNode) !== ''
-  }
-
-  goUp() {
-    const parentFolder = getParentFolder(this.folderNode)
-
-    if (parentFolder) {
-      this.navigate(parentFolder)
-    }
   }
 
   handlePathInputSubmit(event: SubmitEvent) {

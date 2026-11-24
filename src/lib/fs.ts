@@ -1,4 +1,4 @@
-import {MusicIcon} from "../components/icons/music-icon.ts";
+import {MediaIcon} from "../components/icons/media-icon.ts";
 import {InternetExplorerIcon} from "../components/icons/internet-explorer-icon.ts";
 import {GalleryIcon} from "../components/icons/gallery-icon.ts";
 import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
@@ -202,7 +202,12 @@ export function linkNodeToIcon(linkNode: LinkNode) {
 
     switch (extension) {
       case 'wav':
-        icon = new MusicIcon()
+        icon = new MediaIcon()
+        icon.icon = '/img/audio.ico'
+        break
+      case 'mp4':
+        icon = new MediaIcon()
+        icon.icon = '/img/video.ico'
         break
       case 'html':
         icon = new InternetExplorerIcon()

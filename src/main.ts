@@ -7,7 +7,7 @@ import './components/window.ts'
 
 import './components/icons/file-explorer-icon.ts'
 import './components/icons/internet-explorer-icon.ts'
-import './components/icons/music-icon.ts'
+import './components/icons/media-icon.ts'
 import './components/icons/plaintext-icon.ts'
 
 import {launchEvent} from "./lib/events.ts";

@@ -1,6 +1,7 @@
 import type {EpkApp} from "../components/app.ts";
 
 export enum DisallowFlags {
+  AllowAll = 0b0000,
   DisallowMaximize = 0b0001,
   DisallowMinimize = 0b0010,
   DisallowVerticalResize = 0b0100,
@@ -28,6 +29,8 @@ export type Launch = {
 export type WindowProperties = {
   title?: string,
   fullscreen?: boolean,
+  height?: number,
+  disallowFlags?: number,
 }
 
 export function launchEvent(

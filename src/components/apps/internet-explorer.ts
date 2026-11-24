@@ -66,13 +66,6 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           cursor: initial;
           padding: 2px;
 
-          &::before {
-            background-image: url("/img/internet-explorer/folder-closed.png");
-            content: "";
-            height: 16px;
-            width: 16px;
-          }
-
           &.active {
             background-color: #316AC5;
             color: #ffffff;
@@ -81,10 +74,6 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
 
         &[open] {
           border: 1px solid #7F9DB9;
-
-          & > summary.favorite-icon::before {
-            background-image: url("/img/internet-explorer/folder-open.png");
-          }
         }
 
         summary:focus {
@@ -426,11 +415,18 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
   }
 
   expandFavoritesFolder(event: Event) {
-    const target = event.target as HTMLElement
+    let target = event.target as HTMLElement
+
+    if (!target.classList.contains('favorite-icon')) {
+      target = target.parentElement!
+    }
+
     target.classList.add('active')
 
+    const parent = target.parentElement!
+
     Array.from(this.favoritesFolders!)
-      .filter(e => e !== target)
+      .filter(e => e !== parent)
       .forEach(e => e.removeAttribute('open'))
 
     Array.from(this.favoriteIcons!)
@@ -450,7 +446,8 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         return html`
           <details class="favorites-folder">
             <summary class="favorite-icon" @click="${this.expandFavoritesFolder}">
-              ${f.title}
+              <img src="/img/internet-explorer/folder-closed.png" />
+              <span>${f.title}</span>
             </summary>
             ${this.buildFavoritesPanel(f.favorites)}
           </details>`

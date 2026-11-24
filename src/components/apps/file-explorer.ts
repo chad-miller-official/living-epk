@@ -1,16 +1,7 @@
 import {type EpkIcon, IconViewMode} from "../icon.ts";
 import {customElement, property, queryAll, state} from "lit/decorators.js";
 import {css, html, type TemplateResult} from "lit";
-import {
-  type FolderNode,
-  getFormattedTimestamp,
-  getLinkName,
-  getParentFolder,
-  type LinkNode,
-  linkNodeToIcon,
-  LinkNodeType,
-  loadFolderNode
-} from "../../lib/fs.ts";
+import {getFormattedTimestamp, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
@@ -19,6 +10,7 @@ import {launchEvent} from "../../lib/events.ts";
 import {AppAbout} from "./about.ts";
 import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
 import {Explorer} from "./common/explorer.ts";
+import {FileViewer} from "./common/file-viewer.ts";
 
 enum SortColumn {
   Filename = 'filename',
@@ -26,13 +18,14 @@ enum SortColumn {
 }
 
 @customElement('file-explorer')
-export class FileExplorer extends Explorer<string> {
+export class FileExplorer extends FileViewer(Explorer<string>) {
   static styles = [
     ...Explorer.styles,
     css`
       #sidebar > ul {
         border: none;
-        width: max-content;
+        flex-grow: 1;
+        overflow: auto;
       }
 
       .file-list {
@@ -44,7 +37,7 @@ export class FileExplorer extends Explorer<string> {
 
       .tree-item {
         list-style-type: none;
-        width: fit-content;
+        width: max-content;
 
         &.selected {
           &.unfocused span {
@@ -146,8 +139,7 @@ export class FileExplorer extends Explorer<string> {
 
       th, thead {
         background-color: #eceadb;
-      }
-    `
+      }`
   ]
 
   @queryAll('.epk-icon')
@@ -161,9 +153,6 @@ export class FileExplorer extends Explorer<string> {
 
   @property({type: String})
   windowIcon = '/img/file-explorer-small.ico'
-
-  @state()
-  folderNode: FolderNode = {path: '', folderLinks: [], fileLinks: []}
 
   @state()
   sortAsc = true
@@ -254,42 +243,22 @@ export class FileExplorer extends Explorer<string> {
   ]
 
   private treeLoaderTask = new Task(this, {
-    task: async ([src]) => {
-      const treeResponse = await fetch(src)
+    task: async ([_, src]) => {
+      if (!this.tree) {
+        const treeResponse = await fetch(src)
 
-      if (!treeResponse.ok) {
-        alertDialog(this, 'Error', 'Failed to load file system tree.')
-        return {}
+        if (!treeResponse.ok) {
+          alertDialog(this, 'Error', 'Failed to load file system tree.')
+          this.tree = {}
+        } else {
+          this.tree = await treeResponse.json()
+        }
       }
 
-      return treeResponse.json()
+      return [this.icons, this.tree]
     },
-    args: () => ['/data/_folders.json']
+    args: () => [this.iconLoaderTask.value, '/data/_folders.json']
   })
-
-  private iconLoaderTask = new Task(this, {
-    task: async ([tree, src]) => {
-      const icons = await this.loadIcons(src)
-
-      if (icons) {
-        this.folderNode = icons
-      }
-
-      this.tree = tree
-      return [this.tree, this.folderNode]
-    },
-    args: () => [this.treeLoaderTask.value, this.path]
-  })
-
-  protected async loadIcons(path: string) {
-    try {
-      return await loadFolderNode(path)
-    } catch (ex: unknown) {
-      alertDialog(this, 'Address Bar', `Windows cannot find '${path}'. Check the spelling and try again.`)
-    }
-
-    return null
-  }
 
   private buildIcon(path: LinkNode): EpkIcon {
     const icon = linkNodeToIcon(path)
@@ -352,18 +321,6 @@ export class FileExplorer extends Explorer<string> {
     }
   }
 
-  canGoUp() {
-    return getParentFolder(this.folderNode) !== ''
-  }
-
-  goUp() {
-    const parentFolder = getParentFolder(this.folderNode)
-
-    if (parentFolder) {
-      this.navigate(parentFolder)
-    }
-  }
-
   sortFiles(event: { target: EventTarget | HTMLTableCellElement }) {
     const target = event.target as HTMLTableCellElement
 
@@ -393,12 +350,12 @@ export class FileExplorer extends Explorer<string> {
           ? (a: LinkNode, b: LinkNode) => getLinkName(a).localeCompare(getLinkName(b))
           : (a: LinkNode, b: LinkNode) => getLinkName(b).localeCompare(getLinkName(a))
 
-        this.folderNode.folderLinks.sort(sortAlphabetical)
-        this.folderNode.fileLinks.sort(sortAlphabetical)
+        this.folderNode?.folderLinks.sort(sortAlphabetical)
+        this.folderNode?.fileLinks.sort(sortAlphabetical)
 
         break
       case SortColumn.Modified:
-        this.folderNode.fileLinks.sort(
+        this.folderNode?.fileLinks.sort(
           this.sortAsc
             ? (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
             : (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
@@ -512,7 +469,7 @@ export class FileExplorer extends Explorer<string> {
   getAddressBar() {
     return html`
       <img src="${this.windowIcon}"/>
-      <input type="text" .value="${this.folderNode.path}" id="pathInput"/>`
+      <input type="text" .value="${this.folderNode?.path}" id="pathInput"/>`
   }
 
   getSidebarContent() {
@@ -548,7 +505,7 @@ export class FileExplorer extends Explorer<string> {
           </tr>
           </thead>
           <tbody>
-          ${this.folderNode.folderLinks.map(linkNode => html`
+          ${this.folderNode?.folderLinks.map(linkNode => html`
             <tr>
               <td>${this.buildIcon(linkNode)}</td>
               <td class="divider"></td>
@@ -557,7 +514,7 @@ export class FileExplorer extends Explorer<string> {
               </td>
             </tr>
           `)}
-          ${this.folderNode.fileLinks.map(linkNode => html`
+          ${this.folderNode?.fileLinks.map(linkNode => html`
             <tr>
               <td>${this.buildIcon(linkNode)}</td>
               <td class="divider"></td>
@@ -572,17 +529,17 @@ export class FileExplorer extends Explorer<string> {
   getStatusBarFields() {
     return html`
       <p class="status-bar-field">
-        ${this.folderNode.folderLinks.length + this.folderNode.fileLinks.length} item(s)
+        ${(this.folderNode?.folderLinks.length || 0) + (this.folderNode?.fileLinks.length || 0)} item(s)
       </p>`
   }
 
   render() {
-    return this.iconLoaderTask.render({
+    return this.treeLoaderTask.render({
       pending: () => html`
         <div class="app">
           <div class="content"></div>
         </div>`,
-      complete: () => super.render(),
+      complete: () => super.render() as TemplateResult<1>,
       error: () => html`
         <div class="app">
           <div class="content">Error</div>

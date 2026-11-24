@@ -4,7 +4,7 @@ import interact from "interactjs";
 import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
-import {activeWindowChangeEvent, closeWindowEvent, type WindowProperties} from "../lib/events.ts";
+import {activeWindowChangeEvent, closeWindowEvent, DisallowFlags, type WindowProperties} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import type {EpkApp} from "./app.ts";
@@ -112,6 +112,8 @@ export class EpkWindow extends LitElement {
         background-color: #eceadb;
         flex-grow: 1;
         margin: 0 auto;
+        max-height: calc(100% - 28px);
+        overflow: hidden;
         width: calc(100% - 6px);
 
         &.fullscreen {
@@ -287,9 +289,9 @@ export class EpkWindow extends LitElement {
       this.interact.resizable({
         edges: {
           top: false,
-          right: !this.noVerticalResize,
-          bottom: !this.noHorizontalResize,
-          left: !this.noVerticalResize,
+          right: !this.noHorizontalResize,
+          bottom: !this.noVerticalResize,
+          left: !this.noHorizontalResize,
         },
         listeners: {
           start: () => this.resizing = true,
@@ -339,6 +341,20 @@ export class EpkWindow extends LitElement {
 
     if (Object.hasOwn(detail, 'fullscreen')) {
       this.setFullscreen(detail.fullscreen!)
+    }
+
+    if (detail.height) {
+      this.height = detail.height
+
+      this.resetDimensions()
+      this.restoreWindow()
+      this.updateLastPosition()
+    }
+
+    if (detail.disallowFlags === DisallowFlags.AllowAll) {
+      // TODO
+    } else if (detail.disallowFlags) {
+      // TODO
     }
   }
 

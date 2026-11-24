@@ -5,6 +5,7 @@ import {
   closeWindowEvent,
   DisallowFlags,
   launchEvent,
+  type WindowProperties,
   windowPropertyChangeEvent
 } from "../../lib/events.ts";
 import {styleMap} from "lit/directives/style-map.js";
@@ -16,8 +17,8 @@ import {AppAbout} from "./about.ts";
 import {getFileExtension, getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 
-@customElement('audio-player')
-export class AudioPlayer extends EpkApp {
+@customElement('media-player')
+export class MediaPlayer extends EpkApp {
   static styles = [
     ...EpkApp.styles,
     css`
@@ -121,13 +122,24 @@ export class AudioPlayer extends EpkApp {
       .content {
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
         user-select: none;
       }
 
       .controls {
         border-top: 1px solid black;
         display: flex;
+      }
+      
+      .player-wrapper {
+        background-color: #000000;
+        display: flex;
+        flex-shrink: 1;
+        height: calc(100% - 118px);
+        
+        video {
+          height: 100%;
+          width: 100%;
+        }
       }
 
       .progress-bar-container {
@@ -185,8 +197,8 @@ export class AudioPlayer extends EpkApp {
     `
   ]
 
-  @query('#audioPlayer')
-  audioPlayer!: HTMLAudioElement
+  @query('#player')
+  player!: HTMLAudioElement | HTMLVideoElement
 
   @query('#progressBar')
   progressBar!: HTMLDivElement
@@ -204,7 +216,7 @@ export class AudioPlayer extends EpkApp {
   fileLinkNode?: LinkNode
 
   @state()
-  mimeType: string | undefined
+  mimeType?: string
 
   @state()
   isPlaying = false
@@ -219,7 +231,7 @@ export class AudioPlayer extends EpkApp {
   isEnded = false
 
   @state()
-  audioLength = '00:00 (min:sec)'
+  length = '00:00 (min:sec)'
 
   @state()
   timerText = '00:00 (min:sec)'
@@ -263,7 +275,7 @@ export class AudioPlayer extends EpkApp {
         {
           text: 'Close', action: () => {
             this.fileLinkNode = undefined
-            this.audioPlayer.load()
+            this.player.load()
             this.dispatchEvent(windowPropertyChangeEvent({title: 'Media Player'}))
           }
         },
@@ -300,10 +312,7 @@ export class AudioPlayer extends EpkApp {
 
   connectedCallback() {
     super.connectedCallback()
-
-    if (this.fileLinkNode) {
-      this.mimeType = `audio/${getFileExtension(this.fileLinkNode)}`
-    }
+    this.resetMimeType()
   }
 
   disconnectedCallback() {
@@ -330,7 +339,31 @@ export class AudioPlayer extends EpkApp {
     return [256, 144]
   }
 
-  updateWindowTitle() {
+  resetMimeType() {
+    if (this.fileLinkNode) {
+      const extension = getFileExtension(this.fileLinkNode)
+      let type: string
+
+      switch (extension) {
+        case 'mp3':
+        case 'wav':
+          type = 'audio'
+          break
+        case 'mp4':
+          type = 'video'
+          break
+        default:
+          type = ''
+          break
+      }
+
+      this.mimeType = `${type}/${extension}`
+    } else {
+      this.mimeType = undefined
+    }
+  }
+
+  updateWindowProperties() {
     this.windowTitle = 'Media Player'
 
     if (this.fileLinkNode) {
@@ -345,7 +378,17 @@ export class AudioPlayer extends EpkApp {
       }
     }
 
-    this.dispatchEvent(windowPropertyChangeEvent({title: this.windowTitle}))
+    const updatedProperties: WindowProperties = {title: this.windowTitle}
+
+    if (this.mimeType?.startsWith('video')) {
+      updatedProperties.height = 600
+      updatedProperties.disallowFlags = DisallowFlags.AllowAll
+    } else {
+      updatedProperties.height = 146
+      updatedProperties.disallowFlags = DisallowFlags.DisallowVerticalResize | DisallowFlags.DisallowMaximize
+    }
+
+    this.dispatchEvent(windowPropertyChangeEvent(updatedProperties))
   }
 
   loadFile(fileLinkNode: LinkNode) {
@@ -355,12 +398,12 @@ export class AudioPlayer extends EpkApp {
     this.isEnded = false
 
     this.fileLinkNode = fileLinkNode
-    this.mimeType = `audio/${getFileExtension(this.fileLinkNode)}`
-
     this.sliderPosition = '-5px'
 
-    this.updateWindowTitle()
-    this.audioPlayer.load()
+    this.resetMimeType()
+    this.updateWindowProperties()
+
+    this.player.load()
   }
 
   handleSliderDrag(event: ResizeEvent) {
@@ -368,49 +411,49 @@ export class AudioPlayer extends EpkApp {
 
     const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
     const percentMoved = event.dx / progressBarWidth
-    this.audioPlayer.currentTime += this.audioPlayer.duration * percentMoved
+    this.player.currentTime += this.player.duration * percentMoved
   }
 
   handlePlayPauseClick() {
     if (this.isPlaying) {
-      this.audioPlayer.pause()
+      this.player.pause()
 
       this.isPlaying = false
       this.isPaused = true
       this.isStopped = false
       this.isEnded = false
 
-      this.updateWindowTitle()
+      this.updateWindowProperties()
     } else {
       if (this.isEnded) {
-        this.audioPlayer.currentTime = 0
+        this.player.currentTime = 0
       }
 
-      this.audioPlayer.play().then(() => {
+      this.player.play().then(() => {
         this.isPlaying = true
         this.isPaused = false
         this.isStopped = false
         this.isEnded = false
 
-        this.updateWindowTitle()
+        this.updateWindowProperties()
       })
     }
   }
 
   handleStopClick() {
-    this.audioPlayer.pause()
-    this.audioPlayer.currentTime = 0
+    this.player.pause()
+    this.player.currentTime = 0
 
     this.isPlaying = false
     this.isPaused = false
     this.isStopped = true
     this.isEnded = false
 
-    this.updateWindowTitle()
+    this.updateWindowProperties()
   }
 
   getTimeString(time: number): [string, string] {
-    if (this.audioPlayer.duration < 60) {
+    if (this.player.duration < 60) {
       const seconds = time.toFixed(2)
       const [whole, fraction] = seconds.toString().split('.')
       return [`${whole.toString().padStart(2, '0')}.${fraction.toString().padStart(2, '0')}`, '(sec)']
@@ -422,13 +465,13 @@ export class AudioPlayer extends EpkApp {
   }
 
   handleTimeUpdate() {
-    const currentTime = this.audioPlayer.currentTime
-    this.sliderPosition = `-5px + ${(currentTime / this.audioPlayer.duration) * 100}%`
-    this.timerText = this.getTimeString(this.audioPlayer.currentTime).join(' ')
+    const currentTime = this.player.currentTime
+    this.sliderPosition = `-5px + ${(currentTime / this.player.duration) * 100}%`
+    this.timerText = this.getTimeString(this.player.currentTime).join(' ')
   }
 
   handleLoadedMetadata() {
-    this.audioLength = this.getTimeString(this.audioPlayer?.duration)[0]
+    this.length = this.getTimeString(this.player?.duration)[0]
   }
 
   handleEnded() {
@@ -437,7 +480,7 @@ export class AudioPlayer extends EpkApp {
     this.isStopped = true
     this.isEnded = true
 
-    this.updateWindowTitle()
+    this.updateWindowProperties()
   }
 
   handleProgressBarClick(event: PointerEvent) {
@@ -449,33 +492,56 @@ export class AudioPlayer extends EpkApp {
 
     const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
     const percentMoved = event.offsetX / progressBarWidth
-    this.audioPlayer.currentTime = this.audioPlayer.duration * percentMoved
+    this.player.currentTime = this.player.duration * percentMoved
   }
 
   seek(amount: number) {
-    let newTime = this.audioPlayer.currentTime + amount
+    let newTime = this.player.currentTime + amount
 
     if (newTime < 0) {
       newTime = 0
-    } else if (newTime > this.audioPlayer.duration) {
-      newTime = this.audioPlayer.duration
+    } else if (newTime > this.player.duration) {
+      newTime = this.player.duration
     }
 
-    this.audioPlayer.currentTime = newTime
+    this.player.currentTime = newTime
   }
 
   render() {
     const sliderStyle = {left: `calc(${this.sliderPosition})`}
 
+    const source = html`
+      <source src="${this.fileLinkNode?.physicalPath}" type="${this.mimeType}"/>`
+
+    let playerElement
+
+    switch (this.mimeType?.split('/')[0]) {
+      case 'audio':
+        playerElement = html`
+          <audio id="player" @timeupdate=${this.handleTimeUpdate} @loadedmetadata=${this.handleLoadedMetadata}
+                 @ended=${this.handleEnded}>
+            ${source}
+          </audio>`
+        break
+      case 'video':
+        playerElement = html`
+          <div class="player-wrapper">
+            <video id="player" @timeupdate=${this.handleTimeUpdate} @loadedmetadata=${this.handleLoadedMetadata}
+                   @ended=${this.handleEnded}>
+              ${source}
+            </video>
+          </div>`
+        break
+      default:
+        playerElement = html`
+          <div>Unrecognized MIME type: ${this.mimeType}</div>`
+    }
+
     return html`
       <div class="app" @click="${this.handleClick}">
         <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
         <div class="content">
-          <audio id="audioPlayer" @timeupdate="${this.handleTimeUpdate}"
-                 @loadedmetadata="${this.handleLoadedMetadata}"
-                 @ended="${this.handleEnded}">
-            <source src="${this.fileLinkNode?.physicalPath}" type="${this.mimeType}"/>
-          </audio>
+          ${playerElement}
           <div class="timeline">
             <div id="progressBar" @click="${this.handleProgressBarClick}">
               <div id="slider" style="${styleMap(sliderStyle)}"></div>
@@ -492,7 +558,7 @@ export class AudioPlayer extends EpkApp {
             </div>
             <div class="ticks">
               <div class="tick">0:00</div>
-              <div class="tick">${this.audioLength}</div>
+              <div class="tick">${this.length}</div>
             </div>
           </div>
           <div class="controls">
