@@ -22,9 +22,7 @@ export function alertDialog(alerter: EpkApp, title: string, message: string) {
   alerter.dispatchEvent(
     launchEvent(() =>
         new Promise<EpkAlert>(resolve =>
-          new Audio('/audio/error.wav')
-            .play()
-            .then(() => resolve(getAlertDialog(alerter.getAppId(), title, message)))),
+          playError().then(() => resolve(getAlertDialog(alerter.getAppId(), title, message)))),
       getAlertDialogLaunchArgs(message)
     )
   )
@@ -43,6 +41,10 @@ export function warnDialog(alerter: EpkApp, title: string, message: string, args
       getAlertDialogLaunchArgs(message)
     )
   )
+}
+
+export function playError() {
+  return new Audio('/audio/error.wav').play()
 }
 
 export function playClick() {

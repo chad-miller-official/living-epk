@@ -8,6 +8,8 @@ import {activeWindowChangeEvent, DisallowFlags, type WindowProperties} from "../
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import type {EpkApp} from "./app.ts";
+import type {EpkDesktop} from "./desktop.ts";
+import {playError} from "../lib/os.ts";
 
 type WindowPosition = {
   x: number,
@@ -199,6 +201,9 @@ export class EpkWindow extends LitElement {
 
   private interact?: Interactable
 
+  private blinkTimer?: number
+  private blinkCounter: number = 0
+
   /*
    * When closing a Window, two events are triggered:
    *
@@ -369,15 +374,71 @@ export class EpkWindow extends LitElement {
     }
   }
 
+  checkBlockingDialog(event: Event) {
+    const desktop = this.parentElement as EpkDesktop
+
+    const blockingDialogWindow = desktop.windows.filter(w => {
+      if (w !== this && Object.hasOwn(w.app[0], 'delegatingAppId')) {
+        // @ts-ignore
+        return w.app[0].delegatingAppId === this.app[0].getAppId()
+      }
+
+      return false
+    }).pop()
+
+    if (blockingDialogWindow) {
+      event.stopPropagation()
+      // TODO change this sound to ding
+      playError().then(() => blockingDialogWindow.blink())
+      return true
+    }
+
+    return false
+  }
+
+  blink() {
+    if (this.blinkTimer) {
+      return
+    }
+
+    this.blinkTimer = setInterval(() => {
+      this.active = !this.active
+      this.blinkCounter++
+
+      if (this.blinkCounter > 10) {
+        clearInterval(this.blinkTimer)
+        this.dispatchEvent(activeWindowChangeEvent())
+        this.blinkTimer = undefined
+        this.blinkCounter = 0
+      }
+    }, 100)
+  }
+
   handleClick(event: Event) {
     if (this.isClosing) {
       event.stopPropagation()
     } else {
+      if (this.checkBlockingDialog(event)) {
+        return
+      }
+
       this.dispatchEvent(activeWindowChangeEvent())
     }
   }
 
-  handleDblClick() {
+  handleCloseClick(event: Event) {
+    if (this.checkBlockingDialog(event)) {
+      return
+    }
+
+    this.app[0]?.close()
+  }
+
+  handleDblClick(event: Event) {
+    if (this.checkBlockingDialog(event)) {
+      return
+    }
+
     this.toggleMaximized()
   }
 
@@ -536,14 +597,13 @@ export class EpkWindow extends LitElement {
                   <button
                       aria-label="${this.state === WindowState.MAXIMIZED ? 'Restore' : 'Maximize'}"
                       @click="${this.toggleMaximized}"></button>`}
-                <button aria-label="Close" @click="${() => this.app[0]?.close()}"></button>
+                <button aria-label="Close" @click="${this.handleCloseClick}"></button>
               </div>
             </div>`}
           <div class="${viewportClass}">
             <slot class="${this.resizing ? 'resizing' : ''}"></slot>
           </div>
         </div>
-      </div>
-    `
+      </div>`
   }
 }
