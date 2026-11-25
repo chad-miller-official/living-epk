@@ -6,7 +6,7 @@ import type {EpkApp} from "../app.ts";
 
 @customElement('document-reader-icon')
 export class InternetExplorerIcon extends EpkIcon {
-  icon = '/img/html-file.ico'
+  icon = '/img/icons/html-file.ico'
 
   getLaunchOptions(): LaunchOptions {
     return {

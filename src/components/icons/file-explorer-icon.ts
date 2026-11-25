@@ -7,10 +7,10 @@ import type {LaunchOptions} from "../../lib/events.ts";
 @customElement('file-explorer-icon')
 export class FileExplorerIcon extends EpkIcon {
   @property({type: String})
-  icon = '/img/file-explorer.ico'
+  icon = '/img/icons/file-explorer.ico'
 
   @property({type: String})
-  windowIcon = '/img/file-explorer-small.ico'
+  windowIcon = '/img/icons/small/file-explorer-small.ico'
 
   getLaunchOptions(): LaunchOptions {
     return {

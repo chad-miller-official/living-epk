@@ -83,7 +83,7 @@ export class ImageGallery extends EpkApp {
   windowTitle = 'Windows Picture and Fax Viewer'
 
   @property({type: String})
-  windowIcon = '/img/gallery-small.ico'
+  windowIcon = '/img/icons/small/gallery-small.ico'
 
   @property({type: String})
   fileLinkNode?: LinkNode

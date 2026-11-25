@@ -6,7 +6,7 @@ import {getLinkName} from "../../lib/fs.ts";
 
 @customElement('plaintext-icon')
 export class PlainTextIcon extends EpkIcon {
-  icon = '/img/notepad.ico'
+  icon = '/img/icons/notepad.ico'
 
   async getAppInstance(): Promise<EpkApp> {
     return new Promise(resolve => {

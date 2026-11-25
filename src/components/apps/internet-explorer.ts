@@ -159,7 +159,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
   windowTitle = 'Microsoft Internet Explorer'
 
   @property({type: String})
-  windowIcon = '/img/internet-explorer.ico'
+  windowIcon = '/img/icons/small/internet-explorer.ico'
 
   @state()
   isLoading = true
@@ -586,7 +586,7 @@ class InternetExplorerAbout extends EpkApp {
   ]
 
   @property({type: String})
-  windowIcon = '/img/internet-explorer.ico'
+  windowIcon = '/img/icons/small/internet-explorer.ico'
 
   @property({type: String})
   windowTitle = 'About Internet Explorer'

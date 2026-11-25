@@ -30,7 +30,7 @@ export class Notepad extends EpkApp {
   windowTitle = 'Notepad'
 
   @property({type: String})
-  windowIcon = '/img/notepad-small.ico'
+  windowIcon = '/img/icons/small/notepad-small.ico'
 
   @property({type: Number})
   currentLine = 1
@@ -178,7 +178,7 @@ export class Notepad extends EpkApp {
 
             const about = new AppAbout()
             about.appName = 'Microsoft &reg; Notepad'
-            about.appIcon = '/img/notepad.ico'
+            about.appIcon = '/img/icons/notepad.ico'
             about.windowTitle = 'About Notepad'
             about.delegatingAppId = this.getAppId()
 

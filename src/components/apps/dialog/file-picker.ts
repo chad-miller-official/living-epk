@@ -251,17 +251,17 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
                 <div class="shortcuts">
                   <button type="button" class="style-2"
                           @click="${() => this.navigate('C:\\Users\\Chad\\My Documents')}">
-                    <img src="/img/file-explorer.ico"/>
+                    <img src="/img/icons/file-explorer.ico"/>
                     <span>My Documents</span>
                   </button>
                   <button type="button" class="style-2"
                           @click="${() => this.navigate('C:\\Users\\Chad\\My Pictures')}">
-                    <img src="/img/my-pictures.ico"/>
+                    <img src="/img/icons/my-pictures.ico"/>
                     <span>My Pictures</span>
                   </button>
                   <button type="button" class="style-2"
                           @click="${() => this.navigate('C:\\Users\\Chad\\My Music')}">
-                    <img src="/img/my-music.ico"/>
+                    <img src="/img/icons/my-music.ico"/>
                     <span>My Music</span>
                   </button>
                 </div>

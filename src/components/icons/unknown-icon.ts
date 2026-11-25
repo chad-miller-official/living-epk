@@ -7,7 +7,7 @@ import {getLinkName} from "../../lib/fs.ts";
 
 @customElement('unknown-icon')
 export class UnknownIcon extends EpkIcon {
-  icon = '/img/unknown.ico'
+  icon = '/img/icons/unknown.ico'
 
   getAppInstance(): Promise<EpkApp> {
     return new Promise<EpkAlert>(resolve => {

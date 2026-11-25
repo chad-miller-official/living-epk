@@ -205,7 +205,7 @@ export class MediaPlayer extends EpkApp {
   windowTitle = 'Media Player'
 
   @property({type: String})
-  windowIcon = '/img/media-player-small.ico'
+  windowIcon = '/img/icons/small/media-player-small.ico'
 
   @property({type: String})
   fileLinkNode?: LinkNode
@@ -298,7 +298,7 @@ export class MediaPlayer extends EpkApp {
 
             const about = new AppAbout()
             about.appName = 'Microsoft &reg; Media Player'
-            about.appIcon = '/img/media-player.ico'
+            about.appIcon = '/img/icons/media-player.ico'
             about.windowTitle = 'About Media Player'
             about.delegatingAppId = this.getAppId()
 

@@ -152,7 +152,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
   windowTitle = 'File Explorer'
 
   @property({type: String})
-  windowIcon = '/img/file-explorer-small.ico'
+  windowIcon = '/img/icons/small/file-explorer-small.ico'
 
   @state()
   showSidebar = true

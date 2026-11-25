@@ -204,12 +204,12 @@ export function linkNodeToIcon(linkNode: LinkNode) {
       case 'wav':
       case 'mp3':
         icon = new MediaIcon()
-        icon.icon = '/img/audio.ico'
+        icon.icon = '/img/icons/audio.ico'
         break
       case 'mp4':
       case 'webm':
         icon = new MediaIcon()
-        icon.icon = '/img/video.ico'
+        icon.icon = '/img/icons/video.ico'
         break
       case 'html':
         icon = new InternetExplorerIcon()

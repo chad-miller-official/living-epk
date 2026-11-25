@@ -6,7 +6,7 @@ import {ImageGallery} from "../apps/image-gallery.ts";
 
 @customElement('gallery-icon')
 export class GalleryIcon extends EpkIcon {
-  icon = '/img/gallery.ico'
+  icon = '/img/icons/gallery.ico'
 
   @property({type: String})
   fsSpecPath!: string
