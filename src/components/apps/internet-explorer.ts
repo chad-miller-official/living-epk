@@ -449,7 +449,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         return html`
           <details class="favorites-folder">
             <summary class="favorite-icon" @click="${this.expandFavoritesFolder}">
-              <img src="/img/internet-explorer/folder-closed.png"/>
+              <img src="/img/explorer/folder-closed.png"/>
               <span>${f.title}</span>
             </summary>
             ${this.buildFavoritesPanel(f.favorites)}
@@ -649,7 +649,7 @@ class InternetExplorerAbout extends EpkApp {
                 the maximum extent possible under the law.
               </div>
             </div>
-            <img class="logo" src="/img/internet-explorer/logo.png"/>
+            <img class="logo" src="/img/logo.png"/>
             <form class="form" @submit="${this.handleSubmit}">
               <p class="link" @click=${this.handleCopyrightClick}>Copyright &copy; 1995-2004
                 Microsoft Corp.</p>

@@ -270,18 +270,18 @@ export abstract class Explorer<T> extends EpkApp {
     return html`
       <div class="app" @click="${this.handleClick}">
         <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"
-                     logo="/img/internet-explorer/logo.png"></epk-toolbar>
+                     logo="/img/logo.png"></epk-toolbar>
         <section class="content">
           <div class="viewport">
             <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">
               <button type="button" class="style-2"
                       ?disabled="${!this.pathStack.canGoBack()}" @click="${this.goBack}">
-                <img src="/img/file-explorer/back.png"/>
+                <img src="/img/explorer/back.png"/>
                 <span>Back</span>
               </button>
               <button type="button" class="style-2"
                       ?disabled="${!this.pathStack.canGoForward()}" @click="${this.goForward}">
-                <img src="/img/file-explorer/forward.png"/>
+                <img src="/img/explorer/forward.png"/>
               </button>
               ${this.getNavigationButtons()}
             </div>
@@ -292,7 +292,7 @@ export abstract class Explorer<T> extends EpkApp {
                 ${this.getAddressBar()}
               </div>
               <button type="submit" id="goButton" class="style-2">
-                <img src="/img/file-explorer/go.png"/>
+                <img src="/img/explorer/go.png"/>
                 <span>Go</span>
               </button>
             </form>
@@ -302,7 +302,7 @@ export abstract class Explorer<T> extends EpkApp {
                   Favorites
                   <button type="button" id="closeButton" class="style-2"
                           @click="${() => this.showSidebar = false}">
-                    <img src="/img/file-explorer/x.png"/>
+                    <img src="/img/explorer/x.png"/>
                   </button>
                 </div>
                 ${this.getSidebarContent()}

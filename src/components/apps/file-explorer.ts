@@ -413,19 +413,19 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
       switch (folder) {
         case 'C:':
-          icon = 'disk'
+          icon = '/img/file-explorer/disk.ico'
           break
         case 'My Music':
-          icon = 'my-music'
+          icon = '/img/icons/small/my-music-small.ico'
           break
         case 'My Pictures':
-          icon = 'my-pictures'
+          icon = '/img/icons/small/my-pictures-small.ico'
           break
         case 'My Videos':
-          icon = 'my-videos'
+          icon = '/img/icons/small/my-videos-small.ico'
           break
         default:
-          icon = 'folder-closed'
+          icon = '/img/explorer/folder-closed.png'
       }
 
       if (nextIsString) {
@@ -433,7 +433,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
           <li class="tree-item ${cwdIsNext ? 'selected' : ''}"
               @click="${() => this.navigate(nextPath)}">
             <div>
-              <img src="/img/file-explorer/${icon}.ico"/>
+              <img src="${icon}"/>
               <span>${folder}</span>
             </div>
           </li>`
@@ -447,7 +447,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
                   class="tree-item ${cwdIsNext ? 'selected' : ''}"
                   @click="${() => this.navigate(nextPath)}">
                 <div>
-                  <img src="/img/file-explorer/${icon}.ico"/>
+                  <img src="${icon}"/>
                   <span>${folder === 'C:' ? 'Local Disk (C:)' : folder}</span>
                 </div>
               </summary>

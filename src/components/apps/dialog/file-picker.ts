@@ -234,14 +234,14 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
                 <form class="navigation" @submit="${this.handlePathInputSubmit}">
                   <input id="pathInput" type="text" value="${folderNode.path}"/>
                   <button type="submit" id="goButton" class="style-2">
-                    <img src="/img/file-explorer/go.png"/>
+                    <img src="/img/explorer/go.png"/>
                     <span>Go</span>
                   </button>
                   <div class="divider"></div>
                   <button type="button" id="backButton" class="style-2"
                           ?disabled="${!this.pathStack.canGoBack()}"
                           @click="${this.pathStack.goBack}">
-                    <img src="/img/file-explorer/back.png"/>
+                    <img src="/img/explorer/back.png"/>
                   </button>
                   <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"
                           @click="${this.goUp}">

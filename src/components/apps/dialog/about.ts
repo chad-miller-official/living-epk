@@ -123,7 +123,7 @@ export class AppAbout extends Dialog(EpkApp) {
       <div class="app">
         <div class="content">
           <div class="about">
-            <img src="/img/banner.png" width="413" alt="Banner"/>
+            <img src="/img/about/banner.png" width="413" alt="Banner"/>
             <div class="about-wrapper">
               ${this.appIcon ? html`<img src="${this.appIcon}" alt="${this.appName}"/>` : html`
                 <div class="app-icon"></div>`}
