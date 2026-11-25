@@ -307,7 +307,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
     })
   }
 
-  getMinimumDimensions(): [number | null, number | null] {
+  getMinimumDimensions(): [number, number] {
     return [400, 320]
   }
 

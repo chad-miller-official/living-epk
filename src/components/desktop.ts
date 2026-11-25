@@ -164,12 +164,12 @@ export class EpkDesktop extends LitElement {
       const [eventWidth, eventHeight] = launchData.windowDimensions
 
       let [widthToUse, heightToUse] = [
-        lastWidth || eventWidth || minWidth || undefined,
-        lastHeight || eventHeight || minHeight || undefined,
+        lastWidth || eventWidth || minWidth,
+        lastHeight || eventHeight || minHeight,
       ]
 
-      epkWindow.minWidth = minWidth || 32
-      epkWindow.minHeight = minHeight || 32
+      epkWindow.minWidth = minWidth
+      epkWindow.minHeight = minHeight
       epkWindow.width = widthToUse
       epkWindow.height = heightToUse
 

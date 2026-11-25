@@ -56,6 +56,7 @@ export abstract class Explorer<T> extends EpkApp {
         background-color: #ffffff;
         display: flex;
         height: 100%;
+        overflow: hidden;
       }
 
       .explorer-divider {
@@ -64,10 +65,6 @@ export abstract class Explorer<T> extends EpkApp {
         min-width: 5px;
         max-width: 5px;
         width: 5px;
-      }
-
-      .hidden {
-        display: none;
       }
 
       .navigation {
@@ -81,6 +78,10 @@ export abstract class Explorer<T> extends EpkApp {
           padding: 9px 7px;
           margin: 1px;
         }
+      }
+
+      .hidden {
+        display: none;
       }
 
       .sidebar-header {

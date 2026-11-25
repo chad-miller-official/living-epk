@@ -236,6 +236,7 @@ export class MediaPlayer extends EpkApp {
 
   interact: Interactable | null = null
   dragged = false
+  doNotTrackLastPosition = true
 
   toolbarSpec: ToolbarMenu[] = [
     {
@@ -338,7 +339,7 @@ export class MediaPlayer extends EpkApp {
   }
 
   getMinimumDimensions(): [number, number] {
-    return [256, 144]
+    return [256, this.fileLinkNode && getFileExtension(this.fileLinkNode)!.match(/mp4|webm/) ? 256 : 144]
   }
 
   resetMimeType() {

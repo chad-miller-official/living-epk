@@ -283,6 +283,10 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
     return icon
   }
 
+  getMinimumDimensions(): [number, number] {
+    return [256, 256]
+  }
+
   navigate(newPath: string) {
     if (this.path.replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
       return

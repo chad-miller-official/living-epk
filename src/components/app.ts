@@ -80,8 +80,8 @@ export abstract class EpkApp extends LitElement {
     return this._appId
   }
 
-  getMinimumDimensions(): [number | null, number | null] {
-    return [null, null]
+  getMinimumDimensions(): [number, number] {
+    return [128, 128]
   }
 
   getPositionTrackingName(): string {

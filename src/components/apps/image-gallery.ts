@@ -139,6 +139,10 @@ export class ImageGallery extends EpkApp {
     }
   }
 
+  getMinimumDimensions(): [number, number] {
+    return [256, 256]
+  }
+
   setPanzoom() {
     this.panzoom = Panzoom(this.image, {
       canvas: true,
