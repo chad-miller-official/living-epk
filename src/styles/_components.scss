@@ -5,4 +5,8 @@
 
 epk-window {
   position: fixed;
+
+  &.no-interact {
+    pointer-events: none;
+  }
 }

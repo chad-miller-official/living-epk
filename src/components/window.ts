@@ -76,7 +76,6 @@ export class EpkWindow extends LitElement {
           inset 2px 2px #647ecf,
           inset -3px -3px #5c74ca,
           inset 3px 3px #607ecb;
-
           user-select: none;
 
           & > .title-bar {
@@ -389,17 +388,29 @@ export class EpkWindow extends LitElement {
     if (blockingDialogWindow) {
       event.stopPropagation()
       // TODO change this sound to ding
-      playError().then(() => blockingDialogWindow.blink())
+      playError().then(() => blockingDialogWindow.blink(
+        /*
+         * This isn't a great solution, but it's the best we have for now: manually add/remove a class to prevent
+         * pointer-events, but only while the blocking dialog window is blinking. We can't set pointer-events to none
+         * as soon as the dialog box is open, because then click events don't fire when the parent window is clicked,
+         * breaking blink behavior entirely.
+         */
+        () => this.classList.add('no-interact'),
+        () => this.classList.remove('no-interact')
+      ))
+
       return true
     }
 
     return false
   }
 
-  blink() {
+  blink(preHook?: () => void, postHook?: () => void) {
     if (this.blinkTimer) {
       return
     }
+
+    preHook?.()
 
     this.blinkTimer = setInterval(() => {
       this.active = !this.active
@@ -410,6 +421,7 @@ export class EpkWindow extends LitElement {
         this.dispatchEvent(activeWindowChangeEvent())
         this.blinkTimer = undefined
         this.blinkCounter = 0
+        postHook?.()
       }
     }, 100)
   }

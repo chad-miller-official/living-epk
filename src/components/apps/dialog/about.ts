@@ -78,6 +78,10 @@ export class AppAbout extends Dialog(EpkApp) {
       hr {
         width: 100%;
       }
+      
+      img {
+        user-select: none;
+      }
     `
   ]
 
