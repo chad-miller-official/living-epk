@@ -2,7 +2,7 @@ import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 import type {EpkApp} from "../app.ts";
 import {DisallowFlags, type LaunchOptions} from "../../lib/events.ts";
-import {EpkAlert} from "../apps/alert.ts";
+import {EpkAlert} from "../apps/dialog/alert.ts";
 import {getLinkName} from "../../lib/fs.ts";
 
 @customElement('unknown-icon')

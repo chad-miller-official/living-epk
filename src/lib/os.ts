@@ -1,10 +1,12 @@
 import {DisallowFlags, launchEvent} from "./events.ts";
-import {EpkAlert} from "../components/apps/alert.ts";
+import {EpkAlert} from "../components/apps/dialog/alert.ts";
+import type {EpkApp} from "../components/app.ts";
 
-function getAlertDialog(title: string, message: string): EpkAlert {
+function getAlertDialog(delegatingAppId: string, title: string, message: string): EpkAlert {
   const alert = new EpkAlert()
   alert.windowTitle = title
   alert.message = message
+  alert.delegatingAppId = delegatingAppId
   return alert
 }
 
@@ -16,23 +18,23 @@ function getAlertDialogLaunchArgs(message: string) {
   }
 }
 
-export function alertDialog(alerter: Element, title: string, message: string) {
+export function alertDialog(alerter: EpkApp, title: string, message: string) {
   alerter.dispatchEvent(
     launchEvent(() =>
         new Promise<EpkAlert>(resolve =>
           new Audio('/audio/error.wav')
             .play()
-            .then(() => resolve(getAlertDialog(title, message)))),
+            .then(() => resolve(getAlertDialog(alerter.getAppId(), title, message)))),
       getAlertDialogLaunchArgs(message)
     )
   )
 }
 
-export function warnDialog(alerter: Element, title: string, message: string, args: Partial<EpkAlert> = {}) {
+export function warnDialog(alerter: EpkApp, title: string, message: string, args: Partial<EpkAlert> = {}) {
   alerter.dispatchEvent(
     launchEvent(() =>
         new Promise<EpkAlert>(resolve => {
-          const alert = getAlertDialog(title, message)
+          const alert = getAlertDialog(alerter.getAppId(), title, message)
           alert.alertGraphic = '/img/warn.ico'
           alert.silenceId = args.silenceId
           alert.buttonPosition = args.buttonPosition || undefined

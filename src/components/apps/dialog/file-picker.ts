@@ -1,13 +1,14 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
-import {type FolderNode, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../lib/fs.ts";
-import {EpkIcon, IconViewMode} from "../icon.ts";
-import {activeWindowChangeEvent, closeWindowEvent, filePickedEvent} from "../../lib/events.ts";
-import {EpkApp} from "../app.ts";
-import {playClick} from "../../lib/os.ts";
-import {PathStack} from "../../lib/path-stack.ts";
-import {buttonStyle2} from "../../lib/ui.ts";
-import {FileViewer} from "./common/file-viewer.ts";
+import {type FolderNode, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../../lib/fs.ts";
+import {EpkIcon, IconViewMode} from "../../icon.ts";
+import {filePickedEvent} from "../../../lib/events.ts";
+import {EpkApp} from "../../app.ts";
+import {playClick} from "../../../lib/os.ts";
+import {PathStack} from "../../../lib/path-stack.ts";
+import {buttonStyle2} from "../../../lib/ui.ts";
+import {FileViewer} from "../common/file-viewer.ts";
+import {Dialog} from "./dialog.ts";
 
 export type FileTypeFilter = {
   regex: string,
@@ -16,7 +17,7 @@ export type FileTypeFilter = {
 }
 
 @customElement('file-picker')
-export class FilePicker extends FileViewer(EpkApp) {
+export class FilePicker extends Dialog(FileViewer(EpkApp)) {
   static styles = [
     ...EpkApp.styles,
     buttonStyle2,
@@ -127,6 +128,9 @@ export class FilePicker extends FileViewer(EpkApp) {
   @query('#fileExplorer')
   fileExplorer!: HTMLDivElement
 
+  @query('#iconForm')
+  iconForm!: HTMLFormElement
+
   @query('#pathInput')
   pathInput!: HTMLInputElement
 
@@ -148,7 +152,6 @@ export class FilePicker extends FileViewer(EpkApp) {
   @state()
   selectedFileLinkNode?: LinkNode
 
-  delegatingAppId!: string
   pathStack = new PathStack<string>()
 
   getMinimumDimensions(): [number, number] {
@@ -165,14 +168,12 @@ export class FilePicker extends FileViewer(EpkApp) {
     }
   }
 
-  handleFilePick(fileLinkNode?: LinkNode) {
-    if (!fileLinkNode) {
-      return
+  close(event: SubmitEvent) {
+    if (this.delegatingAppId && this.selectedFileLinkNode) {
+      this.dispatchEvent(filePickedEvent(this.delegatingAppId, this.selectedFileLinkNode))
     }
 
-    this.dispatchEvent(filePickedEvent(this.delegatingAppId, this.selectedFileLinkNode))
-    this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
-    this.dispatchEvent(closeWindowEvent())
+    super.close(event)
   }
 
   handleFileTypeFilterChange(event: Event) {
@@ -201,7 +202,7 @@ export class FilePicker extends FileViewer(EpkApp) {
     icon.selected = path.physicalPath === this.selectedFileLinkNode?.physicalPath
 
     icon.handleDblClick = path.type === LinkNodeType.File
-      ? () => this.handleFilePick(icon.fileLinkNode)
+      ? () => this.iconForm.requestSubmit()
       : () => this.navigate(path.physicalPath)
 
     return icon
@@ -270,15 +271,12 @@ export class FilePicker extends FileViewer(EpkApp) {
                     ${files.map(this.buildIcon.bind(this))}
                   </div>
                 </div>
-                <div class="controls">
+                <form id="iconForm" class="controls" @submit="${this.close}">
                   <span>File name:</span>
                   <input type="text"
                          value="${this.selectedFileLinkNode ? getLinkName(this.selectedFileLinkNode) : ''}"
                          readonly/>
-                  <button type="button"
-                          @click="${() => this.handleFilePick(this.selectedFileLinkNode)}">
-                    Open
-                  </button>
+                  <button type="submit">Open</button>
                   <span>Files of type:</span>
                   <select @change="${this.handleFileTypeFilterChange}">
                     <option value=".*">All Files</option>
@@ -287,10 +285,8 @@ export class FilePicker extends FileViewer(EpkApp) {
                         ${filter.label}
                       </option>`)}
                   </select>
-                  <button type="button" @click="${() => this.dispatchEvent(closeWindowEvent())}">
-                    Cancel
-                  </button>
-                </div>
+                  <button type="submit">Cancel</button>
+                </form>
               </div>
             </div>
           </div>`

@@ -1,10 +1,7 @@
 import {type FolderNode, getParentFolder, loadFolderNode} from "../../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {alertDialog} from "../../../lib/os.ts";
-import type {EpkApp} from "../../app.ts";
-
-type AbstractConstructor<T = {}> = abstract new (...args: any[]) => T;
-type EpkAppConstructor = AbstractConstructor<EpkApp>
+import type {EpkAppConstructor} from "../../../lib/support.ts";
 
 export function FileViewer<T extends EpkAppConstructor>(Base: T) {
   abstract class FileViewerMixin extends Base {

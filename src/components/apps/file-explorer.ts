@@ -7,7 +7,7 @@ import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
 import {alertDialog, playClick} from "../../lib/os.ts";
 import {launchEvent} from "../../lib/events.ts";
-import {AppAbout} from "./about.ts";
+import {AppAbout} from "./dialog/about.ts";
 import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
 import {Explorer} from "./common/explorer.ts";
 import {FileViewer} from "./common/file-viewer.ts";
@@ -237,7 +237,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
         }
       ],
     },
-    this.toolbarHelpMenu(() => {
+    this.toolbarHelpMenu('Windows', () => {
       const about = new AppAbout()
       about.appName = 'Microsoft &reg; Windows'
       about.windowTitle = 'About Windows'

@@ -175,12 +175,12 @@ export abstract class Explorer<T> extends EpkApp {
     }
   }
 
-  protected toolbarHelpMenu<T extends EpkApp>(aboutApp: () => T) {
+  protected toolbarHelpMenu<T extends EpkApp>(aboutName: string, aboutApp: () => T) {
     return {
       text: 'Help',
       items: [
         {
-          text: 'About Internet Explorer',
+          text: `About ${aboutName}`,
           action: (event: Event) => {
             event.stopPropagation()
             this.toolbar!.closeAll()

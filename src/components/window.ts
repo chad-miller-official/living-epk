@@ -4,7 +4,7 @@ import interact from "interactjs";
 import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
-import {activeWindowChangeEvent, closeWindowEvent, DisallowFlags, type WindowProperties} from "../lib/events.ts";
+import {activeWindowChangeEvent, DisallowFlags, type WindowProperties} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import type {EpkApp} from "./app.ts";
@@ -536,8 +536,7 @@ export class EpkWindow extends LitElement {
                   <button
                       aria-label="${this.state === WindowState.MAXIMIZED ? 'Restore' : 'Maximize'}"
                       @click="${this.toggleMaximized}"></button>`}
-                <button aria-label="Close"
-                        @click="${() => this.dispatchEvent(closeWindowEvent())}"></button>
+                <button aria-label="Close" @click="${() => this.app[0]?.close()}"></button>
               </div>
             </div>`}
           <div class="${viewportClass}">

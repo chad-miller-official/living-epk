@@ -283,7 +283,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
       text: 'Favorites',
       items: this.buildFavoritesMenuItems(FAVORITES),
     },
-    this.toolbarHelpMenu(() => {
+    this.toolbarHelpMenu('Internet Explorer', () => {
       const about = new InternetExplorerAbout()
       about.delegatingAppId = this.getAppId()
       return about
@@ -291,9 +291,13 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
   ]
 
   firstUpdated() {
+    const ieThis = this
+
     this.frame?.addEventListener('load', () => {
       this.isLoading = false
-      this.getFrameDocument()?.addEventListener('click', () => this.dispatchEvent(activeWindowChangeEvent()))
+
+      this.getFrameDocument()
+        ?.addEventListener('click', () => ieThis.dispatchEvent(activeWindowChangeEvent()))
     })
 
     window.addEventListener('blur', () => {

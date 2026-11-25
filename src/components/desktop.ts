@@ -90,9 +90,16 @@ export class EpkDesktop extends LitElement {
 
   handleActiveWindowChange(event: Event) {
     const targetAppId = (event as CustomEvent).detail.targetAppId
+    let targetWindow: EpkWindow | undefined
 
-    const targetWindow = (targetAppId ? this.getWindowByAppId(targetAppId) : null)
-      || (event.target as EpkWindow)
+    if (targetAppId) {
+      targetWindow = this.getWindowByAppId(targetAppId)
+    }
+
+    if (!targetWindow) {
+      const target = event.target as Element
+      targetWindow = (target.classList.contains('epk-app') ? target.parentElement : target) as EpkWindow
+    }
 
     targetWindow.active = true
     targetWindow.style.zIndex = EpkWindow.instanceCount.toString()

@@ -1,13 +1,14 @@
 import {customElement, property} from "lit/decorators.js";
-import {EpkApp} from "../app.ts";
+import {EpkApp} from "../../app.ts";
 import {css, html} from "lit";
-import {activeWindowChangeEvent, closeWindowEvent, launchEvent} from "../../lib/events.ts";
-import {Notepad} from "./notepad.ts";
+import {launchEvent} from "../../../lib/events.ts";
+import {Notepad} from "../notepad.ts";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
-import {LinkNodeType} from "../../lib/fs.ts";
+import {LinkNodeType} from "../../../lib/fs.ts";
+import {Dialog} from "./dialog.ts";
 
 @customElement('app-about')
-export class AppAbout extends EpkApp {
+export class AppAbout extends Dialog(EpkApp) {
   static styles = [
     ...EpkApp.styles,
     css`
@@ -92,8 +93,6 @@ export class AppAbout extends EpkApp {
   @property({type: String})
   windowIcon = null
 
-  delegatingAppId!: string
-
   getMinimumDimensions(): [number, number] {
     return [419, 350]
   }
@@ -113,12 +112,6 @@ export class AppAbout extends EpkApp {
 
       resolve(notepad)
     })))
-  }
-
-  close(event: SubmitEvent) {
-    event.preventDefault()
-    this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
-    this.dispatchEvent(closeWindowEvent())
   }
 
   render() {

@@ -3,6 +3,7 @@ import xpStyle from 'xp.css/dist/XP.css?inline'
 import {query} from "lit/decorators.js";
 import {EpkToolbar} from "./ui/toolbar.ts";
 import type {LinkNode} from "../lib/fs.ts";
+import {closeWindowEvent} from "../lib/events.ts";
 
 export abstract class EpkApp extends LitElement {
   static styles = [
@@ -35,11 +36,11 @@ export abstract class EpkApp extends LitElement {
         font-weight: bold;
         src: local('Verdana'), url('/font/Verdana-Bold.ttf') format('ttf');
       }
-      
+
       #toolbar {
         z-index: 10000;
       }
-      
+
       .app {
         display: flex;
         flex-direction: column;
@@ -50,11 +51,11 @@ export abstract class EpkApp extends LitElement {
         flex: 1;
         min-height: 0;
       }
-      
+
       .status-bar {
         margin: 0;
       }
-      
+
       .status-bar-field {
         user-select: none;
       }
@@ -95,5 +96,9 @@ export abstract class EpkApp extends LitElement {
 
   handleFilePicked(_file?: LinkNode) {
     return
+  }
+
+  close(_?: Event) {
+    this.dispatchEvent(closeWindowEvent())
   }
 }

@@ -1,10 +1,10 @@
 import {customElement, property, query} from "lit/decorators.js"
-import {EpkApp} from "../app.ts"
+import {EpkApp} from "../../app.ts"
 import {css, html, nothing} from "lit";
-import {closeWindowEvent} from "../../lib/events.ts";
+import {Dialog} from "./dialog.ts";
 
 @customElement('epk-alert')
-export class EpkAlert extends EpkApp {
+export class EpkAlert extends Dialog(EpkApp) {
   static styles = [
     ...EpkApp.styles,
     css`
@@ -66,12 +66,12 @@ export class EpkAlert extends EpkApp {
     return [356, null]
   }
 
-  async handleOkClick() {
+  async close(event: SubmitEvent) {
     if (this.silenceId && this.silencer?.checked) {
       await cookieStore.set(this.silenceId, 'true')
     }
 
-    this.dispatchEvent(closeWindowEvent())
+    super.close(event)
   }
 
   render() {
@@ -90,14 +90,10 @@ export class EpkAlert extends EpkApp {
                   </div>
                 ` : nothing}
               </div>
-              <button type="submit" class="${this.buttonPosition}"
-                      @click="${this.handleOkClick}">
-                OK
-              </button>
+              <button type="submit" class="${this.buttonPosition}" @click="${this.close}">OK</button>
             </div>
           </div>
         </div>
-      </div>
-    `
+      </div>`
   }
 }

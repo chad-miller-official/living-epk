@@ -12,10 +12,10 @@ import {styleMap} from "lit/directives/style-map.js";
 import interact from "interactjs";
 import type {Interactable} from "@interactjs/types";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
-import {FilePicker} from "./file-picker.ts";
-import {AppAbout} from "./about.ts";
+import {AppAbout} from "./dialog/about.ts";
 import {getFileExtension, getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
+import {FilePicker} from "./dialog/file-picker.ts";
 
 @customElement('media-player')
 export class MediaPlayer extends EpkApp {

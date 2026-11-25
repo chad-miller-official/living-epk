@@ -4,10 +4,10 @@ import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import dayjs from "dayjs";
 import {closeWindowEvent, DisallowFlags, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
-import {AppAbout} from "./about.ts";
-import {FilePicker} from "./file-picker.ts";
+import {AppAbout} from "./dialog/about.ts";
 import {getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
+import {FilePicker} from "./dialog/file-picker.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
