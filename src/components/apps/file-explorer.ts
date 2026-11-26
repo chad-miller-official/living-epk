@@ -280,6 +280,10 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
       this.toolbar?.requestUpdate()
     }
 
+    if (path.$?.icon?.large) {
+      icon.icon = path.$.icon.large
+    }
+
     return icon
   }
 
@@ -366,8 +370,8 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
       case SortColumn.Modified:
         this.folderNode?.fileLinks.sort(
           this.sortAsc
-            ? (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
-            : (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
+            ? (a, b) => (a.$?.timestamp || 0) - (b.$?.timestamp || 0)
+            : (a, b) => (b.$?.timestamp || 0) - (a.$?.timestamp || 0)
         )
 
         break
@@ -397,7 +401,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
   }
 
   buildFileTree(tree: any, currentPath: string): TemplateResult<1> | TemplateResult<1>[] {
-    return Object.keys(tree).filter(folder => folder !== '.').map(folder => {
+    return Object.keys(tree).filter(folder => folder !== '.' && folder !== '$').map(folder => {
       let nextPath = currentPath
 
       if (nextPath) {
@@ -406,29 +410,12 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
       nextPath += folder
 
-      const nextIsString = typeof tree[folder] === 'string'
+      const metadata = tree[folder].$
+      const icon = metadata?.icon?.small || '/img/explorer/folder-closed.png'
+      const nextIsTerminalFolder = !Object.keys(tree[folder]).filter(f => f !== '.' && f !== '$').length
       const cwdIsNext = this.path.replace(/\\$/, '') === nextPath.replace(/\\$/, '')
 
-      let icon: string
-
-      switch (folder) {
-        case 'C:':
-          icon = '/img/file-explorer/disk.ico'
-          break
-        case 'My Music':
-          icon = '/img/icons/small/my-music-small.ico'
-          break
-        case 'My Pictures':
-          icon = '/img/icons/small/my-pictures-small.ico'
-          break
-        case 'My Videos':
-          icon = '/img/icons/small/my-videos-small.ico'
-          break
-        default:
-          icon = '/img/explorer/folder-closed.png'
-      }
-
-      if (nextIsString) {
+      if (nextIsTerminalFolder) {
         return html`
           <li class="tree-item ${cwdIsNext ? 'selected' : ''}"
               @click="${() => this.navigate(nextPath)}">
@@ -448,7 +435,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
                   @click="${() => this.navigate(nextPath)}">
                 <div>
                   <img src="${icon}"/>
-                  <span>${folder === 'C:' ? 'Local Disk (C:)' : folder}</span>
+                  <span>${metadata?.alias || folder}</span>
                 </div>
               </summary>
               <ul>
@@ -477,8 +464,8 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
   getAddressBar() {
     return html`
-      <img src="${this.windowIcon}"/>
-      <input type="text" .value="${this.folderNode?.path}" id="pathInput"/>`
+      <img src="${this.folderNode?.$?.icon?.small || '/img/icons/small/file-explorer-small.ico'}"/>
+      <input type="text" .value="${`${this.folderNode?.path}\\`}" id="pathInput"/>`
   }
 
   getSidebarContent() {

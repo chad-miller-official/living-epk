@@ -1,7 +1,13 @@
 import {customElement, queryAssignedElements} from "lit/decorators.js";
 import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
-import {type FilePicked, type Launch} from "../lib/events.ts";
+import {
+  ACTIVE_WINDOW_CHANGE_EVENT,
+  CLOSE_WINDOW_EVENT, FILE_PICKED_EVENT,
+  type FilePicked,
+  type Launch,
+  LAUNCH_EVENT
+} from "../lib/events.ts";
 import {DisallowFlags, EpkWindow} from "./window.ts";
 import {EpkApp} from "./app.ts";
 
@@ -39,10 +45,10 @@ export class EpkDesktop extends LitElement {
   appInstanceCount = new Map<string, number>()
 
   firstUpdated() {
-    this.addEventListener('launch', this.handleLaunch)
-    this.addEventListener('active-window-change', this.handleActiveWindowChange)
-    this.addEventListener('close-window', this.handleCloseWindow)
-    this.addEventListener('file-picked', this.handleFilePicked)
+    this.addEventListener(LAUNCH_EVENT, this.handleLaunch)
+    this.addEventListener(ACTIVE_WINDOW_CHANGE_EVENT, this.handleActiveWindowChange)
+    this.addEventListener(CLOSE_WINDOW_EVENT, this.handleCloseWindow)
+    this.addEventListener(FILE_PICKED_EVENT, this.handleFilePicked)
   }
 
   handleFilePicked(event: Event) {

@@ -1,14 +1,46 @@
 {
   "C:": {
+    "$": {
+      "alias": "Local Disk (C:)",
+      "icon": {
+        "small": "/img/icons/small/disk.ico"
+      }
+    },
     ".": "",
     "Users": {
-      ".": "/data/home.json",
+      ".": "",
       "Chad": {
-        ".": "/data/home.json",
-        "My Documents": "/data/my-documents.json",
-        "My Music": "/data/my-music.json",
-        "My Pictures": "/data/my-pictures.json",
-        "My Videos": "/data/my-videos.json"
+        ".": "",
+        "My Documents": {
+          ".": "/data/my-documents.json"
+        },
+        "My Music": {
+          "$": {
+            "icon": {
+              "small": "/img/icons/small/my-music-small.ico",
+              "large": "/img/icons/my-music.ico"
+            }
+          },
+          ".": "/data/my-music.json"
+        },
+        "My Pictures": {
+          "$": {
+            "icon": {
+              "small": "/img/icons/small/my-pictures-small.ico",
+              "large": "/img/icons/my-pictures.ico"
+            }
+          },
+          ".": "/data/my-pictures.json"
+        },
+        "My Videos": {
+          "$": {
+            "icon": {
+              "small": "/img/icons/small/my-videos-small.ico",
+              "large": "/img/icons/my-videos.ico"
+            }
+          },
+          ".": "/data/my-videos.json"
+        }
       }
     }
   }

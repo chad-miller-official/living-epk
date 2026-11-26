@@ -4,7 +4,12 @@ import interact from "interactjs";
 import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
-import {activeWindowChangeEvent, type WindowProperties} from "../lib/events.ts";
+import {
+  activeWindowChangeEvent,
+  CLOSE_WINDOW_EVENT,
+  WINDOW_PROPERTY_CHANGE_EVENT,
+  type WindowProperties
+} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import type {EpkApp} from "./app.ts";
@@ -246,8 +251,8 @@ export class EpkWindow extends LitElement {
   }
 
   firstUpdated() {
-    this.addEventListener('close-window', this.handleCloseWindow)
-    this.addEventListener('window-property-change', this.handleWindowPropertyChange)
+    this.addEventListener(CLOSE_WINDOW_EVENT, this.handleCloseWindow)
+    this.addEventListener(WINDOW_PROPERTY_CHANGE_EVENT, this.handleWindowPropertyChange)
 
     /*
      * Problem: we sometimes need to calculate the X and Y coordinates of the window after it's
@@ -493,7 +498,7 @@ export class EpkWindow extends LitElement {
   }
 
   handleResize(event: ResizeEvent) {
-    if (this.state !== null) {
+    if (this.state) {
       return
     }
 

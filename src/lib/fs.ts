@@ -11,17 +11,27 @@ export enum LinkNodeType {
   File = 'file', Folder = 'folder'
 }
 
+type FsMetadata = {
+  alias?: string,
+  icon?: {
+    small?: string,
+    large?: string,
+  },
+  timestamp?: number,
+}
+
 export type LinkNode = {
-  type: LinkNodeType
-  physicalPath: string
+  type: LinkNodeType,
+  physicalPath: string,
   logicalPath: string,
-  timestamp?: number
+  $?: FsMetadata,
 }
 
 export type FolderNode = {
   path: string
-  folderLinks: LinkNode[]
-  fileLinks: LinkNode[]
+  $?: FsMetadata,
+  folderLinks: LinkNode[],
+  fileLinks: LinkNode[],
 }
 
 export class FsError extends Error {
@@ -32,9 +42,15 @@ export class FsError extends Error {
 
 type FsRecord = {
   path: string,
+  $?: FsMetadata,
   files: string | null,
-  folders: string[],
+  folders: Pick<FsRecord, 'path' | '$'>[],
 }
+
+type FsStruct = {
+  $?: FsMetadata,
+  '.'?: string,
+} & { [dir: string]: FsStruct }
 
 interface IdbSchema extends DBSchema {
   'file-system': {
@@ -45,25 +61,27 @@ interface IdbSchema extends DBSchema {
 
 let _idb: IDBPDatabase<IdbSchema>
 
-function _loadFoldersHelper(prefix: string, cwd: string, fsStruct: { [dir: string]: string } | string): FsRecord[] {
+function _loadFoldersHelper(prefix: string, cwd: string, fsStruct: FsStruct): FsRecord[] {
+  const folders = Object.keys(fsStruct)
+    .filter(f => f !== '.' && f !== '$')
+    .map(f => {
+      return {
+        path: f,
+        $: fsStruct[f].$
+      }
+    })
+
   const record: FsRecord = {
     path: `${prefix}${cwd}`,
-    files: null,
-    folders: [],
+    $: fsStruct.$ || {},
+    files: fsStruct['.'] || null,
+    folders,
   }
 
-  if (typeof fsStruct === 'string') {
-    record.files = fsStruct
-    return [record]
-  } else {
-    record.files = fsStruct['.']
-    record.folders = Object.keys(fsStruct).filter(f => f !== '.')
-
-    return [
-      record,
-      ...record.folders.map(m => _loadFoldersHelper(`${record.path}\\`, m, fsStruct[m])).flat()
-    ]
-  }
+  return [
+    record,
+    ...record.folders.map(m => _loadFoldersHelper(`${record.path}\\`, m.path, fsStruct[m.path])).flat()
+  ]
 }
 
 async function _loadFolders() {
@@ -108,14 +126,15 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
 
   if (folders) {
     folderLinks = record.folders
-      .sort((a, b) => a.localeCompare(b))
+      .sort((a, b) => a.path.localeCompare(b.path))
       .map(folder => {
-        const fullPath = `${path}\\${folder}`
+        const fullPath = `${path}\\${folder.path}`
 
         return {
           type: LinkNodeType.Folder,
           physicalPath: fullPath,
           logicalPath: fullPath,
+          $: folder.$,
         }
       })
   }
@@ -132,10 +151,11 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
 
     type ProtoLinkNode = {
       path: string,
-      timestamp: number,
+      $: FsMetadata,
     }
 
-    const protoNodes = (await filesResponse.json())['paths'] as ProtoLinkNode[]
+    const filesResponseJson = await filesResponse.json()
+    const protoNodes = filesResponseJson.paths as ProtoLinkNode[]
 
     fileLinks = protoNodes
       .sort((a, b) => a.path.localeCompare(b.path))
@@ -144,13 +164,14 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
           type: LinkNodeType.File,
           physicalPath: n.path,
           logicalPath: `${path}\\${n.path.split('/').pop()}`,
-          timestamp: n.timestamp,
+          $: n.$,
         }
       })
   }
 
   return {
     path,
+    $: record.$,
     folderLinks,
     fileLinks,
   }
@@ -182,7 +203,7 @@ const _dateTimeFormat = new Intl.DateTimeFormat('en-US', {
 })
 
 export function getFormattedTimestamp(linkNode: LinkNode) {
-  return _dateTimeFormat.format(linkNode.timestamp)
+  return _dateTimeFormat.format(linkNode.$?.timestamp)
 }
 
 export function getParentFolder(folderNode: FolderNode) {
@@ -227,7 +248,11 @@ export function linkNodeToIcon(linkNode: LinkNode) {
 
   icon.title = title
   icon.fileLinkNode = linkNode
-  icon.classList.add('epk-icon')
 
+  if (linkNode.$?.icon?.large) {
+    icon.icon = linkNode.$.icon.large
+  }
+
+  icon.classList.add('epk-icon')
   return icon
 }
