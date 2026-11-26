@@ -33,6 +33,7 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
         grid-auto-flow: column;
         grid-template-rows: repeat(auto-fill, minmax(16px, 1fr));
         height: 97%;
+        margin-left: 2px;
 
         * {
           width: max-content;
