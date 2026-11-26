@@ -14,7 +14,7 @@ import {
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import type {EpkApp} from "./app.ts";
 import type {EpkDesktop} from "./desktop.ts";
-import {playError} from "../lib/os.ts";
+import {playSound, SystemSound} from "../lib/os.ts";
 
 export enum DisallowFlags {
   AllowAll = 0b0000,
@@ -413,8 +413,8 @@ export class EpkWindow extends LitElement {
 
     if (blockingDialogWindow) {
       event.stopPropagation()
-      // TODO change this sound to ding
-      playError().then(() => blockingDialogWindow.blink(
+
+      playSound(SystemSound.Ding).then(() => blockingDialogWindow.blink(
         /*
          * This isn't a great solution, but it's the best we have for now: manually add/remove a class to prevent
          * pointer-events, but only while the blocking dialog window is blinking. We can't set pointer-events to none

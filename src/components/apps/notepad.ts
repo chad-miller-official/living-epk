@@ -51,9 +51,11 @@ export class Notepad extends EpkApp {
       items: [
         {
           text: 'New', shortcut: 'Ctrl+N', action: () => {
-            const notepad = new Notepad()
-            notepad.windowTitle = 'Notepad - Untitled'
-            this.dispatchEvent(launchEvent(() => new Promise<Notepad>(resolve => resolve(notepad))))
+            this.dispatchEvent(launchEvent(() => {
+              const notepad = new Notepad()
+              notepad.windowTitle = 'Notepad - Untitled'
+              return notepad
+            }))
           },
         },
         {
@@ -61,21 +63,22 @@ export class Notepad extends EpkApp {
             event.stopPropagation()
             this.toolbar!.closeAll()
 
-            const filePicker = new FilePicker()
-            filePicker.delegatingAppId = this._appId
-            filePicker.path = 'C:\\Users\\Chad\\My Documents'
+            this.dispatchEvent(launchEvent(() => {
+              const filePicker = new FilePicker()
+              filePicker.delegatingAppId = this._appId
+              filePicker.path = 'C:\\Users\\Chad\\My Documents'
 
-            const plaintextFilterRegex = '[.]txt$'
+              const plaintextFilterRegex = '[.]txt$'
 
-            filePicker.fileTypeFilters = [{
-              regex: plaintextFilterRegex,
-              label: 'Plain text (*.txt)',
-              selected: true
-            }]
+              filePicker.fileTypeFilters = [{
+                regex: plaintextFilterRegex,
+                label: 'Plain text (*.txt)',
+                selected: true
+              }]
 
-            filePicker.filterRegex = new RegExp(plaintextFilterRegex)
-
-            this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
+              filePicker.filterRegex = new RegExp(plaintextFilterRegex)
+              return filePicker
+            }, {
               size: {
                 width: 500,
                 height: 400,
@@ -179,13 +182,14 @@ export class Notepad extends EpkApp {
             event.stopPropagation()
             this.toolbar!.closeAll()
 
-            const about = new AppAbout()
-            about.appName = 'Microsoft &reg; Notepad'
-            about.appIcon = '/img/icons/notepad.ico'
-            about.windowTitle = 'About Notepad'
-            about.delegatingAppId = this.getAppId()
-
-            this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
+            this.dispatchEvent(launchEvent(() => {
+              const about = new AppAbout()
+              about.appName = 'Microsoft &reg; Notepad'
+              about.appIcon = '/img/icons/notepad.ico'
+              about.windowTitle = 'About Notepad'
+              about.delegatingAppId = this.getAppId()
+              return about
+            }, {
               size: {
                 width: 419,
                 height: 350,

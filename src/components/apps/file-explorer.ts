@@ -12,7 +12,7 @@ import {
 import {Task} from "@lit/task";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
-import {alertDialog, playClick} from "../../lib/os.ts";
+import {alertDialog, playSound, SystemSound} from "../../lib/os.ts";
 import {launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {AppAbout} from "./dialog/about.ts";
 import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
@@ -200,9 +200,11 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
           text: 'Explore',
           disabled: () => this.selectedIcon?.fileLinkNode?.type !== LinkNodeType.Folder,
           action: () => {
-            const fileExplorer = new FileExplorer()
-            fileExplorer.path = this.selectedIcon!.fileLinkNode!.physicalPath
-            this.dispatchEvent(launchEvent(() => new Promise<FileExplorer>(resolve => resolve(fileExplorer))))
+            this.dispatchEvent(launchEvent(() => {
+              const fileExplorer = new FileExplorer()
+              fileExplorer.path = this.selectedIcon!.fileLinkNode!.physicalPath
+              return fileExplorer
+            }))
           }
         },
         ToolbarUiElement.DIVIDER,
@@ -275,7 +277,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
   protected async onLoadIcons(path: string): Promise<FolderNode> {
     await super.onLoadIcons(path)
-    this.windowIcon = this.folderNode!.$?.icon?.small || DEFAULT_WINDOW_ICON
+    this.windowIcon = this.folderNode!.metadata?.icon?.small || DEFAULT_WINDOW_ICON
     this.dispatchEvent(windowPropertyChangeEvent({thumbnail: this.windowIcon}))
     return this.folderNode!
   }
@@ -296,8 +298,8 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
       this.toolbar?.requestUpdate()
     }
 
-    if (path.$?.icon?.large) {
-      icon.icon = path.$.icon.large
+    if (path.metadata?.icon?.large) {
+      icon.icon = path.metadata.icon.large
     }
 
     return icon
@@ -312,7 +314,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
       return
     }
 
-    playClick().then(() => {
+    playSound(SystemSound.Click).then(() => {
       this.path = newPath
       this.pathStack.push(newPath)
     })
@@ -386,8 +388,8 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
       case SortColumn.Modified:
         this.folderNode?.fileLinks.sort(
           this.sortAsc
-            ? (a, b) => (a.$?.timestamp || 0) - (b.$?.timestamp || 0)
-            : (a, b) => (b.$?.timestamp || 0) - (a.$?.timestamp || 0)
+            ? (a, b) => (a.metadata?.timestamp || 0) - (b.metadata?.timestamp || 0)
+            : (a, b) => (b.metadata?.timestamp || 0) - (a.metadata?.timestamp || 0)
         )
 
         break
@@ -465,13 +467,13 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
   getNavigationButtons() {
     return html`
-      <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"
+      <button type="button" id="upButton" class="tool-button" ?disabled="${!this.canGoUp()}"
               @click="${this.goUp}">
         <img src="/img/file-explorer/up.png"/>
       </button>
       <div class="divider"></div>
       <button type="button" id="treeView"
-              class="style-2 ${this.showSidebar ? 'active' : ''}"
+              class="tool-button ${this.showSidebar ? 'active' : ''}"
               @click="${() => this.showSidebar = !this.showSidebar}">
         <img src="/img/file-explorer/tree-view.png"/>
         <span>Folders</span>
@@ -480,7 +482,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
   getAddressBar() {
     return html`
-      <img src="${this.folderNode?.$?.icon?.small || DEFAULT_WINDOW_ICON}"/>
+      <img src="${this.folderNode?.metadata?.icon?.small || DEFAULT_WINDOW_ICON}"/>
       <input type="text" .value="${`${this.folderNode?.path}\\`}" id="pathInput"/>`
   }
 

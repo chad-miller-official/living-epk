@@ -12,6 +12,20 @@ export enum LinkNodeType {
   Folder = 'folder',
 }
 
+export type LinkNode = {
+  type: LinkNodeType,
+  physicalPath: string,
+  logicalPath: string,
+  metadata?: FsMetadata,
+}
+
+export type FolderNode = {
+  path: string
+  folderLinks: LinkNode[],
+  fileLinks: LinkNode[],
+  metadata?: FsMetadata,
+}
+
 type FsMetadata = {
   alias?: string,
   icon?: {
@@ -21,31 +35,11 @@ type FsMetadata = {
   timestamp?: number,
 }
 
-export type LinkNode = {
-  type: LinkNodeType,
-  physicalPath: string,
-  logicalPath: string,
-  $?: FsMetadata,
-}
-
-export type FolderNode = {
-  path: string
-  $?: FsMetadata,
-  folderLinks: LinkNode[],
-  fileLinks: LinkNode[],
-}
-
-export class FsError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options)
-  }
-}
-
 type FsRecord = {
   path: string,
-  $?: FsMetadata,
   filesJson?: string,
-  folders: Pick<FsRecord, 'path' | '$'>[],
+  folders: Pick<FsRecord, 'path' | 'metadata'>[],
+  metadata?: FsMetadata,
 }
 
 type FsStruct = {
@@ -60,27 +54,27 @@ interface IdbSchema extends DBSchema {
   }
 }
 
-let _idb: IDBPDatabase<IdbSchema>
+let idb: IDBPDatabase<IdbSchema>
 
-function _loadFoldersHelper(prefix: string, cwd: string, fsStruct: FsStruct): FsRecord[] {
+function loadFoldersHelper(prefix: string, cwd: string, fsStruct: FsStruct): FsRecord[] {
   const folders = Object.keys(fsStruct)
     .filter(f => f !== '.' && f !== '$')
     .map(f => {
       return {
         path: f,
-        $: fsStruct[f].$
+        metadata: fsStruct[f].$
       }
     })
 
   const record: FsRecord = {
     path: `${prefix}${cwd}`,
-    $: fsStruct.$,
+    metadata: fsStruct.$,
     filesJson: fsStruct['.'],
     folders,
   }
 
   const additionalRecords = record.folders
-    .map(m => _loadFoldersHelper(`${record.path}\\`, m.path, fsStruct[m.path]))
+    .map(m => loadFoldersHelper(`${record.path}\\`, m.path, fsStruct[m.path]))
     .flat()
 
   return [
@@ -89,26 +83,26 @@ function _loadFoldersHelper(prefix: string, cwd: string, fsStruct: FsStruct): Fs
   ]
 }
 
-async function _loadFolders() {
+async function loadFolders() {
   const response = await fetch("/data/_folders.json")
   const folders = await response.json()
   const root = Object.keys(folders)[0]
-  return _loadFoldersHelper('', root, folders[root])
+  return loadFoldersHelper('', root, folders[root])
 }
 
 export async function initDb() {
-  if (_idb) {
+  if (idb) {
     return
   }
 
-  _idb = await openDB<IdbSchema>('chad-db', 1, {
+  idb = await openDB<IdbSchema>('chad-db', 1, {
     async upgrade(db) {
       db.createObjectStore('file-system', {keyPath: 'path'})
     }
   })
 
-  const records = await _loadFolders()
-  const tx = _idb.transaction('file-system', 'readwrite')
+  const records = await loadFolders()
+  const tx = idb.transaction('file-system', 'readwrite')
 
   await Promise.all([
     ...records.map(record => tx.store.put(record)),
@@ -116,9 +110,15 @@ export async function initDb() {
   ])
 }
 
+class FsError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
+  }
+}
+
 export async function loadFolderNode(path: string, signal?: AbortSignal): Promise<FolderNode> {
   path = path.replace(/\\?$/, '')
-  const record = await _idb.get('file-system', path)
+  const record = await idb.get('file-system', path)
 
   if (!record) {
     throw new FsError(`Failed to load file system record: ${path}`)
@@ -137,7 +137,7 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
           type: LinkNodeType.Folder,
           physicalPath: fullPath,
           logicalPath: fullPath,
-          $: folder.$,
+          metadata: folder.metadata,
         }
       })
   }
@@ -153,7 +153,7 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
     }
 
     const filesResponseJson = await filesResponse.json()
-    const protoNodes = filesResponseJson.paths as Pick<FsRecord, 'path' | '$'>[]
+    const protoNodes = filesResponseJson.paths as Pick<FsRecord, 'path' | 'metadata'>[]
 
     fileLinks = protoNodes
       .sort((a, b) => a.path.localeCompare(b.path))
@@ -162,14 +162,14 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
           type: LinkNodeType.File,
           physicalPath: n.path,
           logicalPath: `${path}\\${n.path.split('/').pop()}`,
-          $: n.$,
+          metadata: n.metadata,
         }
       })
   }
 
   return {
     path,
-    $: record.$,
+    metadata: record.metadata,
     folderLinks,
     fileLinks,
   }
@@ -195,13 +195,13 @@ export function getFileExtension(linkNode: LinkNode) {
   return linkNode.physicalPath.split('.').pop()
 }
 
-const _dateTimeFormat = new Intl.DateTimeFormat('en-US', {
+const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'full',
   timeStyle: 'short',
 })
 
 export function getFormattedTimestamp(linkNode: LinkNode) {
-  return _dateTimeFormat.format(linkNode.$?.timestamp)
+  return dateTimeFormat.format(linkNode.metadata?.timestamp)
 }
 
 export function getParentFolder(folderNode: FolderNode) {
@@ -247,8 +247,8 @@ export function linkNodeToIcon(linkNode: LinkNode) {
   icon.title = title
   icon.fileLinkNode = linkNode
 
-  if (linkNode.$?.icon?.large) {
-    icon.icon = linkNode.$.icon.large
+  if (linkNode.metadata?.icon?.large) {
+    icon.icon = linkNode.metadata.icon.large
   }
 
   icon.classList.add('epk-icon')

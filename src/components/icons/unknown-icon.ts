@@ -10,14 +10,12 @@ import type {Launch} from "../../lib/events.ts";
 export class UnknownIcon extends EpkIcon {
   icon = '/img/icons/unknown.ico'
 
-  getAppInstance(): Promise<EpkApp> {
-    return new Promise<EpkAlert>(resolve => {
-      const alert = new EpkAlert()
-      alert.windowTitle = 'Windows'
-      alert.message = `Windows cannot open this file: '${getLinkName(this.fileLinkNode!)}'`
-      alert.alertGraphic = '/img/search-file.ico'
-      return resolve(alert)
-    })
+  getAppInstance(): EpkApp {
+    const alert = new EpkAlert()
+    alert.windowTitle = 'Windows'
+    alert.message = `Windows cannot open this file: '${getLinkName(this.fileLinkNode!)}'`
+    alert.alertGraphic = '/img/search-file.ico'
+    return alert
   }
 
   getLaunchOptions(): Omit<Launch, 'init'> {

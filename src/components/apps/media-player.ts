@@ -242,27 +242,28 @@ export class MediaPlayer extends EpkApp {
             event.stopPropagation()
             this.toolbar!.closeAll()
 
-            const filePicker = new FilePicker()
-            filePicker.delegatingAppId = this.getAppId()
-            filePicker.path = 'C:\\Users\\Chad\\My Music'
+            this.dispatchEvent(launchEvent(() => {
+              const filePicker = new FilePicker()
+              filePicker.delegatingAppId = this.getAppId()
+              filePicker.path = 'C:\\Users\\Chad\\My Music'
 
-            const soundFilterRegex = '[.](mp3|wav)$'
+              const soundFilterRegex = '[.](mp3|wav)$'
 
-            filePicker.fileTypeFilters = [
-              {
-                regex: soundFilterRegex,
-                label: 'Sound (*.mp3, *.wav)',
-                selected: true
-              },
-              {
-                regex: '[.](mp4|webm)$',
-                label: 'Video (*.mp4, *.webm)',
-              },
-            ]
+              filePicker.fileTypeFilters = [
+                {
+                  regex: soundFilterRegex,
+                  label: 'Sound (*.mp3, *.wav)',
+                  selected: true
+                },
+                {
+                  regex: '[.](mp4|webm)$',
+                  label: 'Video (*.mp4, *.webm)',
+                },
+              ]
 
-            filePicker.filterRegex = new RegExp(soundFilterRegex)
-
-            this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
+              filePicker.filterRegex = new RegExp(soundFilterRegex)
+              return filePicker
+            }, {
               size: {
                 width: 500,
                 height: 400,
@@ -293,13 +294,14 @@ export class MediaPlayer extends EpkApp {
             event.stopPropagation()
             this.toolbar!.closeAll()
 
-            const about = new AppAbout()
-            about.appName = 'Microsoft &reg; Media Player'
-            about.appIcon = '/img/icons/media-player.ico'
-            about.windowTitle = 'About Media Player'
-            about.delegatingAppId = this.getAppId()
-
-            this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
+            this.dispatchEvent(launchEvent(() => {
+              const about = new AppAbout()
+              about.appName = 'Microsoft &reg; Media Player'
+              about.appIcon = '/img/icons/media-player.ico'
+              about.windowTitle = 'About Media Player'
+              about.delegatingAppId = this.getAppId()
+              return about
+            }, {
               size: {
                 width: 419,
                 height: 350,

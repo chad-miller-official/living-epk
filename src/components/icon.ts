@@ -104,7 +104,7 @@ export abstract class EpkIcon extends LitElement {
   @state()
   selected = false
 
-  abstract getAppInstance(): Promise<EpkApp>
+  abstract getAppInstance(): EpkApp
 
   getLaunchOptions(): Omit<Launch, 'init'> {
     return {}

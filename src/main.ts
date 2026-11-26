@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelector('#desktop')!.dispatchEvent(
     launchEvent(
-      () => new Promise<Notepad>(resolve => {
+      () => {
         const notepad = new Notepad()
         notepad.fileLinkNode = {
           type: LinkNodeType.File,
@@ -28,8 +28,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           logicalPath: 'C:\\Users\\Chad\\My Documents\\Welcome to my zone.txt',
         }
         notepad.windowTitle = 'Notepad - Welcome to my zone'
-        resolve(notepad)
-      }),
+        return notepad
+      },
       {
         location: {
           x: 260,

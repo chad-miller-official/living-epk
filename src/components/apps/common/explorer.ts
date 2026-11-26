@@ -4,15 +4,15 @@ import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../../ui
 import {styleMap} from "lit/directives/style-map.js";
 import {property, query, state} from "lit/decorators.js";
 import {PathStack} from "../../../lib/path-stack.ts";
-import {buttonStyle2} from "../../../lib/ui.ts";
+import {extendedUiStyle} from "../../../lib/ui.ts";
 import {closeWindowEvent, launchEvent} from "../../../lib/events.ts";
-import {playClick} from "../../../lib/os.ts";
 import {DisallowFlags} from "../../window.ts";
+import {playSound, SystemSound} from "../../../lib/os.ts";
 
 export abstract class Explorer<T> extends EpkApp {
   static styles = [
     ...EpkApp.styles,
-    buttonStyle2,
+    extendedUiStyle,
     css`
       #closeButton {
         height: 18px;
@@ -187,7 +187,7 @@ export abstract class Explorer<T> extends EpkApp {
             event.stopPropagation()
             this.toolbar!.closeAll()
 
-            this.dispatchEvent(launchEvent(() => new Promise<T>(resolve => resolve(aboutApp())), {
+            this.dispatchEvent(launchEvent(aboutApp, {
               size: {
                 width: 419,
                 height: 350,
@@ -225,13 +225,13 @@ export abstract class Explorer<T> extends EpkApp {
 
   goBack() {
     if (this.pathStack.canGoBack()) {
-      playClick().then(() => this.path = this.pathStack.goBack())
+      playSound(SystemSound.Click).then(() => this.path = this.pathStack.goBack())
     }
   }
 
   goForward() {
     if (this.pathStack.canGoForward()) {
-      playClick().then(() => this.path = this.pathStack.goForward())
+      playSound(SystemSound.Click).then(() => this.path = this.pathStack.goForward())
     }
   }
 
@@ -277,12 +277,12 @@ export abstract class Explorer<T> extends EpkApp {
         <section class="content">
           <div class="viewport">
             <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">
-              <button type="button" class="style-2"
+              <button type="button" class="tool-button"
                       ?disabled="${!this.pathStack.canGoBack()}" @click="${this.goBack}">
                 <img src="/img/explorer/back.png"/>
                 <span>Back</span>
               </button>
-              <button type="button" class="style-2"
+              <button type="button" class="tool-button"
                       ?disabled="${!this.pathStack.canGoForward()}" @click="${this.goForward}">
                 <img src="/img/explorer/forward.png"/>
               </button>
@@ -294,7 +294,7 @@ export abstract class Explorer<T> extends EpkApp {
               <div class="address-bar">
                 ${this.getAddressBar()}
               </div>
-              <button type="submit" id="goButton" class="style-2">
+              <button type="submit" id="goButton" class="tool-button">
                 <img src="/img/explorer/go.png"/>
                 <span>Go</span>
               </button>
@@ -303,7 +303,7 @@ export abstract class Explorer<T> extends EpkApp {
               <div id="sidebar" style="${styleMap(sidebarStyle)}">
                 <div class="sidebar-header">
                   Favorites
-                  <button type="button" id="closeButton" class="style-2"
+                  <button type="button" id="closeButton" class="tool-button"
                           @click="${() => this.showSidebar = false}">
                     <img src="/img/explorer/x.png"/>
                   </button>

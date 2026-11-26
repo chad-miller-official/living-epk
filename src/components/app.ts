@@ -5,6 +5,9 @@ import {EpkToolbar} from "./ui/toolbar.ts";
 import type {LinkNode} from "../lib/fs.ts";
 import {closeWindowEvent} from "../lib/events.ts";
 import type {Dimensions} from "./window.ts";
+import type {AbstractConstructor} from "../lib/lang.ts";
+
+export type EpkAppConstructor = AbstractConstructor<EpkApp>
 
 export abstract class EpkApp extends LitElement {
   static styles = [

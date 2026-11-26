@@ -104,7 +104,7 @@ export class AppAbout extends Dialog(EpkApp) {
   handleEulaClick(event: Event) {
     event.stopPropagation()
 
-    this.dispatchEvent(launchEvent(() => new Promise<Notepad>(resolve => {
+    this.dispatchEvent(launchEvent(() => {
       const notepad = new Notepad()
       notepad.windowTitle = `Notepad - eula`
 
@@ -114,8 +114,8 @@ export class AppAbout extends Dialog(EpkApp) {
         logicalPath: 'C:\\Windows\\eula.txt'
       }
 
-      resolve(notepad)
-    })))
+      return notepad
+    }))
   }
 
   render() {

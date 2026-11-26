@@ -16,15 +16,13 @@ export class InternetExplorerIcon extends EpkIcon {
     }
   }
 
-  getAppInstance(): Promise<EpkApp> {
-    return new Promise<InternetExplorer>(resolve => {
-      const internetExplorer = new InternetExplorer()
+  getAppInstance(): EpkApp {
+    const internetExplorer = new InternetExplorer()
 
-      if (this.fileLinkNode) {
-        internetExplorer.path = this.fileLinkNode
-      }
+    if (this.fileLinkNode) {
+      internetExplorer.path = this.fileLinkNode
+    }
 
-      return resolve(internetExplorer)
-    })
+    return internetExplorer
   }
 }

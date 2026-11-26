@@ -74,11 +74,11 @@ export class InternetExplorerAbout extends Dialog(EpkApp) {
   handleCopyrightClick(event: Event) {
     event.stopPropagation()
 
-    this.dispatchEvent(launchEvent(() => new Promise<InternetExplorer>(resolve => {
+    this.dispatchEvent(launchEvent(() => {
       const ie = new InternetExplorer()
       ie.path = 'https://web.archive.org/web/20030828184444/http://www.microsoft.com/isapi/redir.dll?prd=ie&pver=6.0&ar=aboutie&sba=copyr'
-      resolve(ie)
-    })))
+      return ie
+    }))
   }
 
   render() {

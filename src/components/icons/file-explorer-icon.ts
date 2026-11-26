@@ -20,16 +20,14 @@ export class FileExplorerIcon extends EpkIcon {
     }
   }
 
-  getAppInstance(): Promise<EpkApp> {
-    return new Promise<FileExplorer>(resolve => {
-      const fileExplorer = new FileExplorer()
-      fileExplorer.windowIcon = this.windowIcon
+  getAppInstance(): EpkApp {
+    const fileExplorer = new FileExplorer()
+    fileExplorer.windowIcon = this.windowIcon
 
-      if (this.fileLinkNode) {
-        fileExplorer.path = this.fileLinkNode.physicalPath
-      }
+    if (this.fileLinkNode) {
+      fileExplorer.path = this.fileLinkNode.physicalPath
+    }
 
-      return resolve(fileExplorer)
-    })
+    return fileExplorer
   }
 }

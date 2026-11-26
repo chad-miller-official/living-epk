@@ -137,7 +137,7 @@ export class EpkDesktop extends LitElement {
   handleLaunch(event: Event) {
     const launchData = (event as CustomEvent<Launch>).detail
 
-    launchData.init().then(app => {
+    new Promise<EpkApp>(resolve => resolve(launchData.init())).then(app => {
       const appName = app.constructor.name
       app.classList.add('epk-app')
 

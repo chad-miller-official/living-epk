@@ -10,13 +10,11 @@ export class GalleryIcon extends EpkIcon {
   @property({type: String})
   fsSpecPath!: string
 
-  getAppInstance(): Promise<EpkApp> {
-    return new Promise<ImageGallery>(resolve => {
-      const imageGallery = new ImageGallery()
-      imageGallery.fileLinkNode = this.fileLinkNode
-      imageGallery.fsSpecPath = this.fsSpecPath
-      return resolve(imageGallery)
-    })
+  getAppInstance(): EpkApp {
+    const imageGallery = new ImageGallery()
+    imageGallery.fileLinkNode = this.fileLinkNode
+    imageGallery.fsSpecPath = this.fsSpecPath
+    return imageGallery
   }
 
   getLaunchOptions() {

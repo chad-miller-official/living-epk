@@ -1,7 +1,7 @@
 import {css} from "lit";
 
-export const buttonStyle2 = css`
-  button.style-2 {
+export const extendedUiStyle = css`
+  button.tool-button {
     align-items: center;
     background: transparent;
     border: 1px solid transparent;
@@ -55,5 +55,4 @@ export const buttonStyle2 = css`
     height: 85%;
     margin: 2px;
     width: 1px;
-  }
-`
+  }`

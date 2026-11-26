@@ -3,7 +3,7 @@ import {css, html, nothing, type TemplateResult} from "lit";
 import {activeWindowChangeEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../ui/toolbar.ts";
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
-import {alertDialog, playClick, warnDialog} from "../../lib/os.ts";
+import {alertDialog, playSound, SystemSound, warnDialog} from "../../lib/os.ts";
 import {Explorer} from "./common/explorer.ts";
 import {WindowState} from "../window.ts";
 import {InternetExplorerAbout} from "./dialog/ie-about.ts";
@@ -182,16 +182,18 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
               text: 'Window',
               shortcut: 'Ctrl+N',
               action: () => {
-                const internetExplorer = new InternetExplorer()
+                this.dispatchEvent(launchEvent(() => {
+                  const internetExplorer = new InternetExplorer()
 
-                internetExplorer.path = this.path
-                internetExplorer.showAddressBar = this.showAddressBar
-                internetExplorer.showStandardButtons = this.showStandardButtons
-                internetExplorer.showStatusBar = this.showStatusBar
-                internetExplorer.pathStack = this.pathStack
-                internetExplorer.pathStack.pop()
+                  internetExplorer.path = this.path
+                  internetExplorer.showAddressBar = this.showAddressBar
+                  internetExplorer.showStandardButtons = this.showStandardButtons
+                  internetExplorer.showStatusBar = this.showStatusBar
+                  internetExplorer.pathStack = this.pathStack
+                  internetExplorer.pathStack.removeMostRecent()
 
-                this.dispatchEvent(launchEvent(() => new Promise<InternetExplorer>(resolve => resolve(internetExplorer))))
+                  return internetExplorer
+                }))
               }
             },
           ],
@@ -355,7 +357,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
       return
     }
 
-    playClick().then(async () => {
+    playSound(SystemSound.Click).then(async () => {
       let newPathToUse: string | LinkNode | undefined
 
       if (newPath.startsWith('C:')) {
@@ -464,23 +466,23 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
 
   getNavigationButtons() {
     return html`
-      <button type="button" class="style-2" @click="${this.stop}">
+      <button type="button" class="tool-button" @click="${this.stop}">
         <img src="/img/internet-explorer/stop.png"/>
       </button>
-      <button type="button" class="style-2" @click="${this.refresh}">
+      <button type="button" class="tool-button" @click="${this.refresh}">
         <img src="/img/internet-explorer/refresh.png"/>
       </button>
-      <button type="button" class="style-2" @click="${this.goHome}">
+      <button type="button" class="tool-button" @click="${this.goHome}">
         <img src="/img/internet-explorer/home.png"/>
       </button>
       <div class="divider"></div>
-      <button type="button" class="style-2 ${this.showSidebar ? 'active' : ''}"
+      <button type="button" class="tool-button ${this.showSidebar ? 'active' : ''}"
               @click="${() => this.showSidebar = !this.showSidebar}">
         <img src="/img/internet-explorer/favorites.png"/>
         <span>Favorites</span>
       </button>
       <div class="divider"></div>
-      <button type="button" class="style-2"
+      <button type="button" class="tool-button"
               @click="${() => window.print()}">
         <img src="/img/internet-explorer/print.png"/>
       </button>`

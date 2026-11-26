@@ -28,16 +28,14 @@ export class MediaIcon extends EpkIcon {
     }
   }
 
-  getAppInstance(): Promise<EpkApp> {
-    return new Promise<MediaPlayer>(resolve => {
-      const mediaPlayer = new MediaPlayer()
+  getAppInstance(): EpkApp {
+    const mediaPlayer = new MediaPlayer()
 
-      if (this.fileLinkNode) {
-        mediaPlayer.fileLinkNode = this.fileLinkNode
-        mediaPlayer.windowTitle = `Media Player - ${getLinkName(this.fileLinkNode)} (stopped)`
-      }
+    if (this.fileLinkNode) {
+      mediaPlayer.fileLinkNode = this.fileLinkNode
+      mediaPlayer.windowTitle = `Media Player - ${getLinkName(this.fileLinkNode)} (stopped)`
+    }
 
-      return resolve(mediaPlayer)
-    })
+    return mediaPlayer
   }
 }

@@ -4,11 +4,11 @@ import {type FolderNode, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeTyp
 import {EpkIcon, IconViewMode} from "../../icon.ts";
 import {filePickedEvent} from "../../../lib/events.ts";
 import {EpkApp} from "../../app.ts";
-import {playClick} from "../../../lib/os.ts";
 import {PathStack} from "../../../lib/path-stack.ts";
-import {buttonStyle2} from "../../../lib/ui.ts";
+import {extendedUiStyle} from "../../../lib/ui.ts";
 import {FileViewer} from "../common/file-viewer.ts";
 import {Dialog} from "./dialog.ts";
+import { playSound, SystemSound } from "../../../lib/os.ts";
 
 export type FileTypeFilter = {
   regex: string,
@@ -20,7 +20,7 @@ export type FileTypeFilter = {
 export class FilePicker extends Dialog(FileViewer(EpkApp)) {
   static styles = [
     ...EpkApp.styles,
-    buttonStyle2,
+    extendedUiStyle,
     css`
       #backButton, #upButton {
         img {
@@ -193,7 +193,7 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
       return
     }
 
-    playClick().then(() => {
+    playSound(SystemSound.Click).then(() => {
       this.path = newPath
       this.pathStack.push(newPath)
     })
@@ -237,33 +237,33 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
                 <div class="look-in">Look in:</div>
                 <form class="navigation" @submit="${this.handlePathInputSubmit}">
                   <input id="pathInput" type="text" value="${folderNode.path}"/>
-                  <button type="submit" id="goButton" class="style-2">
+                  <button type="submit" id="goButton" class="tool-button">
                     <img src="/img/explorer/go.png"/>
                     <span>Go</span>
                   </button>
                   <div class="divider"></div>
-                  <button type="button" id="backButton" class="style-2"
+                  <button type="button" id="backButton" class="tool-button"
                           ?disabled="${!this.pathStack.canGoBack()}"
                           @click="${this.pathStack.goBack}">
                     <img src="/img/explorer/back.png"/>
                   </button>
-                  <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"
+                  <button type="button" id="upButton" class="tool-button" ?disabled="${!this.canGoUp()}"
                           @click="${this.goUp}">
                     <img src="/img/file-explorer/up.png"/>
                   </button>
                 </form>
                 <div class="shortcuts">
-                  <button type="button" class="style-2"
+                  <button type="button" class="tool-button"
                           @click="${() => this.navigate('C:\\Users\\Chad\\My Documents')}">
                     <img src="/img/icons/file-explorer.ico"/>
                     <span>My Documents</span>
                   </button>
-                  <button type="button" class="style-2"
+                  <button type="button" class="tool-button"
                           @click="${() => this.navigate('C:\\Users\\Chad\\My Pictures')}">
                     <img src="/img/icons/my-pictures.ico"/>
                     <span>My Pictures</span>
                   </button>
-                  <button type="button" class="style-2"
+                  <button type="button" class="tool-button"
                           @click="${() => this.navigate('C:\\Users\\Chad\\My Music')}">
                     <img src="/img/icons/my-music.ico"/>
                     <span>My Music</span>

@@ -1,5 +1,5 @@
-import type {EpkAppConstructor} from "../../../lib/support.ts";
 import {activeWindowChangeEvent} from "../../../lib/events.ts";
+import type {EpkAppConstructor} from "../../app.ts";
 
 export function Dialog<T extends EpkAppConstructor>(Base: T) {
   abstract class DialogMixin extends Base {

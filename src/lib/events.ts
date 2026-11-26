@@ -6,7 +6,7 @@ import type {Dimensions, Point} from "@interactjs/core/types";
 export const LAUNCH_EVENT = 'launch'
 
 export type Launch = {
-  init: () => Promise<EpkApp>,
+  init: () => EpkApp,
   size?: Partial<Dimensions>,
   location?: Partial<Point> | 'center',
   disallowFlags?: number,

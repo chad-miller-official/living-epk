@@ -5,7 +5,7 @@ import {type FolderNode, type LinkNode, loadFolderNode} from "../../lib/fs.ts";
 import {Task, TaskStatus} from "@lit/task";
 import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
-import {buttonStyle2} from "../../lib/ui.ts";
+import {extendedUiStyle} from "../../lib/ui.ts";
 import {windowPropertyChangeEvent} from "../../lib/events.ts";
 import {alertDialog} from "../../lib/os.ts";
 import {WindowState} from "../window.ts";
@@ -14,7 +14,7 @@ import {WindowState} from "../window.ts";
 export class ImageGallery extends EpkApp {
   static styles = [
     ...EpkApp.styles,
-    buttonStyle2,
+    extendedUiStyle,
     css`
       .buttons {
         background-color: #eef2fb;
@@ -228,21 +228,21 @@ export class ImageGallery extends EpkApp {
               <div class="content">
                 <div id="image" class="slideshow" style="${styleMap(wrapperStyle)}" @click="${this.goToNext}"></div>
                 <div class="slideshow-controls buttons">
-                  <button class="active style-2" id="play" @click="${this.handlePlayClick}">
+                  <button class="active tool-button" id="play" @click="${this.handlePlayClick}">
                     <img src="/img/image-viewer/play.png"/>
                   </button>
-                  <button class="style-2" id="pause" @click="${this.handlePauseClick}">
+                  <button class="tool-button" id="pause" @click="${this.handlePauseClick}">
                     <img src="/img/image-viewer/pause.png"/>
                   </button>
                   <div class="divider"></div>
-                  <button class="style-2" @click="${this.goToPrevious}">
+                  <button class="tool-button" @click="${this.goToPrevious}">
                     <img src="/img/image-viewer/previous.png"/>
                   </button>
-                  <button class="style-2" @click="${this.goToNext}">
+                  <button class="tool-button" @click="${this.goToNext}">
                     <img src="/img/image-viewer/next.png"/>
                   </button>
                   <div class="divider"></div>
-                  <button class="style-2" @click="${this.exitSlideshow}">
+                  <button class="tool-button" @click="${this.exitSlideshow}">
                     <img src="/img/image-viewer/exit.png"/>
                   </button>
                 </div>
@@ -258,31 +258,31 @@ export class ImageGallery extends EpkApp {
                     <div id="image" style="${styleMap(wrapperStyle)}"></div>
                   </div>
                   <div class="buttons">
-                    <button class="style-2" @click="${this.goToPrevious}">
+                    <button class="tool-button" @click="${this.goToPrevious}">
                       <img src="/img/image-viewer/previous.png"/>
                     </button>
-                    <button class="style-2" @click="${this.goToNext}">
+                    <button class="tool-button" @click="${this.goToNext}">
                       <img src="/img/image-viewer/next.png"/>
                     </button>
                     <div class="divider"></div>
-                    <button class="style-2" @click="${() => this.panzoom?.zoom(1)}">
+                    <button class="tool-button" @click="${() => this.panzoom?.zoom(1)}">
                       <img src="/img/image-viewer/best-fit.png"/>
                     </button>
-                    <button class="style-2" @click="${() => this.panzoom?.zoom(4)}">
+                    <button class="tool-button" @click="${() => this.panzoom?.zoom(4)}">
                       <img src="/img/image-viewer/actual-size.png"/>
                     </button>
-                    <button class="style-2" @click="${this.handleSlideshowClick}">
+                    <button class="tool-button" @click="${this.handleSlideshowClick}">
                       <img src="/img/image-viewer/slideshow.png"/>
                     </button>
                     <div class="divider"></div>
-                    <button class="style-2" @click="${() => this.panzoom?.zoomIn()}">
+                    <button class="tool-button" @click="${() => this.panzoom?.zoomIn()}">
                       <img src="/img/image-viewer/zoom-in.png"/>
                     </button>
-                    <button class="style-2" @click="${() => this.panzoom?.zoomOut()}">
+                    <button class="tool-button" @click="${() => this.panzoom?.zoomOut()}">
                       <img src="/img/image-viewer/zoom-out.png"/>
                     </button>
                     <div class="divider"></div>
-                    <button class="style-2" @click="${() => window.print()}">
+                    <button class="tool-button" @click="${() => window.print()}">
                       <img src="/img/image-viewer/print.png"/>
                     </button>
                   </div>
