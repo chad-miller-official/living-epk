@@ -168,8 +168,17 @@ export class EpkDesktop extends LitElement {
         lastHeight || eventHeight || minSize.height,
       ]
 
-      epkWindow.minSize = minSize
-      epkWindow.size = {width: widthToUse, height: heightToUse}
+      epkWindow.minSize = {}
+
+      if (minSize.width) {
+        epkWindow.minSize.width = minSize.width
+      }
+
+      if (minSize.height) {
+        epkWindow.minSize.height = minSize.height
+      }
+
+      epkWindow.size = {width: widthToUse!, height: heightToUse!}
 
       const location = launchData.location
 

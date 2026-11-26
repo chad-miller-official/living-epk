@@ -81,7 +81,7 @@ export abstract class EpkApp extends LitElement {
     return this._appId
   }
 
-  getMinimumDimensions(): Dimensions {
+  getMinimumDimensions(): Partial<Dimensions> {
     return {width: 128, height: 128}
   }
 

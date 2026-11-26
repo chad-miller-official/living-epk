@@ -13,9 +13,8 @@ export function FileViewer<T extends EpkAppConstructor>(Base: T) {
         return await loadFolderNode(path)
       } catch (ex: unknown) {
         alertDialog(this, 'Address Bar', `Windows cannot find '${path}'. Check the spelling and try again.`)
+        return null
       }
-
-      return {path: '', folderLinks: [], fileLinks: []}
     }
 
     protected iconLoaderTask = new Task(this, {
@@ -26,7 +25,13 @@ export function FileViewer<T extends EpkAppConstructor>(Base: T) {
     abstract navigate(to: string): void
 
     protected async onLoadIcons(path: string): Promise<FolderNode> {
-      return (this.folderNode = await this.loadIcons(path))!
+      const icons = await this.loadIcons(path)
+
+      if (icons) {
+        this.folderNode = icons
+      }
+
+      return this.folderNode!
     }
 
     canGoUp() {

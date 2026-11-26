@@ -1,4 +1,4 @@
-import {launchEvent} from "./events.ts";
+import {type Launch, launchEvent} from "./events.ts";
 import {EpkAlert} from "../components/apps/dialog/alert.ts";
 import type {EpkApp} from "../components/app.ts";
 import {DisallowFlags} from "../components/window.ts";
@@ -11,11 +11,13 @@ function getAlertDialog(delegatingAppId: string, title: string, message: string)
   return alert
 }
 
-function getAlertDialogLaunchArgs(message: string) {
+function getAlertDialogLaunchArgs(message: string): Partial<Launch> {
   return {
-    width: Math.min(message.length * 5, 500),
+    size: {
+      width: Math.min(message.length * 5, 500)
+    },
+    location: 'center',
     disallowFlags: DisallowFlags.DisallowAll,
-    centered: true,
   }
 }
 

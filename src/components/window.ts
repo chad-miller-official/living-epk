@@ -190,7 +190,7 @@ export class EpkWindow extends LitElement {
   size?: Dimensions
 
   @property()
-  minSize!: Dimensions
+  minSize!: Partial<Dimensions>
 
   @property({type: Number})
   disallowFlags: DisallowFlags = DisallowFlags.AllowAll
@@ -342,7 +342,12 @@ export class EpkWindow extends LitElement {
           end: () => this.resizing = false,
         },
         modifiers: [
-          interact.modifiers.restrictSize({min: this.minSize})
+          interact.modifiers.restrictSize({
+            min: {
+              width: this.minSize.width || 0,
+              height: this.minSize.height || 0,
+            }
+          })
         ]
       })
     }
