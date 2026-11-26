@@ -2,7 +2,7 @@ import {MediaIcon} from "../components/icons/media-icon.ts";
 import {InternetExplorerIcon} from "../components/icons/internet-explorer-icon.ts";
 import {GalleryIcon} from "../components/icons/gallery-icon.ts";
 import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
-import {EpkIcon} from "../components/icon.ts";
+import {EpkIcon, type IconGraphic} from "../components/icon.ts";
 import {type DBSchema, type IDBPDatabase, openDB} from "idb";
 import {FileExplorerIcon} from "../components/icons/file-explorer-icon.ts";
 import {UnknownIcon} from "../components/icons/unknown-icon.ts";
@@ -28,10 +28,7 @@ export type FolderNode = {
 
 type FsMetadata = {
   alias?: string,
-  icon?: {
-    small?: string,
-    large?: string,
-  },
+  icon?: Partial<IconGraphic>,
   timestamp?: number,
 }
 
@@ -221,12 +218,22 @@ export function linkNodeToIcon(linkNode: LinkNode) {
       case 'wav':
       case 'mp3':
         icon = new MediaIcon()
-        icon.icon = '/img/icons/audio.ico'
+
+        icon.icon = {
+          small: '/img/icons/audio.ico',
+          large: '/img/icons/audio.ico',
+        }
+
         break
       case 'mp4':
       case 'webm':
         icon = new MediaIcon()
-        icon.icon = '/img/icons/video.ico'
+
+        icon.icon = {
+          small: '/img/icons/video.ico',
+          large: '/img/icons/video.ico',
+        }
+
         break
       case 'html':
         icon = new InternetExplorerIcon()
@@ -247,8 +254,11 @@ export function linkNodeToIcon(linkNode: LinkNode) {
   icon.title = title
   icon.fileLinkNode = linkNode
 
-  if (linkNode.metadata?.icon?.large) {
-    icon.icon = linkNode.metadata.icon.large
+  if (linkNode.metadata?.icon) {
+    icon.icon = {
+      small: linkNode.metadata.icon.small || icon.icon.small,
+      large: linkNode.metadata.icon.large || icon.icon.large,
+    }
   }
 
   icon.classList.add('epk-icon')

@@ -5,6 +5,11 @@ import {type Launch, launchEvent} from "../lib/events.ts";
 import type {EpkApp} from "./app.ts";
 import type {LinkNode} from "../lib/fs.ts";
 
+export type IconGraphic = {
+  small: string,
+  large: string,
+}
+
 export enum IconViewMode {
   IconView = 'icon',
   ListView = 'list',
@@ -86,8 +91,11 @@ export abstract class EpkIcon extends LitElement {
   @property({type: String})
   title = ''
 
-  @property({type: String})
-  icon = ''
+  @property({type: Object})
+  icon: IconGraphic = {
+    small: '/img/icons/unknown.ico',
+    large: '/img/icons/unknown.ico',
+  }
 
   @property({type: String})
   color = '#000000'
@@ -112,10 +120,7 @@ export abstract class EpkIcon extends LitElement {
 
   handleClick(event: PointerEvent) {
     this.selected = true
-
-    if (this.onclick) {
-      this.onclick(event)
-    }
+    this.onclick?.(event)
   }
 
   handleDblClick() {
@@ -138,13 +143,22 @@ export abstract class EpkIcon extends LitElement {
       titleClassName += ' shadowed'
     }
 
-    let iconSize = this.viewMode === IconViewMode.ListView ? 16 : 48
+    let iconSize: number
+    let iconGraphic: string
+
+    if (this.viewMode === IconViewMode.IconView) {
+      iconSize = 48
+      iconGraphic = this.icon.large
+    } else {
+      iconSize = 16
+      iconGraphic = this.icon.small
+    }
 
     return html`
       <div class="${iconClassName}" @click="${this.handleClick}" @dblclick="${this.handleDblClick}">
         <div class="fx-wrapper">
-          <img src="${this.icon}" alt="${this.icon}" width="${iconSize}" height="${iconSize}"/>
-          <img src="${this.icon}" class="fx" width="${iconSize}" height="${iconSize}"/>
+          <img src="${iconGraphic}" width="${iconSize}" height="${iconSize}"/>
+          <img src="${iconGraphic}" class="fx" width="${iconSize}" height="${iconSize}"/>
         </div>
         <span class="${titleClassName}" style="${styleMap(textStyle)}">
           ${this.title}

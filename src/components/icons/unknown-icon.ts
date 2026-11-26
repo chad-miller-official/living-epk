@@ -8,8 +8,6 @@ import type {Launch} from "../../lib/events.ts";
 
 @customElement('unknown-icon')
 export class UnknownIcon extends EpkIcon {
-  icon = '/img/icons/unknown.ico'
-
   getAppInstance(): EpkApp {
     const alert = new EpkAlert()
     alert.windowTitle = 'Windows'

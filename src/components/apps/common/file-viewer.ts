@@ -8,7 +8,7 @@ export const DEFAULT_WINDOW_ICON = '/img/icons/small/file-explorer-small.ico'
 export function FileViewer<T extends EpkAppConstructor>(Base: T) {
   abstract class FileViewerMixin extends Base {
     protected folderNode?: FolderNode
-    protected abstract path: any
+    protected abstract path: string
 
     protected async loadIcons(path: string) {
       try {

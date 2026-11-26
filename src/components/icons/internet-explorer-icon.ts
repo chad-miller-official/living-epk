@@ -3,9 +3,12 @@ import {customElement} from "lit/decorators.js";
 import {InternetExplorer} from "../apps/internet-explorer.ts";
 import type {EpkApp} from "../app.ts";
 
-@customElement('document-reader-icon')
+@customElement('internet-explorer-icon')
 export class InternetExplorerIcon extends EpkIcon {
-  icon = '/img/icons/html-file.ico'
+  icon = {
+    small: '/img/icons/small/internet-explorer.ico',
+    large: '/img/icons/html-file.ico',
+  }
 
   getLaunchOptions() {
     return {

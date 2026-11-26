@@ -1,15 +1,14 @@
-import {customElement, property} from "lit/decorators.js";
+import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 import {FileExplorer} from "../apps/file-explorer.ts";
 import type {EpkApp} from "../app.ts";
 
 @customElement('file-explorer-icon')
 export class FileExplorerIcon extends EpkIcon {
-  @property({type: String})
-  icon = '/img/icons/file-explorer.ico'
-
-  @property({type: String})
-  windowIcon = '/img/icons/small/file-explorer-small.ico'
+  icon = {
+    small: '/img/icons/small/file-explorer-small.ico',
+    large: '/img/icons/file-explorer.ico',
+  }
 
   getLaunchOptions() {
     return {
@@ -22,7 +21,6 @@ export class FileExplorerIcon extends EpkIcon {
 
   getAppInstance(): EpkApp {
     const fileExplorer = new FileExplorer()
-    fileExplorer.windowIcon = this.windowIcon
 
     if (this.fileLinkNode) {
       fileExplorer.path = this.fileLinkNode.physicalPath

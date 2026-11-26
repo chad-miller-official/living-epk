@@ -296,8 +296,11 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
       this.toolbar?.requestUpdate()
     }
 
-    if (path.metadata?.icon?.large) {
-      icon.icon = path.metadata.icon.large
+    if (path.metadata?.icon) {
+      icon.icon = {
+        small: path.metadata.icon.small || icon.icon.small,
+        large: path.metadata.icon.large || icon.icon.large,
+      }
     }
 
     return icon
