@@ -6,7 +6,7 @@ import {filePickedEvent} from "../../../lib/events.ts";
 import {EpkApp} from "../../app.ts";
 import {PathStack} from "../../../lib/path-stack.ts";
 import {extendedUiStyle} from "../../../lib/ui.ts";
-import {FileViewer} from "../common/file-viewer.ts";
+import {DEFAULT_WINDOW_ICON, FileViewer} from "../common/file-viewer.ts";
 import {Dialog} from "./dialog.ts";
 import { playSound, SystemSound } from "../../../lib/os.ts";
 
@@ -49,7 +49,20 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
 
       #pathInput {
         flex-grow: 1;
+      }
+
+      .address-bar {
+        align-items: center;
+        background-color: #ffffff;
+        border: 1px solid #7f9db9;
+        display: flex;
         margin-right: 10px;
+        padding-left: 3px;
+        width: 100%;
+
+        & > input {
+          border: none;
+        }
       }
 
       .controls {
@@ -180,6 +193,16 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
     super.close(event)
   }
 
+  handlePickSubmit(event: SubmitEvent) {
+    event.preventDefault()
+
+    if (this.selectedFileLinkNode?.type === LinkNodeType.Folder) {
+      this.navigate(this.selectedFileLinkNode.physicalPath)
+    } else {
+      this.close(event)
+    }
+  }
+
   handleFileTypeFilterChange(event: Event) {
     this.filterRegex = new RegExp((event.target as HTMLOptionElement).value)
 
@@ -236,7 +259,10 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
               <div class="viewport">
                 <div class="look-in">Look in:</div>
                 <form class="navigation" @submit="${this.handlePathInputSubmit}">
-                  <input id="pathInput" type="text" value="${folderNode.path}"/>
+                  <div class="address-bar">
+                    <img src="${this.folderNode?.metadata?.icon?.small || DEFAULT_WINDOW_ICON}"/>
+                    <input id="pathInput" type="text" value="${`${folderNode.path}\\`}"/>
+                  </div>
                   <button type="submit" id="goButton" class="tool-button">
                     <img src="/img/explorer/go.png"/>
                     <span>Go</span>
@@ -275,7 +301,7 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
                     ${files.map(this.buildIcon.bind(this))}
                   </div>
                 </div>
-                <form id="iconForm" class="controls" @submit="${this.close}">
+                <form id="iconForm" class="controls" @submit="${this.handlePickSubmit}">
                   <span>File name:</span>
                   <input type="text"
                          value="${this.selectedFileLinkNode ? getLinkName(this.selectedFileLinkNode) : ''}"

@@ -17,9 +17,7 @@ import {launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {AppAbout} from "./dialog/about.ts";
 import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
 import {Explorer} from "./common/explorer.ts";
-import {FileViewer} from "./common/file-viewer.ts";
-
-const DEFAULT_WINDOW_ICON = '/img/icons/small/file-explorer-small.ico'
+import {DEFAULT_WINDOW_ICON, FileViewer} from "./common/file-viewer.ts";
 
 enum SortColumn {
   Filename = 'filename',

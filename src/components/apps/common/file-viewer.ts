@@ -3,6 +3,8 @@ import {Task} from "@lit/task";
 import {alertDialog} from "../../../lib/os.ts";
 import type {EpkAppConstructor} from "../../app.ts";
 
+export const DEFAULT_WINDOW_ICON = '/img/icons/small/file-explorer-small.ico'
+
 export function FileViewer<T extends EpkAppConstructor>(Base: T) {
   abstract class FileViewerMixin extends Base {
     protected folderNode?: FolderNode
