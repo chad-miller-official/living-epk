@@ -283,8 +283,8 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
     return icon
   }
 
-  getMinimumDimensions(): [number, number] {
-    return [256, 256]
+  getMinimumDimensions() {
+    return {width: 256, height: 256}
   }
 
   navigate(newPath: string) {

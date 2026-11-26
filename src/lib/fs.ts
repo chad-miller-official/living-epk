@@ -7,7 +7,6 @@ import {type DBSchema, type IDBPDatabase, openDB} from "idb";
 import {FileExplorerIcon} from "../components/icons/file-explorer-icon.ts";
 import {UnknownIcon} from "../components/icons/unknown-icon.ts";
 
-
 export enum LinkNodeType {
   File = 'file', Folder = 'folder'
 }
@@ -45,9 +44,8 @@ interface IdbSchema extends DBSchema {
 }
 
 let _idb: IDBPDatabase<IdbSchema>
-type _FolderStructure = { [dir: string]: string }
 
-function _loadFoldersHelper(prefix: string, cwd: string, fsStruct: _FolderStructure | string): FsRecord[] {
+function _loadFoldersHelper(prefix: string, cwd: string, fsStruct: { [dir: string]: string } | string): FsRecord[] {
   const record: FsRecord = {
     path: `${prefix}${cwd}`,
     files: null,

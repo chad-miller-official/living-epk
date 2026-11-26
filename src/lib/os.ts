@@ -1,6 +1,7 @@
-import {DisallowFlags, launchEvent} from "./events.ts";
+import {launchEvent} from "./events.ts";
 import {EpkAlert} from "../components/apps/dialog/alert.ts";
 import type {EpkApp} from "../components/app.ts";
+import {DisallowFlags} from "../components/window.ts";
 
 function getAlertDialog(delegatingAppId: string, title: string, message: string): EpkAlert {
   const alert = new EpkAlert()

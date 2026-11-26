@@ -1,17 +1,18 @@
 import {EpkIcon} from "../icon.ts";
 import {customElement} from "lit/decorators.js";
 import {InternetExplorer} from "../apps/internet-explorer.ts";
-import type {LaunchOptions} from "../../lib/events.ts";
 import type {EpkApp} from "../app.ts";
 
 @customElement('document-reader-icon')
 export class InternetExplorerIcon extends EpkIcon {
   icon = '/img/icons/html-file.ico'
 
-  getLaunchOptions(): LaunchOptions {
+  getLaunchOptions() {
     return {
-      width: 600,
-      height: 400,
+      size: {
+        width: 600,
+        height: 400,
+      }
     }
   }
 

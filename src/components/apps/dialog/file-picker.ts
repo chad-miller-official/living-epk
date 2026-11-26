@@ -154,8 +154,8 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
 
   pathStack = new PathStack<string>()
 
-  getMinimumDimensions(): [number, number] {
-    return [400, 300]
+  getMinimumDimensions() {
+    return {width: 400, height: 300}
   }
 
   handleClick(event: Event) {
@@ -170,7 +170,10 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
 
   close(event: SubmitEvent) {
     if (this.delegatingAppId && this.selectedFileLinkNode) {
-      this.dispatchEvent(filePickedEvent(this.delegatingAppId, this.selectedFileLinkNode))
+      this.dispatchEvent(filePickedEvent({
+        targetAppId: this.delegatingAppId,
+        fileLinkNode: this.selectedFileLinkNode,
+      }))
     }
 
     super.close(event)

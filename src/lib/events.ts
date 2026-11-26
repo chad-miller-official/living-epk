@@ -1,30 +1,49 @@
 import type {EpkApp} from "../components/app.ts";
 import type {LinkNode} from "./fs.ts";
-
-export enum DisallowFlags {
-  AllowAll = 0b0000,
-  DisallowMaximize = 0b0001,
-  DisallowMinimize = 0b0010,
-  DisallowVerticalResize = 0b0100,
-  DisallowHorizontalResize = 0b1000,
-  DisallowResize = DisallowVerticalResize | DisallowHorizontalResize,
-  DisallowAll = DisallowMaximize | DisallowMinimize | DisallowResize,
-}
-
-export type LaunchOptions = {
-  width?: number,
-  height?: number,
-  x?: number,
-  y?: number,
-  disallowFlags?: number,
-  centered?: boolean,
-}
+import type {EpkWindow} from "../components/window.ts";
+import type {Dimensions, Point} from "@interactjs/core/types";
 
 export type Launch = {
   init: () => Promise<EpkApp>,
-  windowDimensions: [number | null, number | null], // width, height
-  position: [number | null, number | null] | 'center', // x, y
-  disallowFlags: number,
+  size?: Partial<Dimensions>,
+  location?: Partial<Point> | 'center',
+  disallowFlags?: number,
+}
+
+export function launchEvent(
+  appInit: Pick<Launch, 'init'>['init'],
+  launchOptions: Omit<Launch, 'init'> = {}
+): CustomEvent<Launch> {
+  return new CustomEvent<Launch>('launch', {
+    detail: {
+      init: appInit,
+      ...launchOptions
+    },
+    bubbles: true,
+    composed: true,
+  })
+}
+
+export type ActiveWindowChange = { targetAppId?: string }
+
+export function activeWindowChangeEvent(targetAppId?: string): CustomEvent<ActiveWindowChange> {
+  return new CustomEvent<ActiveWindowChange>('active-window-change', {
+    detail: {targetAppId},
+    bubbles: true,
+  })
+}
+
+export function closeWindowEvent(): CustomEvent {
+  return new CustomEvent('close-window', {bubbles: true})
+}
+
+export type WindowProperties = Partial<Pick<EpkWindow, 'title' | 'size' | 'disallowFlags' | 'state'>>
+
+export function windowPropertyChangeEvent(props: WindowProperties): CustomEvent<WindowProperties> {
+  return new CustomEvent<WindowProperties>('window-property-change', {
+    detail: props,
+    bubbles: true,
+  })
 }
 
 export type FilePicked = {
@@ -32,59 +51,9 @@ export type FilePicked = {
   fileLinkNode?: LinkNode,
 }
 
-export type WindowProperties = {
-  title?: string,
-  fullscreen?: boolean,
-  height?: number,
-  disallowFlags?: number,
-}
-
-export function launchEvent(
-  appInit: () => Promise<EpkApp>,
-  launchOptions: LaunchOptions = {}
-): CustomEvent<Launch> {
-  return new CustomEvent<Launch>('launch', {
-    detail: {
-      init: appInit,
-      windowDimensions: [launchOptions.width || null, launchOptions.height || null],
-      position: launchOptions.centered ? 'center' : [launchOptions.x || null, launchOptions.y || null],
-      disallowFlags: launchOptions.disallowFlags || 0,
-    },
-    bubbles: true,
-    composed: true,
-  })
-}
-
-export function activeWindowChangeEvent(targetAppId?: string): CustomEvent {
-  return new CustomEvent('active-window-change', {
-    detail: {targetAppId},
-    bubbles: true,
-    composed: true,
-  })
-}
-
-export function closeWindowEvent(): CustomEvent {
-  return new CustomEvent('close-window', {
-    bubbles: true,
-    composed: true,
-  })
-}
-
-export function windowPropertyChangeEvent(props: WindowProperties): CustomEvent<WindowProperties> {
-  return new CustomEvent('window-property-change', {
+export function filePickedEvent(props: FilePicked): CustomEvent<FilePicked> {
+  return new CustomEvent<FilePicked>('file-picked', {
     detail: props,
     bubbles: true,
-    composed: true,
-  })
-}
-
-export function filePickedEvent(targetAppId: string, linkNode?: LinkNode): CustomEvent<FilePicked> {
-  return new CustomEvent('file-picked', {
-    detail: {
-      targetAppId,
-      fileLinkNode: linkNode
-    },
-    bubbles: true,
-    composed: true,
   })
 }

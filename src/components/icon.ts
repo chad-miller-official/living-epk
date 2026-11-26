@@ -1,7 +1,7 @@
 import {property, state} from "lit/decorators.js";
 import {styleMap} from "lit/directives/style-map.js";
 import {css, type CSSResultGroup, html, LitElement} from "lit";
-import {launchEvent, type LaunchOptions} from "../lib/events.ts";
+import {type Launch, launchEvent} from "../lib/events.ts";
 import type {EpkApp} from "./app.ts";
 import type {LinkNode} from "../lib/fs.ts";
 
@@ -106,7 +106,7 @@ export abstract class EpkIcon extends LitElement {
 
   abstract getAppInstance(): Promise<EpkApp>
 
-  getLaunchOptions(): LaunchOptions {
+  getLaunchOptions(): Omit<Launch, 'init'> {
     return {}
   }
 
@@ -149,7 +149,6 @@ export abstract class EpkIcon extends LitElement {
         <span class="${titleClassName}" style="${styleMap(textStyle)}">
           ${this.title}
         </span>
-      </div>
-    `
+      </div>`
   }
 }

@@ -1,8 +1,8 @@
 import {customElement, queryAssignedElements} from "lit/decorators.js";
 import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
-import {DisallowFlags, type FilePicked, type Launch} from "../lib/events.ts";
-import {EpkWindow} from "./window.ts";
+import {type FilePicked, type Launch} from "../lib/events.ts";
+import {DisallowFlags, EpkWindow} from "./window.ts";
 import {EpkApp} from "./app.ts";
 
 @customElement('epk-desktop')
@@ -89,7 +89,7 @@ export class EpkDesktop extends LitElement {
   }
 
   handleActiveWindowChange(event: Event) {
-    const targetAppId = (event as CustomEvent).detail.targetAppId
+    const targetAppId = (event as CustomEvent).detail?.targetAppId
     let targetWindow: EpkWindow | undefined
 
     if (targetAppId) {
@@ -140,12 +140,9 @@ export class EpkDesktop extends LitElement {
 
       const epkWindow = new EpkWindow()
 
-      const appLastPosition = app.doNotTrackLastPosition ? {
-        x: null,
-        y: null,
-        height: null,
-        width: null,
-      } : EpkWindow.lastAppPositions.get(app.getPositionTrackingName())
+      const appLastPosition = app.doNotTrackLastPosition
+        ? null
+        : EpkWindow.lastAppPositions.get(app.getPositionTrackingName())
 
       epkWindow.slot = 'windows'
       epkWindow.title = app.windowTitle
@@ -154,34 +151,26 @@ export class EpkDesktop extends LitElement {
         epkWindow.thumbnail = app.windowIcon
       }
 
-      epkWindow.noHorizontalResize = (launchData.disallowFlags & DisallowFlags.DisallowHorizontalResize) > 0
-      epkWindow.noVerticalResize = (launchData.disallowFlags & DisallowFlags.DisallowVerticalResize) > 0
-      epkWindow.noMaximize = (launchData.disallowFlags & DisallowFlags.DisallowMaximize) > 0
-      epkWindow.noMinimize = (launchData.disallowFlags & DisallowFlags.DisallowMinimize) > 0
+      epkWindow.disallowFlags = launchData.disallowFlags || DisallowFlags.AllowAll
 
-      const [lastWidth, lastHeight] = [appLastPosition?.width, appLastPosition?.height]
-      const [minWidth, minHeight] = app.getMinimumDimensions()
-      const [eventWidth, eventHeight] = launchData.windowDimensions
+      const [lastWidth, lastHeight] = [appLastPosition?.size.width, appLastPosition?.size.height]
+      const [eventWidth, eventHeight] = [launchData.size?.width, launchData.size?.height]
+      const minSize = app.getMinimumDimensions()
 
       let [widthToUse, heightToUse] = [
-        lastWidth || eventWidth || minWidth,
-        lastHeight || eventHeight || minHeight,
+        lastWidth || eventWidth || minSize.width,
+        lastHeight || eventHeight || minSize.height,
       ]
 
-      epkWindow.minWidth = minWidth
-      epkWindow.minHeight = minHeight
-      epkWindow.width = widthToUse
-      epkWindow.height = heightToUse
+      epkWindow.minSize = minSize
+      epkWindow.size = {width: widthToUse, height: heightToUse}
 
-      const position = launchData.position
+      const location = launchData.location
 
-      if (position !== 'center') {
-        epkWindow.x = appLastPosition?.x || (position[0] as number) || 0
-        epkWindow.y = appLastPosition?.y || (position[1] as number) || 0
-
-        if (instanceCount > 0) {
-          epkWindow.x += 16
-          epkWindow.y += 16
+      if (location !== 'center') {
+        epkWindow.location = {
+          x: (appLastPosition?.location.x || location?.x || 0) + (instanceCount > 0 ? 16 : 0),
+          y: (appLastPosition?.location.y || location?.y || 0) + (instanceCount > 0 ? 16 : 0),
         }
       }
 
@@ -197,7 +186,6 @@ export class EpkDesktop extends LitElement {
           <slot name="icons"></slot>
         </div>
         <slot name="windows"></slot>
-      </main>
-    `
+      </main>`
   }
 }

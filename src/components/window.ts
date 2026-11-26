@@ -4,21 +4,40 @@ import interact from "interactjs";
 import type {Interactable, InteractEvent} from "@interactjs/types";
 import {styleMap} from "lit/directives/style-map.js";
 import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
-import {activeWindowChangeEvent, DisallowFlags, type WindowProperties} from "../lib/events.ts";
+import {activeWindowChangeEvent, type WindowProperties} from "../lib/events.ts";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import type {EpkApp} from "./app.ts";
 import type {EpkDesktop} from "./desktop.ts";
 import {playError} from "../lib/os.ts";
 
-type WindowPosition = {
+export enum DisallowFlags {
+  AllowAll = 0b0000,
+  DisallowMaximize = 0b0001,
+  DisallowMinimize = 0b0010,
+  DisallowVerticalResize = 0b0100,
+  DisallowHorizontalResize = 0b1000,
+  DisallowResize = DisallowVerticalResize | DisallowHorizontalResize,
+  DisallowAll = DisallowMaximize | DisallowMinimize | DisallowResize,
+}
+
+export type Point = {
   x: number,
   y: number,
+}
+
+export type Dimensions = {
   width: number,
   height: number,
 }
 
-enum WindowState {
+type WindowPosition = {
+  location: Point,
+  size: Dimensions,
+}
+
+export enum WindowState {
+  DEFAULT,
   MINIMIZED,
   MAXIMIZED,
   FULLSCREEN,
@@ -159,49 +178,33 @@ export class EpkWindow extends LitElement {
   @property({type: String})
   thumbnail = ''
 
-  @property()
-  x?: number
+  @property({type: Object})
+  location?: Point
+
+  @property({type: Object})
+  size?: Dimensions
 
   @property()
-  y?: number
+  minSize!: Dimensions
 
-  @property()
-  width?: number
-
-  @property()
-  height?: number
-
-  @property()
-  minWidth!: number
-
-  @property()
-  minHeight!: number
-
-  @property({type: Boolean})
-  noHorizontalResize = false
-
-  @property({type: Boolean})
-  noVerticalResize = false
-
-  @property({type: Boolean})
-  noMinimize = false
-
-  @property({type: Boolean})
-  noMaximize = false
+  @property({type: Number})
+  disallowFlags: DisallowFlags = DisallowFlags.AllowAll
 
   @state()
   active = true
 
   @state()
-  state: WindowState | null = null
+  state: WindowState = WindowState.DEFAULT
+
+  @state()
+  previousState: WindowState = WindowState.DEFAULT
 
   @state()
   resizing = false
 
-  private interact?: Interactable
-
   private blinkTimer?: number
   private blinkCounter: number = 0
+  private interact?: Interactable
 
   /*
    * When closing a Window, two events are triggered:
@@ -220,6 +223,8 @@ export class EpkWindow extends LitElement {
   private isClosing = false
 
   private maximizeWindow() {
+    this.resetCoordinates('0', '0')
+    this.resetDimensions('100vh', '100vw')
     this.style.top = '0'
     this.style.left = '0'
   }
@@ -230,18 +235,14 @@ export class EpkWindow extends LitElement {
   }
 
   private resetCoordinates(overrideX?: string, overrideY?: string) {
-    const useX = overrideX || `${this.x}px`
-    const useY = overrideY || `${this.y}px`
-
+    const useX = overrideX || `${this.location!.x}px`
+    const useY = overrideY || `${this.location!.y}px`
     this.style.transform = `translate(${useX}, ${useY})`
   }
 
   private resetDimensions(overrideHeight?: string, overrideWidth?: string) {
-    this.style.height = overrideHeight || `${this.height}px`
-
-    if (overrideWidth || this.width) {
-      this.style.width = overrideWidth || `${this.width}px`
-    }
+    this.style.height = overrideHeight || `${this.size!.height}px`
+    this.style.width = overrideWidth || `${this.size!.width}px`
   }
 
   firstUpdated() {
@@ -264,25 +265,23 @@ export class EpkWindow extends LitElement {
       const literalWidth = parseInt(bodyStyle.width.replace(/px$/, ''))
       const literalHeight = parseInt(bodyStyle.height.replace(/px$/, ''))
 
-      if (!this.x) {
-        this.x = Math.floor((window.innerWidth - literalWidth) / 2)
-      }
-
-      if (!this.y) {
-        this.y = Math.floor((window.innerHeight - literalHeight) / 2)
+      if (!this.location?.x || !this.location?.y) {
+        this.location = {
+          x: this.location?.x || Math.floor((window.innerWidth - literalWidth) / 2),
+          y: this.location?.y || Math.floor((window.innerHeight - literalHeight) / 2),
+        }
       }
 
       this.dispatchEvent(activeWindowChangeEvent())
       this.resetDimensions()
       this.updateLastPosition()
 
-      this.style.transform = `translate(${this.x}px, ${this.y}px)`
+      this.style.transform = `translate(${this.location.x}px, ${this.location.y}px)`
 
       loaderObserver.disconnect()
     })
 
     this.resetInteract()
-
     loaderObserver.observe(this.window)
     EpkWindow.instanceCount++
   }
@@ -293,7 +292,27 @@ export class EpkWindow extends LitElement {
     EpkWindow.instanceCount--
   }
 
+  noHorizontalResize() {
+    return this.disallowFlags & DisallowFlags.DisallowHorizontalResize
+  }
+
+  noVerticalResize() {
+    return this.disallowFlags & DisallowFlags.DisallowVerticalResize
+  }
+
+  noMinimize() {
+    return this.disallowFlags & DisallowFlags.DisallowMinimize
+  }
+
+  noMaximize() {
+    return this.disallowFlags & DisallowFlags.DisallowMaximize
+  }
+
   resetInteract() {
+    if (this.interact) {
+      this.interact.unset()
+    }
+
     this.interact = interact(this.windowWrapper)
 
     this.interact.draggable({
@@ -301,13 +320,16 @@ export class EpkWindow extends LitElement {
       listeners: {move: this.handleDrag.bind(this)},
     })
 
-    if (!(this.noHorizontalResize && this.noVerticalResize)) {
+    const noHorizontalResize = this.noHorizontalResize()
+    const noVerticalResize = this.noVerticalResize()
+
+    if (!(noHorizontalResize && noVerticalResize)) {
       this.interact.resizable({
         edges: {
           top: false,
-          right: !this.noHorizontalResize,
-          bottom: !this.noVerticalResize,
-          left: !this.noHorizontalResize,
+          right: !noHorizontalResize,
+          bottom: !noVerticalResize,
+          left: !noHorizontalResize,
         },
         listeners: {
           start: () => this.resizing = true,
@@ -315,12 +337,7 @@ export class EpkWindow extends LitElement {
           end: () => this.resizing = false,
         },
         modifiers: [
-          interact.modifiers.restrictSize({
-            min: {
-              width: this.minWidth,
-              height: this.minHeight,
-            }
-          })
+          interact.modifiers.restrictSize({min: this.minSize})
         ]
       })
     }
@@ -338,12 +355,15 @@ export class EpkWindow extends LitElement {
       this.title = detail.title
     }
 
-    if (Object.hasOwn(detail, 'fullscreen')) {
-      this.setFullscreen(detail.fullscreen!)
+    if (Object.hasOwn(detail, 'state')) {
+      this.setFullscreen(detail.state === WindowState.FULLSCREEN)
     }
 
-    if (detail.height) {
-      this.height = detail.height
+    if (detail.size?.height) {
+      this.size = {
+        width: this.size!.width,
+        height: detail.size.height,
+      }
 
       this.resetDimensions()
       this.restoreWindow()
@@ -351,19 +371,13 @@ export class EpkWindow extends LitElement {
     }
 
     if (Object.hasOwn(detail, 'disallowFlags')) {
-      const disallowFlags = detail.disallowFlags!
+      const oldNoMinimize = this.noMinimize()
+      const oldNoMaximize = this.noMaximize()
 
-      this.noHorizontalResize = Boolean(disallowFlags & DisallowFlags.DisallowHorizontalResize)
-      this.noVerticalResize = Boolean(disallowFlags & DisallowFlags.DisallowVerticalResize)
+      this.disallowFlags = detail.disallowFlags!
 
-      const oldNoMinimize = this.noMinimize
-      const oldNoMaximize = this.noMaximize
-
-      this.noMinimize = Boolean(disallowFlags & DisallowFlags.DisallowMinimize)
-      this.noMaximize = Boolean(disallowFlags & DisallowFlags.DisallowMaximize)
-
-      if ((!oldNoMinimize && this.noMinimize) || (!oldNoMaximize && this.noMaximize)) {
-        this.state = null
+      if ((!oldNoMinimize && this.noMinimize()) || (!oldNoMaximize && this.noMaximize())) {
+        this.state = WindowState.DEFAULT
         this.resetCoordinates()
         this.resetDimensions()
         this.restoreWindow()
@@ -376,14 +390,12 @@ export class EpkWindow extends LitElement {
   checkBlockingDialog(event: Event) {
     const desktop = this.parentElement as EpkDesktop
 
-    const blockingDialogWindow = desktop.windows.filter(w => {
-      if (w !== this && Object.hasOwn(w.app[0], 'delegatingAppId')) {
+    const blockingDialogWindow = desktop.windows.filter(w =>
+      w !== this && Object.hasOwn(w.app[0], 'delegatingAppId')
         // @ts-ignore
-        return w.app[0].delegatingAppId === this.app[0].getAppId()
-      }
-
-      return false
-    }).pop()
+        ? w.app[0].delegatingAppId === this.app[0].getAppId()
+        : false
+    ).pop()
 
     if (blockingDialogWindow) {
       event.stopPropagation()
@@ -459,10 +471,8 @@ export class EpkWindow extends LitElement {
 
     if (containedAppName) {
       EpkWindow.lastAppPositions.set(containedAppName, {
-        x: this.x!,
-        y: this.y!,
-        width: this.width!,
-        height: this.height!,
+        location: this.location!,
+        size: this.size!,
       })
     }
   }
@@ -472,10 +482,12 @@ export class EpkWindow extends LitElement {
       return
     }
 
-    this.x! += event.dx
-    this.y! += event.dy
+    this.location = {
+      x: this.location!.x + event.dx,
+      y: this.location!.y + event.dy,
+    }
 
-    this.style.transform = `translate(${this.x}px, ${this.y}px)`
+    this.style.transform = `translate(${this.location.x}px, ${this.location.y}px)`
     this.updateLastPosition()
     this.dispatchEvent(activeWindowChangeEvent())
   }
@@ -485,15 +497,21 @@ export class EpkWindow extends LitElement {
       return
     }
 
+    const newSize = {width: this.size!.width, height: this.size!.height}
+    const newLocation = {x: this.location!.x, y: this.location!.y}
+
     if (event.axes?.includes('x')) {
-      this.x! += event.deltaRect!.left
-      this.width = event.rect.width - 12
+      newLocation.x += event.deltaRect!.left
+      newSize.width = event.rect.width - 12
     }
 
     if (event.axes?.includes('y')) {
-      this.y! += event.deltaRect!.top
-      this.height = event.rect.height - 15
+      newLocation.y += event.deltaRect!.top
+      newSize.height = event.rect.height - 15
     }
+
+    this.location = newLocation
+    this.size = newSize
 
     this.resetCoordinates()
     this.resetDimensions()
@@ -502,19 +520,17 @@ export class EpkWindow extends LitElement {
   }
 
   toggleMaximized() {
-    if (this.noMaximize) {
+    if (this.noMaximize()) {
       return
     }
 
     if (this.state === WindowState.MINIMIZED) {
-      this.state = null
-      this.resetDimensions(this.height ? `${this.height}px` : undefined)
+      this.state = WindowState.DEFAULT
+      this.resetDimensions(this.size!.height ? `${this.size!.height}px` : undefined)
     } else {
-      this.state = this.state === null ? WindowState.MAXIMIZED : null
+      this.state = !this.state ? WindowState.MAXIMIZED : WindowState.DEFAULT
 
       if (this.state === WindowState.MAXIMIZED) {
-        this.resetCoordinates('0', '0')
-        this.resetDimensions('100vh', '100vw')
         this.maximizeWindow()
       } else {
         this.resetCoordinates()
@@ -525,32 +541,34 @@ export class EpkWindow extends LitElement {
   }
 
   toggleMinimized() {
-    if (this.noMinimize) {
+    if (this.noMinimize()) {
       return
     }
 
-    this.state = this.state === null ? WindowState.MINIMIZED : null
+    this.state = !this.state ? WindowState.MINIMIZED : WindowState.DEFAULT
 
     if (this.state === WindowState.MINIMIZED) {
       this.resetCoordinates()
       this.resetDimensions('28px')
       this.restoreWindow()
     } else {
-      this.resetDimensions(this.height ? `${this.height}px` : undefined)
+      this.resetDimensions(this.size!.height ? `${this.size!.height}px` : undefined)
     }
   }
 
   setFullscreen(fullscreen: boolean) {
     if (fullscreen) {
+      this.previousState = this.state
       this.state = WindowState.FULLSCREEN
-      this.resetCoordinates('0', '0')
-      this.resetDimensions('100vh', '100vw')
       this.maximizeWindow()
     } else {
-      this.state = null
-      this.resetCoordinates()
-      this.resetDimensions()
-      this.restoreWindow()
+      this.state = this.previousState
+
+      if (this.state !== WindowState.MAXIMIZED) {
+        this.resetCoordinates()
+        this.resetDimensions()
+        this.restoreWindow()
+      }
     }
   }
 
@@ -580,12 +598,12 @@ export class EpkWindow extends LitElement {
         if (this.state === WindowState.MINIMIZED) {
           windowClass += ' minimized'
           viewportClass += ' minimized'
-        } else if (this.height) {
-          windowStyle['height'] = `${this.height}px`
+        } else if (this.size!.height) {
+          windowStyle['height'] = `${this.size!.height}px`
         }
 
-        if (this.width) {
-          windowStyle['width'] = `${this.width}px`
+        if (this.size!.width) {
+          windowStyle['width'] = `${this.size!.width}px`
         }
       }
     }
@@ -603,9 +621,9 @@ export class EpkWindow extends LitElement {
                 <div class="title">${this.title}</div>
               </div>
               <div class="title-bar-controls">
-                ${this.noMinimize ? nothing : html`
+                ${this.noMinimize() ? nothing : html`
                   <button aria-label="Minimize" @click="${this.toggleMinimized}"></button>`}
-                ${this.noMaximize ? nothing : html`
+                ${this.noMaximize() ? nothing : html`
                   <button
                       aria-label="${this.state === WindowState.MAXIMIZED ? 'Restore' : 'Maximize'}"
                       @click="${this.toggleMaximized}"></button>`}

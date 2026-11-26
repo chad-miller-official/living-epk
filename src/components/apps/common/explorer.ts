@@ -5,8 +5,9 @@ import {styleMap} from "lit/directives/style-map.js";
 import {property, query, state} from "lit/decorators.js";
 import {PathStack} from "../../../lib/path-stack.ts";
 import {buttonStyle2} from "../../../lib/ui.ts";
-import {closeWindowEvent, DisallowFlags, launchEvent} from "../../../lib/events.ts";
+import {closeWindowEvent, launchEvent} from "../../../lib/events.ts";
 import {playClick} from "../../../lib/os.ts";
+import {DisallowFlags} from "../../window.ts";
 
 export abstract class Explorer<T> extends EpkApp {
   static styles = [
@@ -187,8 +188,10 @@ export abstract class Explorer<T> extends EpkApp {
             this.toolbar!.closeAll()
 
             this.dispatchEvent(launchEvent(() => new Promise<T>(resolve => resolve(aboutApp())), {
-              width: 419,
-              height: 350,
+              size: {
+                width: 419,
+                height: 350,
+              },
               disallowFlags: DisallowFlags.DisallowAll,
             }))
           },

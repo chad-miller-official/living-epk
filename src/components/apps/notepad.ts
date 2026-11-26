@@ -3,11 +3,12 @@ import {css, html, nothing} from "lit";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import dayjs from "dayjs";
-import {closeWindowEvent, DisallowFlags, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
+import {closeWindowEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {AppAbout} from "./dialog/about.ts";
 import {getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 import {FilePicker} from "./dialog/file-picker.ts";
+import {DisallowFlags} from "../window.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
@@ -75,8 +76,10 @@ export class Notepad extends EpkApp {
             filePicker.filterRegex = new RegExp(plaintextFilterRegex)
 
             this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
-              width: 500,
-              height: 400,
+              size: {
+                width: 500,
+                height: 400,
+              },
               disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
             }))
           },
@@ -183,8 +186,10 @@ export class Notepad extends EpkApp {
             about.delegatingAppId = this.getAppId()
 
             this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
-              width: 419,
-              height: 350,
+              size: {
+                width: 419,
+                height: 350,
+              },
               disallowFlags: DisallowFlags.DisallowAll,
             }))
           },

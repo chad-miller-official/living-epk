@@ -1,13 +1,7 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
 import {EpkApp} from "../app.ts";
-import {
-  closeWindowEvent,
-  DisallowFlags,
-  launchEvent,
-  type WindowProperties,
-  windowPropertyChangeEvent
-} from "../../lib/events.ts";
+import {closeWindowEvent, launchEvent, type WindowProperties, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {styleMap} from "lit/directives/style-map.js";
 import interact from "interactjs";
 import type {Interactable} from "@interactjs/types";
@@ -16,6 +10,7 @@ import {AppAbout} from "./dialog/about.ts";
 import {getFileExtension, getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 import {FilePicker} from "./dialog/file-picker.ts";
+import {DisallowFlags} from "../window.ts";
 
 @customElement('media-player')
 export class MediaPlayer extends EpkApp {
@@ -268,8 +263,10 @@ export class MediaPlayer extends EpkApp {
             filePicker.filterRegex = new RegExp(soundFilterRegex)
 
             this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
-              width: 500,
-              height: 400,
+              size: {
+                width: 500,
+                height: 400,
+              },
               disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
             }))
           },
@@ -303,8 +300,10 @@ export class MediaPlayer extends EpkApp {
             about.delegatingAppId = this.getAppId()
 
             this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
-              width: 419,
-              height: 350,
+              size: {
+                width: 419,
+                height: 350,
+              },
               disallowFlags: DisallowFlags.DisallowAll,
             }))
           },
@@ -338,8 +337,11 @@ export class MediaPlayer extends EpkApp {
     })
   }
 
-  getMinimumDimensions(): [number, number] {
-    return [256, this.fileLinkNode && getFileExtension(this.fileLinkNode)!.match(/mp4|webm/) ? 256 : 144]
+  getMinimumDimensions() {
+    return {
+      width: 256,
+      height: this.fileLinkNode && getFileExtension(this.fileLinkNode)!.match(/mp4|webm/) ? 256 : 144
+    }
   }
 
   resetMimeType() {
@@ -384,11 +386,13 @@ export class MediaPlayer extends EpkApp {
     const updatedProperties: WindowProperties = {title: this.windowTitle}
 
     if (updateGeometry) {
+      updatedProperties.size = {width: 0, height: 0}
+
       if (this.mimeType?.startsWith('video')) {
-        updatedProperties.height = 600
+        updatedProperties.size.height = 600
         updatedProperties.disallowFlags = DisallowFlags.AllowAll
       } else {
-        updatedProperties.height = 146
+        updatedProperties.size.height = 146
         updatedProperties.disallowFlags = DisallowFlags.DisallowVerticalResize | DisallowFlags.DisallowMaximize
       }
     }

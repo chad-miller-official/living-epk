@@ -1,11 +1,13 @@
 import {customElement, property, query, queryAll, state} from "lit/decorators.js";
 import {css, html, nothing, type TemplateResult} from "lit";
-import {activeWindowChangeEvent, closeWindowEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
+import {activeWindowChangeEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../ui/toolbar.ts";
 import {EpkApp} from "../app.ts";
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
 import {alertDialog, playClick, warnDialog} from "../../lib/os.ts";
 import {Explorer} from "./common/explorer.ts";
+import {WindowState} from "../window.ts";
+import {Dialog} from "./dialog/dialog.ts";
 
 const COOKIE_EXPERIMENTAL_WARNING = 'quietIeExperimentalWarning'
 
@@ -274,7 +276,10 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           selected: () => this.isFullscreen,
           action: () => {
             this.isFullscreen = !this.isFullscreen
-            this.dispatchEvent(windowPropertyChangeEvent({fullscreen: this.isFullscreen}))
+            
+            this.dispatchEvent(windowPropertyChangeEvent({
+              state: this.isFullscreen ? WindowState.FULLSCREEN : WindowState.DEFAULT
+            }))
           }
         }
       ],
@@ -307,8 +312,8 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
     })
   }
 
-  getMinimumDimensions(): [number, number] {
-    return [400, 320]
+  getMinimumDimensions() {
+    return {width: 400, height: 320}
   }
 
   buildFavoritesMenuItems(favorites: (Favorite | FavoriteFolder)[]): (ToolbarMenuItem | ToolbarMenu)[] {
@@ -526,7 +531,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
 }
 
 @customElement('internet-explorer-about')
-class InternetExplorerAbout extends EpkApp {
+class InternetExplorerAbout extends Dialog(EpkApp) {
   static styles = [
     ...EpkApp.styles,
     css`
@@ -591,14 +596,6 @@ class InternetExplorerAbout extends EpkApp {
   @property({type: String})
   windowTitle = 'About Internet Explorer'
 
-  delegatingAppId!: string
-
-  handleSubmit(event: SubmitEvent) {
-    event.preventDefault()
-    this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
-    this.dispatchEvent(closeWindowEvent())
-  }
-
   handleCopyrightClick(event: Event) {
     event.stopPropagation()
 
@@ -650,7 +647,7 @@ class InternetExplorerAbout extends EpkApp {
               </div>
             </div>
             <img class="logo" src="/img/logo.png"/>
-            <form class="form" @submit="${this.handleSubmit}">
+            <form class="form" @submit="${this.close}">
               <p class="link" @click=${this.handleCopyrightClick}>Copyright &copy; 1995-2004
                 Microsoft Corp.</p>
               <button type="submit">OK</button>

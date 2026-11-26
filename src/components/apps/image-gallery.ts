@@ -8,6 +8,7 @@ import {styleMap} from "lit/directives/style-map.js";
 import {buttonStyle2} from "../../lib/ui.ts";
 import {windowPropertyChangeEvent} from "../../lib/events.ts";
 import {alertDialog} from "../../lib/os.ts";
+import {WindowState} from "../window.ts";
 
 @customElement('image-gallery')
 export class ImageGallery extends EpkApp {
@@ -19,23 +20,23 @@ export class ImageGallery extends EpkApp {
         background-color: #eef2fb;
         display: flex;
         justify-content: center;
-        
+
         &:not(.slideshow-controls) {
           gap: 5px;
           margin: 8px 8px;
         }
-        
+
         &.slideshow-controls {
           gap: 2px;
           margin: 0;
         }
       }
-      
+
       .image-wrapper {
         height: 100%;
         width: 100%;
       }
-      
+
       .slideshow {
         background-color: #000000;
       }
@@ -139,8 +140,8 @@ export class ImageGallery extends EpkApp {
     }
   }
 
-  getMinimumDimensions(): [number, number] {
-    return [256, 256]
+  getMinimumDimensions() {
+    return {width: 256, height: 256}
   }
 
   setPanzoom() {
@@ -153,7 +154,7 @@ export class ImageGallery extends EpkApp {
   exitSlideshow() {
     window.removeEventListener('keyup', this.handleKeyUp.bind(this))
     this.isSlideshow = false
-    this.dispatchEvent(windowPropertyChangeEvent({fullscreen: this.isSlideshow}))
+    this.dispatchEvent(windowPropertyChangeEvent({state: WindowState.DEFAULT}))
     this.pause()
   }
 
@@ -166,7 +167,7 @@ export class ImageGallery extends EpkApp {
   handleSlideshowClick() {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
       this.isSlideshow = true
-      this.dispatchEvent(windowPropertyChangeEvent({fullscreen: this.isSlideshow}))
+      this.dispatchEvent(windowPropertyChangeEvent({state: WindowState.FULLSCREEN}))
       this.panzoom?.destroy()
       this.play()
     }

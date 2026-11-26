@@ -4,6 +4,7 @@ import {query} from "lit/decorators.js";
 import {EpkToolbar} from "./ui/toolbar.ts";
 import type {LinkNode} from "../lib/fs.ts";
 import {closeWindowEvent} from "../lib/events.ts";
+import type {Dimensions} from "./window.ts";
 
 export abstract class EpkApp extends LitElement {
   static styles = [
@@ -80,8 +81,8 @@ export abstract class EpkApp extends LitElement {
     return this._appId
   }
 
-  getMinimumDimensions(): [number, number] {
-    return [128, 128]
+  getMinimumDimensions(): Dimensions {
+    return {width: 128, height: 128}
   }
 
   getPositionTrackingName(): string {

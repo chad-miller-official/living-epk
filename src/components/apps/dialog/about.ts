@@ -97,8 +97,8 @@ export class AppAbout extends Dialog(EpkApp) {
   @property({type: String})
   windowIcon = null
 
-  getMinimumDimensions(): [number, number] {
-    return [419, 350]
+  getMinimumDimensions() {
+    return {width: 419, height: 350}
   }
 
   handleEulaClick(event: Event) {

@@ -62,8 +62,8 @@ export class EpkAlert extends Dialog(EpkApp) {
   windowIcon = null
   doNotTrackLastPosition = true
 
-  getMinimumDimensions(): [number, number] {
-    return [356, 32]
+  getMinimumDimensions() {
+    return {width: 356, height: 32}
   }
 
   async close(event: SubmitEvent) {

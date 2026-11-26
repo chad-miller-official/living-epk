@@ -31,10 +31,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         resolve(notepad)
       }),
       {
-        width: 550,
-        height: 500,
-        x: 260,
-        y: 60
+        location: {
+          x: 260,
+          y: 60
+        },
+        size: {
+          width: 550,
+          height: 500,
+        },
       },
     ),
   )

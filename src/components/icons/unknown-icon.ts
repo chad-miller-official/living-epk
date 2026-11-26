@@ -1,9 +1,10 @@
 import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 import type {EpkApp} from "../app.ts";
-import {DisallowFlags, type LaunchOptions} from "../../lib/events.ts";
 import {EpkAlert} from "../apps/dialog/alert.ts";
 import {getLinkName} from "../../lib/fs.ts";
+import {DisallowFlags} from "../window.ts";
+import type {Launch} from "../../lib/events.ts";
 
 @customElement('unknown-icon')
 export class UnknownIcon extends EpkIcon {
@@ -19,11 +20,11 @@ export class UnknownIcon extends EpkIcon {
     })
   }
 
-  getLaunchOptions(): LaunchOptions {
+  getLaunchOptions(): Omit<Launch, 'init'> {
     return {
-      width: Math.min((33 + getLinkName(this.fileLinkNode!).length) * 7, 500),
+      size: {width: Math.min((33 + getLinkName(this.fileLinkNode!).length) * 7, 500)},
+      location: 'center',
       disallowFlags: DisallowFlags.DisallowAll,
-      centered: true,
     }
   }
 }
