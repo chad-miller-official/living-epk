@@ -19,11 +19,15 @@ export function FileViewer<T extends EpkAppConstructor>(Base: T) {
     }
 
     protected iconLoaderTask = new Task(this, {
-      task: async ([src]) => (this.folderNode = await this.loadIcons(src))!,
+      task: async ([src]) => this.onLoadIcons(src),
       args: () => [this.path]
     })
 
     abstract navigate(to: string): void
+
+    protected async onLoadIcons(path: string): Promise<FolderNode> {
+      return (this.folderNode = await this.loadIcons(path))!
+    }
 
     canGoUp() {
       return this.folderNode && getParentFolder(this.folderNode) !== ''

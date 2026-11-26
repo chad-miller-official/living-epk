@@ -360,6 +360,10 @@ export class EpkWindow extends LitElement {
       this.title = detail.title
     }
 
+    if (detail.thumbnail) {
+      this.thumbnail = detail.thumbnail
+    }
+
     if (Object.hasOwn(detail, 'state')) {
       this.setFullscreen(detail.state === WindowState.FULLSCREEN)
     }

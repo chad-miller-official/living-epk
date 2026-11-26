@@ -1,16 +1,25 @@
 import {type EpkIcon, IconViewMode} from "../icon.ts";
 import {customElement, property, queryAll, state} from "lit/decorators.js";
 import {css, html, type TemplateResult} from "lit";
-import {getFormattedTimestamp, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../lib/fs.ts";
+import {
+  type FolderNode,
+  getFormattedTimestamp,
+  getLinkName,
+  type LinkNode,
+  linkNodeToIcon,
+  LinkNodeType
+} from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
 import {alertDialog, playClick} from "../../lib/os.ts";
-import {launchEvent} from "../../lib/events.ts";
+import {launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {AppAbout} from "./dialog/about.ts";
 import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
 import {Explorer} from "./common/explorer.ts";
 import {FileViewer} from "./common/file-viewer.ts";
+
+const DEFAULT_WINDOW_ICON = '/img/icons/small/file-explorer-small.ico'
 
 enum SortColumn {
   Filename = 'filename',
@@ -152,7 +161,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
   windowTitle = 'File Explorer'
 
   @property({type: String})
-  windowIcon = '/img/icons/small/file-explorer-small.ico'
+  windowIcon = DEFAULT_WINDOW_ICON
 
   @state()
   showSidebar = true
@@ -263,6 +272,13 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
     },
     args: () => [this.iconLoaderTask.value, '/data/_folders.json']
   })
+
+  protected async onLoadIcons(path: string): Promise<FolderNode> {
+    await super.onLoadIcons(path)
+    this.windowIcon = this.folderNode!.$?.icon?.small || DEFAULT_WINDOW_ICON
+    this.dispatchEvent(windowPropertyChangeEvent({thumbnail: this.windowIcon}))
+    return this.folderNode!
+  }
 
   private buildIcon(path: LinkNode): EpkIcon {
     const icon = linkNodeToIcon(path)
@@ -464,7 +480,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
   getAddressBar() {
     return html`
-      <img src="${this.folderNode?.$?.icon?.small || '/img/icons/small/file-explorer-small.ico'}"/>
+      <img src="${this.folderNode?.$?.icon?.small || DEFAULT_WINDOW_ICON}"/>
       <input type="text" .value="${`${this.folderNode?.path}\\`}" id="pathInput"/>`
   }
 

@@ -8,7 +8,8 @@ import {FileExplorerIcon} from "../components/icons/file-explorer-icon.ts";
 import {UnknownIcon} from "../components/icons/unknown-icon.ts";
 
 export enum LinkNodeType {
-  File = 'file', Folder = 'folder'
+  File = 'file',
+  Folder = 'folder',
 }
 
 type FsMetadata = {
@@ -43,7 +44,7 @@ export class FsError extends Error {
 type FsRecord = {
   path: string,
   $?: FsMetadata,
-  files: string | null,
+  filesJson?: string,
   folders: Pick<FsRecord, 'path' | '$'>[],
 }
 
@@ -73,14 +74,18 @@ function _loadFoldersHelper(prefix: string, cwd: string, fsStruct: FsStruct): Fs
 
   const record: FsRecord = {
     path: `${prefix}${cwd}`,
-    $: fsStruct.$ || {},
-    files: fsStruct['.'] || null,
+    $: fsStruct.$,
+    filesJson: fsStruct['.'],
     folders,
   }
 
+  const additionalRecords = record.folders
+    .map(m => _loadFoldersHelper(`${record.path}\\`, m.path, fsStruct[m.path]))
+    .flat()
+
   return [
     record,
-    ...record.folders.map(m => _loadFoldersHelper(`${record.path}\\`, m.path, fsStruct[m.path])).flat()
+    ...additionalRecords
   ]
 }
 
@@ -98,9 +103,7 @@ export async function initDb() {
 
   _idb = await openDB<IdbSchema>('chad-db', 1, {
     async upgrade(db) {
-      db.createObjectStore('file-system', {
-        keyPath: 'path',
-      })
+      db.createObjectStore('file-system', {keyPath: 'path'})
     }
   })
 
@@ -140,22 +143,17 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
   }
 
   let fileLinks: LinkNode[] = []
-  const filesJson = record.files
+  const filesJson = record.filesJson
 
   if (filesJson) {
     const filesResponse = await fetch(filesJson, {signal})
 
     if (!filesResponse.ok) {
-      throw new FsError(`Failed to load files data: ${record.files}`)
-    }
-
-    type ProtoLinkNode = {
-      path: string,
-      $: FsMetadata,
+      throw new FsError(`Failed to load files data: ${record.filesJson}`)
     }
 
     const filesResponseJson = await filesResponse.json()
-    const protoNodes = filesResponseJson.paths as ProtoLinkNode[]
+    const protoNodes = filesResponseJson.paths as Pick<FsRecord, 'path' | '$'>[]
 
     fileLinks = protoNodes
       .sort((a, b) => a.path.localeCompare(b.path))

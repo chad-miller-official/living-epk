@@ -43,7 +43,7 @@ export function closeWindowEvent(): CustomEvent {
 }
 
 export const WINDOW_PROPERTY_CHANGE_EVENT = 'window-property-change'
-export type WindowProperties = Partial<Pick<EpkWindow, 'title' | 'size' | 'disallowFlags' | 'state'>>
+export type WindowProperties = Partial<Pick<EpkWindow, 'title' | 'size' | 'disallowFlags' | 'state' | 'thumbnail'>>
 
 export function windowPropertyChangeEvent(props: WindowProperties): CustomEvent<WindowProperties> {
   return new CustomEvent<WindowProperties>(WINDOW_PROPERTY_CHANGE_EVENT, {
