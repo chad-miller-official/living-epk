@@ -14,7 +14,7 @@ export type Launch = {
 
 export function launchEvent(
   appInit: Pick<Launch, 'init'>['init'],
-  launchOptions: Omit<Launch, 'init'> = {}
+  launchOptions?: Omit<Launch, 'init'>
 ): CustomEvent<Launch> {
   return new CustomEvent<Launch>(LAUNCH_EVENT, {
     detail: {

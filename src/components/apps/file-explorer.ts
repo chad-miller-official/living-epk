@@ -188,7 +188,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
             const linkNode = this.selectedIcon!.fileLinkNode!
 
             if (linkNode.type === LinkNodeType.File) {
-              this.selectedIcon!.handleDblClick()
+              this.selectedIcon!.launch()
             } else {
               this.navigate(linkNode.physicalPath)
             }
@@ -286,10 +286,10 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
     if (icon instanceof GalleryIcon) {
       (icon as GalleryIcon).fsSpecPath = this.path
     } else if (icon instanceof FileExplorerIcon) {
-      icon.handleDblClick = () => this.navigate(icon.fileLinkNode!.physicalPath)
+      icon.ondblclick = () => this.navigate(icon.fileLinkNode!.physicalPath)
     }
 
-    icon.viewMode = IconViewMode.ListView
+    icon.viewMode = IconViewMode.List
 
     icon.onclick = () => {
       this.selectedIcon = icon

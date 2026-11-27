@@ -60,7 +60,7 @@ export class EpkAlert extends Dialog(EpkApp) {
   windowTitle = 'Error'
 
   windowIcon = null
-  doNotTrackLastPosition = true
+  trackLastPosition = false
 
   getMinimumDimensions() {
     return {width: 356}

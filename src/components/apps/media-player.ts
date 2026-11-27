@@ -10,7 +10,7 @@ import {AppAbout} from "./dialog/about.ts";
 import {getFileExtension, getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 import {FilePicker} from "./dialog/file-picker.ts";
-import {DisallowFlags} from "../window.ts";
+import {WindowRestriction} from "../window.ts";
 
 @customElement('media-player')
 export class MediaPlayer extends EpkApp {
@@ -231,7 +231,7 @@ export class MediaPlayer extends EpkApp {
 
   interact: Interactable | null = null
   dragged = false
-  doNotTrackLastPosition = true
+  trackLastPosition = false
 
   toolbarSpec: ToolbarMenu[] = [
     {
@@ -268,7 +268,7 @@ export class MediaPlayer extends EpkApp {
                 width: 500,
                 height: 400,
               },
-              disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
+              disallowFlags: WindowRestriction.DisallowMaximize | WindowRestriction.DisallowMinimize,
             }))
           },
         },
@@ -306,7 +306,7 @@ export class MediaPlayer extends EpkApp {
                 width: 419,
                 height: 350,
               },
-              disallowFlags: DisallowFlags.DisallowAll,
+              disallowFlags: WindowRestriction.DisallowAll,
             }))
           },
         },
@@ -392,10 +392,10 @@ export class MediaPlayer extends EpkApp {
 
       if (this.mimeType?.startsWith('video')) {
         updatedProperties.size.height = 600
-        updatedProperties.disallowFlags = DisallowFlags.AllowAll
+        updatedProperties.disallowFlags = WindowRestriction.AllowAll
       } else {
         updatedProperties.size.height = 146
-        updatedProperties.disallowFlags = DisallowFlags.DisallowVerticalResize | DisallowFlags.DisallowMaximize
+        updatedProperties.disallowFlags = WindowRestriction.DisallowVerticalResize | WindowRestriction.DisallowMaximize
       }
     }
 

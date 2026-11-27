@@ -1,50 +1,22 @@
 import {css, LitElement, unsafeCSS} from "lit"
 import xpStyle from 'xp.css/dist/XP.css?inline'
-import {query} from "lit/decorators.js";
+import {query, queryAll, queryAssignedElements} from "lit/decorators.js";
 import {EpkToolbar} from "./ui/toolbar.ts";
 import type {LinkNode} from "../lib/fs.ts";
 import {closeWindowEvent} from "../lib/events.ts";
 import type {Dimensions} from "./window.ts";
 import type {AbstractConstructor} from "../lib/lang.ts";
+import type {EpkIcon} from "./icon.ts";
 
 export type EpkAppConstructor = AbstractConstructor<EpkApp>
+
+export const APP_DEFAULT_MINIMUM_HEIGHT = 128
+export const APP_DEFAULT_MINIMUM_WIDTH = 128
 
 export abstract class EpkApp extends LitElement {
   static styles = [
     unsafeCSS(xpStyle),
     css`
-      @font-face {
-        font-family: 'Franklin Gothic Medium';
-        font-style: normal;
-        font-weight: normal;
-        src: local('Franklin Gothic Medium'), url('/font/OPTIFranklinGothic-Medium.otf') format('otf');
-      }
-
-      @font-face {
-        font-family: 'Franklin Gothic Medium Italic';
-        font-style: italic;
-        font-weight: normal;
-        src: local('Franklin Gothic Medium'), url('/font/OPTIFranklinGothic-MediumIt.otf') format('otf');
-      }
-
-      @font-face {
-        font-family: 'Tahoma';
-        font-style: normal;
-        font-weight: normal;
-        src: local('Tahoma'), url('/font/Tahoma V1.woff') format('woff');
-      }
-
-      @font-face {
-        font-family: 'Verdana Bold';
-        font-style: normal;
-        font-weight: bold;
-        src: local('Verdana'), url('/font/Verdana-Bold.ttf') format('ttf');
-      }
-
-      #toolbar {
-        z-index: 10000;
-      }
-
       .app {
         display: flex;
         flex-direction: column;
@@ -62,47 +34,65 @@ export abstract class EpkApp extends LitElement {
 
       .status-bar-field {
         user-select: none;
+
+        &.spacer {
+          width: 40%;
+        }
       }
 
-      .status-bar-field.spacer {
-        width: 40%;
-      }
-    `
+      epk-toolbar {
+        z-index: 10000;
+      }`
   ]
 
   @query('#toolbar')
   toolbar?: EpkToolbar
 
+  @queryAll('.epk-icon')
+  shadowDomIcons?: EpkIcon[]
+
+  @queryAssignedElements({selector: '.epk-icon', flatten: true})
+  lightDomIcons?: EpkIcon[]
+
   abstract windowTitle: string
   abstract windowIcon: string | null
 
-  doNotTrackLastPosition = false
-
-  protected _appId: string = crypto.randomUUID()
+  private appId: string = crypto.randomUUID()
+  protected trackLastPosition = true
 
   getAppId(): string {
-    return this._appId
+    return this.appId
+  }
+
+  getContainedIcons(): EpkIcon[] {
+    return [...(this.shadowDomIcons || []), ...(this.lightDomIcons || [])]
   }
 
   getMinimumDimensions(): Partial<Dimensions> {
-    return {width: 128, height: 128}
+    return {width: APP_DEFAULT_MINIMUM_WIDTH, height: APP_DEFAULT_MINIMUM_HEIGHT}
   }
 
   getPositionTrackingName(): string {
     return this.constructor.name
   }
 
+  isPositionTrackingEnabled(): boolean {
+    return this.trackLastPosition
+  }
+
   handleClick(event: Event) {
     if (event.target !== this.toolbar) {
       this.toolbar?.closeAll()
     }
+
+    this.getContainedIcons().filter(i => i !== event.target).forEach(i => i.deselect())
   }
 
   handleFilePicked(_file?: LinkNode) {
     return
   }
 
-  close(_?: Event) {
+  close(..._: any[]) {
     this.dispatchEvent(closeWindowEvent())
   }
 }

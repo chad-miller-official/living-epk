@@ -154,7 +154,7 @@ export class ImageGallery extends EpkApp {
   exitSlideshow() {
     window.removeEventListener('keyup', this.handleKeyUp.bind(this))
     this.isSlideshow = false
-    this.dispatchEvent(windowPropertyChangeEvent({state: WindowState.DEFAULT}))
+    this.dispatchEvent(windowPropertyChangeEvent({state: WindowState.Default}))
     this.pause()
   }
 
@@ -167,7 +167,7 @@ export class ImageGallery extends EpkApp {
   handleSlideshowClick() {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
       this.isSlideshow = true
-      this.dispatchEvent(windowPropertyChangeEvent({state: WindowState.FULLSCREEN}))
+      this.dispatchEvent(windowPropertyChangeEvent({state: WindowState.Fullscreen}))
       this.panzoom?.destroy()
       this.play()
     }

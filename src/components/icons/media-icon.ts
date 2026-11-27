@@ -3,7 +3,7 @@ import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 import type {EpkApp} from "../app.ts";
 import {getFileExtension, getLinkName} from "../../lib/fs.ts";
-import {DisallowFlags} from "../window.ts";
+import {WindowRestriction} from "../window.ts";
 
 @customElement('media-icon')
 export class MediaIcon extends EpkIcon {
@@ -23,7 +23,7 @@ export class MediaIcon extends EpkIcon {
           height: 146,
           width: 400,
         },
-        disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowVerticalResize,
+        disallowFlags: WindowRestriction.DisallowMaximize | WindowRestriction.DisallowVerticalResize,
       }
     }
   }

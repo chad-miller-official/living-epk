@@ -6,7 +6,7 @@ import {property, query, state} from "lit/decorators.js";
 import {PathStack} from "../../../lib/path-stack.ts";
 import {extendedUiStyle} from "../../../lib/ui.ts";
 import {closeWindowEvent, launchEvent} from "../../../lib/events.ts";
-import {DisallowFlags} from "../../window.ts";
+import {WindowRestriction} from "../../window.ts";
 import {playSound, SystemSound} from "../../../lib/os.ts";
 
 export abstract class Explorer<T> extends EpkApp {
@@ -192,7 +192,7 @@ export abstract class Explorer<T> extends EpkApp {
                 width: 419,
                 height: 350,
               },
-              disallowFlags: DisallowFlags.DisallowAll,
+              disallowFlags: WindowRestriction.DisallowAll,
             }))
           },
         },
@@ -274,7 +274,7 @@ export abstract class Explorer<T> extends EpkApp {
       <div class="app" @click="${this.handleClick}">
         <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"
                      logo="/img/logo.png"></epk-toolbar>
-        <section class="content">
+        <div class="content">
           <div class="viewport">
             <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">
               <button type="button" class="tool-button"
@@ -314,7 +314,7 @@ export abstract class Explorer<T> extends EpkApp {
                    @mousedown="${this.handlePrimaryDividerDrag}"></div>
               ${this.getMainContent()}
             </div>
-        </section>
+        </div>
         <div class="status-bar ${this.showStatusBar ? '' : 'hidden'}">
           ${this.getStatusBarFields()}
         </div>

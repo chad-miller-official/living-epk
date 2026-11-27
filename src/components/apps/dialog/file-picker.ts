@@ -32,6 +32,7 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
         display: grid;
         grid-auto-flow: column;
         grid-template-rows: repeat(auto-fill, minmax(16px, 1fr));
+        grid-row-gap: 2px;
         height: 97%;
         margin-left: 2px;
 
@@ -182,7 +183,7 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
     }
   }
 
-  close(event: SubmitEvent) {
+  close(event?: SubmitEvent) {
     if (this.delegatingAppId && this.selectedFileLinkNode) {
       this.dispatchEvent(filePickedEvent({
         targetAppId: this.delegatingAppId,
@@ -201,6 +202,11 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
     } else {
       this.close(event)
     }
+  }
+
+  handleCancelClick() {
+    this.selectedFileLinkNode = undefined
+    this.close()
   }
 
   handleFileTypeFilterChange(event: Event) {
@@ -225,10 +231,10 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
   private buildIcon(path: LinkNode): EpkIcon {
     const icon = linkNodeToIcon(path)
 
-    icon.viewMode = IconViewMode.ListView
+    icon.viewMode = IconViewMode.List
     icon.selected = path.physicalPath === this.selectedFileLinkNode?.physicalPath
 
-    icon.handleDblClick = path.type === LinkNodeType.File
+    icon.ondblclick = path.type === LinkNodeType.File
       ? () => this.iconForm.requestSubmit()
       : () => this.navigate(path.physicalPath)
 
@@ -294,6 +300,10 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
                     <img src="/img/icons/my-music.ico"/>
                     <span>My Music</span>
                   </button>
+                  <button type="button" class="tool-button" @click="${() => this.navigate('C:\\Users\\Chad\\My Videos')}">
+                    <img src="/img/icons/my-videos.ico"/>
+                    <span>My Videos</span>
+                  </button>
                 </div>
                 <div class="file-explorer-container">
                   <div id="fileExplorer">
@@ -315,7 +325,7 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
                         ${filter.label}
                       </option>`)}
                   </select>
-                  <button type="submit">Cancel</button>
+                  <button type="button" @click="${this.handleCancelClick}">Cancel</button>
                 </form>
               </div>
             </div>

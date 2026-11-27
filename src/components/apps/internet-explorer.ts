@@ -279,7 +279,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
             this.isFullscreen = !this.isFullscreen
 
             this.dispatchEvent(windowPropertyChangeEvent({
-              state: this.isFullscreen ? WindowState.FULLSCREEN : WindowState.DEFAULT
+              state: this.isFullscreen ? WindowState.Fullscreen : WindowState.Default
             }))
           }
         }

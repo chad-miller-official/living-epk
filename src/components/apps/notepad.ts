@@ -8,7 +8,7 @@ import {AppAbout} from "./dialog/about.ts";
 import {getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
 import {FilePicker} from "./dialog/file-picker.ts";
-import {DisallowFlags} from "../window.ts";
+import {WindowRestriction} from "../window.ts";
 
 @customElement('notepad-app')
 export class Notepad extends EpkApp {
@@ -65,7 +65,7 @@ export class Notepad extends EpkApp {
 
             this.dispatchEvent(launchEvent(() => {
               const filePicker = new FilePicker()
-              filePicker.delegatingAppId = this._appId
+              filePicker.delegatingAppId = this.getAppId()
               filePicker.path = 'C:\\Users\\Chad\\My Documents'
 
               const plaintextFilterRegex = '[.]txt$'
@@ -83,7 +83,7 @@ export class Notepad extends EpkApp {
                 width: 500,
                 height: 400,
               },
-              disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
+              disallowFlags: WindowRestriction.DisallowMaximize | WindowRestriction.DisallowMinimize,
             }))
           },
         },
@@ -194,7 +194,7 @@ export class Notepad extends EpkApp {
                 width: 419,
                 height: 350,
               },
-              disallowFlags: DisallowFlags.DisallowAll,
+              disallowFlags: WindowRestriction.DisallowAll,
             }))
           },
         },

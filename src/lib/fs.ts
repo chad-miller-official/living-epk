@@ -55,13 +55,11 @@ let idb: IDBPDatabase<IdbSchema>
 
 function loadFoldersHelper(prefix: string, cwd: string, fsStruct: FsStruct): FsRecord[] {
   const folders = Object.keys(fsStruct)
-    .filter(f => f !== '.' && f !== '$')
-    .map(f => {
-      return {
-        path: f,
-        metadata: fsStruct[f].$
-      }
-    })
+    .filter(f => !f.match(/^[.$]$/))
+    .map(f => ({
+      path: f,
+      metadata: fsStruct[f].$
+    }))
 
   const record: FsRecord = {
     path: `${prefix}${cwd}`,
@@ -74,10 +72,7 @@ function loadFoldersHelper(prefix: string, cwd: string, fsStruct: FsStruct): FsR
     .map(m => loadFoldersHelper(`${record.path}\\`, m.path, fsStruct[m.path]))
     .flat()
 
-  return [
-    record,
-    ...additionalRecords
-  ]
+  return [record, ...additionalRecords]
 }
 
 async function loadFolders() {
@@ -107,18 +102,12 @@ export async function initDb() {
   ])
 }
 
-class FsError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options)
-  }
-}
-
 export async function loadFolderNode(path: string, signal?: AbortSignal): Promise<FolderNode> {
   path = path.replace(/\\?$/, '')
   const record = await idb.get('file-system', path)
 
   if (!record) {
-    throw new FsError(`Failed to load file system record: ${path}`)
+    throw new Error(`Failed to load file system record: ${path}`)
   }
 
   let folderLinks: LinkNode[] = []
@@ -146,7 +135,7 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
     const filesResponse = await fetch(filesJson, {signal})
 
     if (!filesResponse.ok) {
-      throw new FsError(`Failed to load files data: ${record.filesJson}`)
+      throw new Error(`Failed to load files data: ${record.filesJson}`)
     }
 
     const filesResponseJson = await filesResponse.json()
@@ -192,13 +181,13 @@ export function getFileExtension(linkNode: LinkNode) {
   return linkNode.physicalPath.split('.').pop()
 }
 
-const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'full',
   timeStyle: 'short',
 })
 
 export function getFormattedTimestamp(linkNode: LinkNode) {
-  return dateTimeFormat.format(linkNode.metadata?.timestamp)
+  return DATE_TIME_FORMAT.format(linkNode.metadata?.timestamp)
 }
 
 export function getParentFolder(folderNode: FolderNode) {
