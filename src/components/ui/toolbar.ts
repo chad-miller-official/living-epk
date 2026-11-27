@@ -2,6 +2,7 @@ import {css, html, LitElement, nothing, type TemplateResult, unsafeCSS} from "li
 import {customElement, property, query, queryAll} from "lit/decorators.js";
 
 import xpStyle from 'xp.css/dist/XP.css?inline'
+import {classMap} from "lit/directives/class-map.js";
 
 export enum ToolbarUiElement {
   DIVIDER,
@@ -41,11 +42,13 @@ export class EpkToolbar extends LitElement {
       menu {
         display: flex;
         font-family: "Pixelated MS Sans Serif", ui-sans-serif;
-        font-style: normal;
-        font-weight: 400;
         margin: 0;
         padding: 1px 2px;
         user-select: none;
+      }
+
+      .bold {
+        font-weight: bold;
       }
 
       .logo-container {
@@ -72,12 +75,12 @@ export class EpkToolbar extends LitElement {
         padding: 4px 9px;
 
         &:hover {
-          background-color: #316AC5;
+          background-color: #316ac5;
           color: #ffffff;
         }
 
         &.active {
-          background-color: #316AC5;
+          background-color: #316ac5;
           color: #ffffff;
 
           & > .toolbar-menu-items {
@@ -93,25 +96,9 @@ export class EpkToolbar extends LitElement {
         margin: 1px;
         padding: 4px calc(7px + 1ch);
 
-        &.with-icon {
-          align-items: center;
-          padding: 2px;
-        }
-
-        & > span {
-          display: flex;
-          gap: 4ch;
-          justify-content: space-between;
-          margin: 0 1ch;
-          width: 100%;
-
-          &[data-command]::after {
-            content: attr(data-command);
-          }
-
-          &.bold {
-            font-weight: bold;
-          }
+        &:hover {
+          background-color: #316AC5;
+          color: #ffffff;
         }
 
         &.disabled {
@@ -139,19 +126,23 @@ export class EpkToolbar extends LitElement {
             margin-left: 4px;
           }
 
-          & > .toolbar-menu-items {
+          &:hover > .toolbar-menu-items {
+            display: block;
             left: calc(100% + 5px);
             margin-top: -4px;
           }
-
-          &:hover > .toolbar-menu-items {
-            display: block;
-          }
         }
 
-        &:hover {
-          background-color: #316AC5;
-          color: #ffffff;
+        & > span {
+          display: flex;
+          gap: 4ch;
+          justify-content: space-between;
+          margin: 0 1ch;
+          width: 100%;
+
+          &[data-command]::after {
+            content: attr(data-command);
+          }
         }
       }
 
@@ -167,7 +158,11 @@ export class EpkToolbar extends LitElement {
         position: absolute;
         width: max-content;
       }
-    `
+
+      .with-icon {
+        align-items: center;
+        padding: 2px;
+      }`
   ]
 
   @query('#menuBar')
@@ -264,22 +259,29 @@ export class EpkToolbar extends LitElement {
                 bold = bold()
               }
 
-              let onClick = undefined
+              let onClick = null
 
-              if (item.action) {
+              if (disabled) {
+                onClick = () => {}
+              } else if (item.action) {
                 onClick = (event: Event) => this.handleToolbarMenuItemClick(event, item.action!)
               }
 
+              const toolbarMenuItemClasses = {
+                'toolbar-menu-item': true,
+                disabled: Boolean(disabled),
+                selected: Boolean(selected),
+                [(menu.selectedStyle || ToolbarSelectionStyle.CHECK).toString()]: true,
+                'with-icon': Boolean(item.icon)
+              }
+
               return html`
-                <li class="toolbar-menu-item ${disabled ? 'disabled' : ''} ${selected ? 'selected' : ''} ${menu.selectedStyle} ${item.icon ? 'with-icon' : ''}"
-                    @click="${disabled ? nothing : onClick}">
+                <li class="${classMap(toolbarMenuItemClasses)}" @click="${onClick}">
                   ${item.icon ? html`<img src="${item.icon}"/>` : nothing}
-                  <span data-command="${item.shortcut || nothing}"
-                        class="${bold ? 'bold' : ''}">
+                  <span data-command="${item.shortcut || nothing}" class="${bold ? 'bold' : ''}">
                     ${item.text}
                   </span>
-                </li>
-              `
+                </li>`
             }
           })}
         </ul>

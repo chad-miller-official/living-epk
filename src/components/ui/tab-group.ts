@@ -14,11 +14,11 @@ export class TabGroup extends LitElement {
       }`
   ]
 
-  @queryAssignedElements({slot: 'tabs'})
-  tabs!: HTMLButtonElement[]
-
   @queryAssignedElements({slot: 'panels'})
   panels!: HTMLElement[]
+
+  @queryAssignedElements({slot: 'tabs'})
+  tabs!: HTMLButtonElement[]
 
   switchTab(event: Event) {
     const targetTab = event.target as HTMLButtonElement
@@ -58,7 +58,6 @@ export class TabGroup extends LitElement {
           <slot name="tabs"></slot>
         </menu>
         <slot name="panels"></slot>
-      </section>
-    `
+      </section>`
   }
 }

@@ -322,10 +322,10 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
   }
 
   handleClick(event: Event) {
-    super.handleClick(event)
     const target = event.target as HTMLElement
 
-    if (target.id !== 'toolbar') {
+    if (target !== this.toolbar) {
+      this.toolbar!.closeAll()
       Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
     }
 
