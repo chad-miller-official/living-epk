@@ -63,10 +63,12 @@ export class EpkAlert extends Dialog(EpkApp) {
     return null
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.silenceId && this.silencer?.checked) {
-      cookieStore.set(this.silenceId, 'true').then(() => super.close())
+      await cookieStore.set(this.silenceId, 'true')
     }
+
+    super.close()
   }
 
   render() {
