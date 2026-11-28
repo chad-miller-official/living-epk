@@ -76,8 +76,7 @@ export abstract class Explorer<T> extends EpkApp {
       }
 
       .hidden {
-        // No way around this !important due to non-deterministic ordering of css() styles
-        display: none !important;
+        display: none;
       }
 
       .navigation {
@@ -183,7 +182,7 @@ export abstract class Explorer<T> extends EpkApp {
           text: `About ${aboutName}`,
           action: (event: Event) => {
             event.stopPropagation()
-            this.toolbar!.closeAll()
+            this.closeToolbar()
 
             this.dispatchEvent(launchEvent(aboutApp, {
               size: {

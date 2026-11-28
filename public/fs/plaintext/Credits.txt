@@ -1,0 +1,6 @@
+- Lit.js for facilitating web components - https://lit.dev/
+
+- XP.css for the CSS styles - https://github.com/botoxparty/XP.css
+
+- Windows XP boot screen animation stolen from MacThePlaneh via their DeviantArt -
+    https://www.deviantart.com/mactheplaneh/art/Long-live-Windows-XP-bootscreen-animated-gif-506557247

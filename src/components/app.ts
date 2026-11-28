@@ -75,6 +75,10 @@ export abstract class EpkApp extends LitElement {
     return this.constructor.name
   }
 
+  closeToolbar(): void {
+    this.toolbar?.closeAll()
+  }
+
   spawnDialog<T>(DialogApp: Constructor<EpkDialog<T>>): EpkDialog<T> {
     const dialog = new DialogApp()
     dialog.delegatingAppId = this.getAppId()
@@ -83,7 +87,7 @@ export abstract class EpkApp extends LitElement {
 
   protected handleClick(event: Event): void {
     if (event.target !== this.toolbar) {
-      this.toolbar?.closeAll()
+      this.closeToolbar()
     }
 
     this.getContainedIcons().filter(i => i !== event.target).forEach(i => i.deselect())

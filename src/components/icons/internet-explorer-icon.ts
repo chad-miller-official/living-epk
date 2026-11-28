@@ -6,7 +6,7 @@ import type {EpkApp} from "../app.ts";
 @customElement('internet-explorer-icon')
 export class InternetExplorerIcon extends EpkIcon {
   icon = {
-    small: '/img/icons/small/internet-explorer.ico',
+    small: '/img/icons/small/internet-explorer.ico', // TODO change to actual small icon
     large: '/img/icons/html-file.ico',
   }
 

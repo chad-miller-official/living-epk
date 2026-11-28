@@ -393,6 +393,14 @@ export class EpkWindow extends LitElement {
     return this.app[0]
   }
 
+  setActive() {
+    this.active = true
+  }
+
+  setInactive() {
+    this.active = false
+  }
+
   private checkBlockingDialog(event: Event): boolean {
     const desktop = this.parentElement as EpkDesktop
 

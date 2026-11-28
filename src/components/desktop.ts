@@ -21,20 +21,21 @@ export class EpkDesktop extends LitElement {
       background-image: url("/img/bliss.jpg");
       background-position: center;
       background-size: cover;
+      box-sizing: border-box;
       display: flex;
-      flex-direction: column;
-      gap: 16px;
       height: 100vh;
+      padding: 8px;
       width: 100vw;
     }
 
     slot[name=icons] {
-      align-items: center;
-      display: flex;
-      flex-direction: column;
-      flex-wrap: wrap;
+      display: grid;
+      grid-auto-columns: 94px;
+      grid-auto-flow: column;
+      grid-template-rows: repeat(auto-fill, 84px);
+      height: 100vh;
       max-height: 100%;
-      row-gap: 8px;
+      row-gap: 14px;
     }`
 
   @queryAssignedElements({slot: 'icons'})
@@ -154,10 +155,8 @@ export class EpkDesktop extends LitElement {
     this.icons?.filter(i => i !== event.target).forEach(i => i.deselect())
 
     this.windows?.forEach(w => {
-      if ((w === event.target || w.contains(event.target as Node))) {
-        w.active = true
-      } else {
-        w.active = false
+      if (!w.contains(event.target as Node)) {
+        w.setInactive()
         const app = w.getApp()
 
         if (event.target instanceof EpkIcon) {
@@ -167,7 +166,7 @@ export class EpkDesktop extends LitElement {
         }
 
         if (event.target !== app) {
-          app.toolbar?.closeAll()
+          app.closeToolbar()
         }
       }
     })

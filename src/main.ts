@@ -22,11 +22,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     launchEvent(
       () => {
         const notepad = new Notepad()
+
         notepad.fileLinkNode = {
           type: LinkNodeType.File,
           physicalPath: '/fs/plaintext/Welcome to my zone.txt',
           logicalPath: 'C:\\Users\\Chad\\My Documents\\Welcome to my zone.txt',
         }
+
         notepad.windowTitle = 'Notepad - Welcome to my zone'
         return notepad
       },
@@ -42,4 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
     ),
   )
+
+  const splash = document.querySelector('#splash') as HTMLDivElement
+  splash.style.display = 'none'
 })

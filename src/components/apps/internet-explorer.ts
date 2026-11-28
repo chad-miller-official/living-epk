@@ -111,6 +111,10 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         margin: 2px;
       }
 
+      .hidden {
+        display: none !important; // Override display: flex in #sidebar rule in explorer.ts
+      }
+
       .loading-text {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -299,7 +303,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
 
     window.addEventListener('blur', () => {
       if (this.shadowRoot?.activeElement === this.frame) {
-        this.toolbar?.closeAll()
+        this.closeToolbar()
       }
     })
   }
