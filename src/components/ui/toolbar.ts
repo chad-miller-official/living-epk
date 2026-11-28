@@ -177,58 +177,13 @@ export class EpkToolbar extends LitElement {
   @queryAll('li.toolbar-menu')
   toolbarItems: NodeListOf<HTMLLIElement> | undefined
 
-  handleItemClick(event: Event) {
-    let targetLi = event.target as HTMLElement
-
-    if (targetLi.tagName.toLowerCase() === 'span') {
-      targetLi = targetLi.parentElement!
-    }
-
-    if (targetLi.classList.contains('disabled')) {
-      return
-    }
-
-    const selectedLi = Array.from(this.toolbarItems!)
-      .filter(item => item.classList.contains('active'))
-      .pop()
-
-    if (selectedLi) {
-      if (selectedLi === targetLi) {
-        targetLi.classList.remove('active')
-        return
-      } else {
-        selectedLi.classList.remove('active')
-      }
-    }
-
-    targetLi.classList.add('active')
-  }
-
-  handleMouseEnter(event: Event) {
-    const targetLi = event.target as HTMLLIElement
-
-    const selectedLi = Array.from(this.toolbarItems!)
-      .filter(item => item.classList.contains('active'))
-      .pop()
-
-    if (selectedLi && !selectedLi.contains(targetLi)) {
-      selectedLi.classList.remove('active')
-      targetLi.classList.add('active')
-    }
-  }
-
-  closeAll() {
+  closeAll(): void {
     if (this.toolbarItems) {
       this.toolbarItems.forEach(item => item.classList.remove('active'))
     }
   }
 
-  handleToolbarMenuItemClick(event: Event, func: (event: Event) => void) {
-    func(event)
-    this.requestUpdate()
-  }
-
-  buildMenu(menu: ToolbarMenu, additionalClasses?: string): TemplateResult {
+  private buildMenu(menu: ToolbarMenu, additionalClasses?: string): TemplateResult {
     return html`
       <li class="toolbar-menu ${additionalClasses}" @click="${this.handleItemClick}"
           @mouseenter="${this.handleMouseEnter}">
@@ -262,7 +217,8 @@ export class EpkToolbar extends LitElement {
               let onClick = null
 
               if (disabled) {
-                onClick = () => {}
+                onClick = () => {
+                }
               } else if (item.action) {
                 onClick = (event: Event) => this.handleToolbarMenuItemClick(event, item.action!)
               }
@@ -288,7 +244,53 @@ export class EpkToolbar extends LitElement {
       </li>`
   }
 
-  handleClick(event: Event) {
+  private handleItemClick(event: Event): void {
+    let targetLi = event.target as HTMLElement
+
+    if (targetLi.tagName.toLowerCase() === 'span') {
+      targetLi = targetLi.parentElement!
+    }
+
+    if (targetLi.classList.contains('disabled')) {
+      return
+    }
+
+    const selectedLi = Array.from(this.toolbarItems!)
+      .filter(item => item.classList.contains('active'))
+      .pop()
+
+    if (selectedLi) {
+      if (selectedLi === targetLi) {
+        targetLi.classList.remove('active')
+        return
+      } else {
+        selectedLi.classList.remove('active')
+      }
+    }
+
+    targetLi.classList.add('active')
+  }
+
+  private handleMouseEnter(event: Event): void {
+    const targetLi = event.target as HTMLLIElement
+
+    const selectedLi = Array.from(this.toolbarItems!)
+      .filter(item => item.classList.contains('active'))
+      .pop()
+
+    if (selectedLi && !selectedLi.contains(targetLi)) {
+      selectedLi.classList.remove('active')
+      targetLi.classList.add('active')
+    }
+  }
+
+  private handleToolbarMenuItemClick(event: Event, func: (event: Event) => void): void {
+    func(event)
+    this.closeAll()
+    this.requestUpdate()
+  }
+
+  private handleClick(event: Event) {
     if (event.target !== this.menuBar && !this.menuBar.contains(event.target as Element)) {
       this.closeAll()
     }

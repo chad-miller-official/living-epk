@@ -11,6 +11,7 @@ import {
 } from "../lib/events.ts";
 import {EpkWindow, WindowRestriction} from "./window.ts";
 import {EpkApp} from "./app.ts";
+import type {FilePickedHandler} from "./apps/dialog/file-picker.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
@@ -55,7 +56,7 @@ export class EpkDesktop extends LitElement {
     return this.windows.find(w => w.getApp().getAppId() === appId)
   }
 
-  private handleActiveWindowChange(event: Event) {
+  private handleActiveWindowChange(event: Event): void {
     const targetAppId = (event as CustomEvent).detail?.targetAppId
     let targetWindow: EpkWindow | undefined
 
@@ -80,7 +81,7 @@ export class EpkDesktop extends LitElement {
       })
   }
 
-  private handleCloseWindow(event: Event) {
+  private handleCloseWindow(event: Event): void {
     let appName: string
 
     if (event.target instanceof EpkWindow) {
@@ -95,7 +96,7 @@ export class EpkDesktop extends LitElement {
     this.appInstanceCount.set(appName, instanceCount - 1)
   }
 
-  private handleLaunch(event: Event) {
+  private handleLaunch(event: Event): void {
     const launchData = (event as CustomEvent<Launch>).detail
 
     const app = launchData.init()
@@ -128,7 +129,6 @@ export class EpkDesktop extends LitElement {
     }
 
     epkWindow.minSize = minSize
-
     const location = launchData.location
 
     if (location !== 'center') {
@@ -144,10 +144,11 @@ export class EpkDesktop extends LitElement {
 
   private handleFilePicked(event: Event): void {
     const detail = (event as CustomEvent<FilePicked>).detail
-    this.getWindowByAppId(detail.targetAppId)?.getApp().handleFilePicked(detail.fileLinkNode)
+    const app = this.getWindowByAppId(detail.targetAppId)?.getApp() as unknown as FilePickedHandler
+    app.handleFilePicked(detail.fileLinkNode)
   }
 
-  private handleClick(event: Event) {
+  private handleClick(event: Event): void {
     this.icons?.filter(i => i !== event.target).forEach(i => i.deselect())
 
     this.windows?.forEach(w => {
@@ -157,9 +158,11 @@ export class EpkDesktop extends LitElement {
         w.active = false
         const app = w.getApp()
 
-        app.getContainedIcons()
-          .filter(i => i !== event.target)
-          .forEach(i => i.deselect())
+        if (event.target instanceof EpkIcon) {
+          app.getContainedIcons()
+            .filter(i => i !== event.target)
+            .forEach(i => i.deselect())
+        }
 
         if (event.target !== app) {
           app.toolbar?.closeAll()

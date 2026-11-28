@@ -1,14 +1,22 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {css, html} from "lit";
-import {type FolderNode, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../../lib/fs.ts";
+import {
+  type FolderNode,
+  getFileLinkNodes,
+  getFolderLinkNodes,
+  getLinkName,
+  type LinkNode,
+  linkNodeToIcon,
+  LinkNodeType
+} from "../../../lib/fs.ts";
 import {EpkIcon, IconViewMode} from "../../icon.ts";
 import {filePickedEvent} from "../../../lib/events.ts";
 import {EpkApp} from "../../app.ts";
 import {PathStack} from "../../../lib/path-stack.ts";
-import {extendedUiStyle} from "../../../lib/ui.ts";
+import {EXTENDED_UI_STYLE} from "../../ui/styles.ts";
 import {DEFAULT_WINDOW_ICON, FileViewer} from "../common/file-viewer.ts";
 import {Dialog} from "./dialog.ts";
-import { playSound, SystemSound } from "../../../lib/os.ts";
+import {playSound, SystemSound} from "../../../lib/os.ts";
 
 export type FileTypeFilter = {
   regex: string,
@@ -16,11 +24,15 @@ export type FileTypeFilter = {
   selected?: boolean,
 }
 
+export interface FilePickedHandler {
+  handleFilePicked(linkNode?: LinkNode): void
+}
+
 @customElement('file-picker')
 export class FilePicker extends Dialog(FileViewer(EpkApp)) {
   static styles = [
     ...EpkApp.styles,
-    extendedUiStyle,
+    EXTENDED_UI_STYLE,
     css`
       #backButton, #upButton {
         img {
@@ -253,7 +265,7 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
           <div class="content"></div>
         </div>`,
       complete: (folderNode: FolderNode) => {
-        let files = folderNode.fileLinks
+        let files = getFileLinkNodes(folderNode)
 
         if (this.filterRegex) {
           files = files.filter(path => this.filterRegex!.test(path.physicalPath))
@@ -300,14 +312,15 @@ export class FilePicker extends Dialog(FileViewer(EpkApp)) {
                     <img src="/img/icons/my-music.ico"/>
                     <span>My Music</span>
                   </button>
-                  <button type="button" class="tool-button" @click="${() => this.navigate('C:\\Users\\Chad\\My Videos')}">
+                  <button type="button" class="tool-button"
+                          @click="${() => this.navigate('C:\\Users\\Chad\\My Videos')}">
                     <img src="/img/icons/my-videos.ico"/>
                     <span>My Videos</span>
                   </button>
                 </div>
                 <div class="file-explorer-container">
                   <div id="fileExplorer">
-                    ${folderNode.folderLinks.map(this.buildIcon.bind(this))}
+                    ${getFolderLinkNodes(folderNode).map(this.buildIcon.bind(this))}
                     ${files.map(this.buildIcon.bind(this))}
                   </div>
                 </div>

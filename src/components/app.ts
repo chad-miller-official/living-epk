@@ -2,11 +2,11 @@ import {css, LitElement, unsafeCSS} from "lit"
 import xpStyle from 'xp.css/dist/XP.css?inline'
 import {query, queryAll, queryAssignedElements} from "lit/decorators.js";
 import {EpkToolbar} from "./ui/toolbar.ts";
-import type {LinkNode} from "../lib/fs.ts";
 import {closeWindowEvent} from "../lib/events.ts";
 import type {Dimensions} from "./window.ts";
-import type {AbstractConstructor} from "../lib/lang.ts";
+import type {AbstractConstructor, Constructor} from "../lib/lang.ts";
 import type {EpkIcon} from "./icon.ts";
+import type {EpkDialog} from "./apps/dialog/dialog.ts";
 
 export type EpkAppConstructor = AbstractConstructor<EpkApp>
 
@@ -80,7 +80,13 @@ export abstract class EpkApp extends LitElement {
     return this.trackLastPosition
   }
 
-  handleClick(event: Event) {
+  spawnDialog<T>(DialogApp: Constructor<EpkDialog<T>>): EpkDialog<T> {
+    const dialog = new DialogApp()
+    dialog.delegatingAppId = this.getAppId()
+    return dialog
+  }
+
+  protected handleClick(event: Event): void {
     if (event.target !== this.toolbar) {
       this.toolbar?.closeAll()
     }
@@ -88,11 +94,7 @@ export abstract class EpkApp extends LitElement {
     this.getContainedIcons().filter(i => i !== event.target).forEach(i => i.deselect())
   }
 
-  handleFilePicked(_file?: LinkNode) {
-    return
-  }
-
-  close(..._: any[]) {
+  close(..._: any[]): void {
     this.dispatchEvent(closeWindowEvent())
   }
 }

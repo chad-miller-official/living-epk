@@ -13,9 +13,8 @@ export function playSound(sound: SystemSound) {
   return new Audio(sound).play()
 }
 
-function getAlertDialog(delegatingAppId: string, title: string, message: string): EpkAlert {
-  const alert = new EpkAlert()
-  alert.delegatingAppId = delegatingAppId
+function getAlertDialog(alerter: EpkApp, title: string, message: string): EpkAlert {
+  const alert = alerter.spawnDialog(EpkAlert)
   alert.message = message
   alert.windowTitle = title
   return alert
@@ -33,7 +32,7 @@ export function alertDialog(alerter: EpkApp, title: string, message: string) {
   playSound(SystemSound.Error).then(() => {
     alerter.dispatchEvent(
       launchEvent(
-        () => getAlertDialog(alerter.getAppId(), title, message),
+        () => getAlertDialog(alerter, title, message),
         getAlertDialogLaunchArgs(message)
       )
     )
@@ -43,7 +42,7 @@ export function alertDialog(alerter: EpkApp, title: string, message: string) {
 export function warnDialog(alerter: EpkApp, title: string, message: string, args: Partial<EpkAlert> = {}) {
   alerter.dispatchEvent(
     launchEvent(() => {
-        const alert = getAlertDialog(alerter.getAppId(), title, message)
+        const alert = getAlertDialog(alerter, title, message)
         alert.alertGraphic = '/img/warn.ico'
         alert.silenceId = args.silenceId
         alert.buttonPosition = args.buttonPosition || undefined

@@ -5,7 +5,7 @@ import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../ui/to
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
 import {alertDialog, playSound, SystemSound, warnDialog} from "../../lib/os.ts";
 import {Explorer} from "./common/explorer.ts";
-import {WindowState} from "../window.ts";
+import {WindowState, type Dimensions} from "../window.ts";
 import {InternetExplorerAbout} from "./dialog/ie-about.ts";
 
 const COOKIE_EXPERIMENTAL_WARNING = 'quietIeExperimentalWarning'
@@ -57,33 +57,6 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
   static styles = [
     ...Explorer.styles,
     css`
-      .favorites-folder {
-        & > summary.favorite-icon {
-          cursor: initial;
-          padding: 2px;
-
-          &.active {
-            background-color: #316AC5;
-            color: #ffffff;
-          }
-        }
-
-        &[open] {
-          border: 1px solid #7F9DB9;
-        }
-
-        summary:focus {
-          outline: none;
-        }
-      }
-
-      .favorites-icons {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin: 2px;
-      }
-
       .favorite-icon {
         align-items: center;
         cursor: pointer;
@@ -109,6 +82,33 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
+      }
+
+      .favorites-folder {
+        & > summary.favorite-icon {
+          cursor: initial;
+          padding: 2px;
+
+          &.active {
+            background-color: #316AC5;
+            color: #ffffff;
+          }
+        }
+
+        &[open] {
+          border: 1px solid #7F9DB9;
+        }
+
+        summary:focus {
+          outline: none;
+        }
+      }
+
+      .favorites-icons {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 2px;
       }
 
       .loading-text {
@@ -140,38 +140,37 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         border: 1px groove rgb(199, 197, 178);
         color-scheme: light;
         width: 100%;
-      }
-    `
+      }`
   ]
 
   @query('iframe')
-  frame?: HTMLIFrameElement
+  frame!: HTMLIFrameElement
 
   @queryAll('.favorite-icon')
-  favoriteIcons?: HTMLElement[]
+  favoriteIcons!: HTMLElement[]
 
   @queryAll('.favorites-folder')
-  favoritesFolders?: HTMLDetailsElement[]
+  favoritesFolders!: HTMLDetailsElement[]
 
   @property()
   path: string | LinkNode = HOME
 
   @property({type: String})
-  windowTitle = 'Microsoft Internet Explorer'
-
-  @property({type: String})
   windowIcon = '/img/icons/small/internet-explorer.ico'
 
-  @state()
-  isLoading = true
+  @property({type: String})
+  windowTitle = 'Microsoft Internet Explorer'
 
   @state()
   isFullscreen = false
 
   @state()
+  isLoading = true
+
+  @state()
   showExperimentalWarning = true
 
-  toolbarSpec: ToolbarMenu[] = [
+  protected toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
       items: [
@@ -224,7 +223,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         {
           text: 'Copy',
           shortcut: 'Ctrl+C',
-          action: () => navigator.clipboard.writeText(this.frame?.contentWindow?.getSelection()?.toString() || ''),
+          action: () => navigator.clipboard.writeText(this.frame.contentWindow?.getSelection()?.toString() || ''),
         },
         {
           text: 'Paste',
@@ -236,7 +235,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           text: 'Select All',
           shortcut: 'Ctrl+A',
           action: () => {
-            const selection = this.frame?.contentWindow?.getSelection()
+            const selection = this.frame.contentWindow?.getSelection()
             const range = this.getFrameDocument().createRange()
 
             selection?.removeAllRanges()
@@ -258,7 +257,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           {
             text: 'Home Page',
             shortcut: 'Alt+Home',
-            action: () => this.goHome(),
+            action: this.goHome,
           }]
         ),
         {
@@ -287,23 +286,15 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
     },
     {
       text: 'Favorites',
-      items: this.buildFavoritesMenuItems(FAVORITES),
+      items: this.getFavoritesMenuItems(FAVORITES),
     },
-    this.toolbarHelpMenu('Internet Explorer', () => {
-      const about = new InternetExplorerAbout()
-      about.delegatingAppId = this.getAppId()
-      return about
-    }),
+    this.toolbarHelpMenu('Internet Explorer', () => this.spawnDialog(InternetExplorerAbout)),
   ]
 
   firstUpdated() {
-    const ieThis = this
-
-    this.frame?.addEventListener('load', () => {
+    this.frame.addEventListener('load', () => {
       this.isLoading = false
-
-      this.getFrameDocument()
-        ?.addEventListener('click', () => ieThis.dispatchEvent(activeWindowChangeEvent()))
+      this.getFrameDocument()?.addEventListener('click', () => this.dispatchEvent(activeWindowChangeEvent()))
     })
 
     window.addEventListener('blur', () => {
@@ -313,46 +304,11 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
     })
   }
 
-  getMinimumDimensions() {
+  getMinimumDimensions(): Partial<Dimensions> {
     return {width: 400, height: 320}
   }
 
-  buildFavoritesMenuItems(favorites: (Favorite | FavoriteFolder)[]): (ToolbarMenuItem | ToolbarMenu)[] {
-    return favorites.map(f => {
-      if ('url' in f) {
-        return {
-          text: f.title,
-          icon: f.icon || '/img/internet-explorer/default.ico',
-          action: () => this.navigate(f.url),
-        }
-      } else {
-        return {
-          text: f.title,
-          items: this.buildFavoritesMenuItems(f.favorites)
-        }
-      }
-    })
-  }
-
-  stop() {
-    this.frame?.contentWindow?.stop()
-  }
-
-  refresh() {
-    if (this.frame) {
-      this.frame.src = this.frame.src
-    }
-  }
-
-  goHome() {
-    this.navigate(HOME)
-  }
-
-  getFrameDocument() {
-    return this.frame?.contentDocument || this.frame?.contentWindow?.document!
-  }
-
-  navigate(newPath: string) {
+  protected navigate(newPath: string) {
     if (this.getTruePath(true).replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
       return
     }
@@ -366,7 +322,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         const path = parts.join('\\')
         const folder = await loadFolderNode(path)
 
-        newPathToUse = folder.fileLinks.find(l => l.logicalPath === newPath)
+        newPathToUse = folder.links.find(l => l.logicalPath === newPath)
 
         if (!newPathToUse) {
           alertDialog(this, 'Microsoft Internet Explorer', `Cannot find '${newPath}'. Make sure the path or Internet address is correct.`)
@@ -403,68 +359,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
     })
   }
 
-  getTruePath(logical: boolean) {
-    return typeof this.path === 'string' ? this.path : logical ? this.path.logicalPath : this.path.physicalPath
-  }
-
-  selectFavorite(event: Event, favorite: Favorite) {
-    let target = event.target as HTMLElement
-
-    if (!target.classList.contains('favorite-icon')) {
-      target = target.parentElement!
-    }
-
-    target.classList.add('active')
-
-    Array.from(this.favoriteIcons!)
-      .filter(e => e !== target)
-      .forEach(e => e.classList.remove('active'))
-
-    this.navigate(favorite.url)
-  }
-
-  expandFavoritesFolder(event: Event) {
-    let target = event.target as HTMLElement
-
-    if (!target.classList.contains('favorite-icon')) {
-      target = target.parentElement!
-    }
-
-    target.classList.add('active')
-
-    const parent = target.parentElement!
-
-    Array.from(this.favoritesFolders!)
-      .filter(e => e !== parent)
-      .forEach(e => e.removeAttribute('open'))
-
-    Array.from(this.favoriteIcons!)
-      .filter(e => e !== target)
-      .forEach(e => e.classList.remove('active'))
-  }
-
-  buildFavoritesPanel(favorites: (Favorite | FavoriteFolder)[]): TemplateResult[] {
-    return favorites.map(f => {
-      if ('url' in f) {
-        return html`
-          <div class="favorite-icon" @click="${(event: Event) => this.selectFavorite(event, f)}">
-            <img src="${f.icon || '/img/internet-explorer/default.ico'}"/>
-            <span>${f.title}</span>
-          </div>`
-      } else {
-        return html`
-          <details class="favorites-folder">
-            <summary class="favorite-icon" @click="${this.expandFavoritesFolder}">
-              <img src="/img/explorer/folder-closed.png"/>
-              <span>${f.title}</span>
-            </summary>
-            ${this.buildFavoritesPanel(f.favorites)}
-          </details>`
-      }
-    })
-  }
-
-  getNavigationButtons() {
+  protected getNavigationButtons() {
     return html`
       <button type="button" class="tool-button" @click="${this.stop}">
         <img src="/img/internet-explorer/stop.png"/>
@@ -488,25 +383,25 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
       </button>`
   }
 
-  getAddressBar() {
+  protected getAddressBar() {
     return html`
       <img src="/img/internet-explorer/default.ico"/>
       <input type="text" .value="${this.getTruePath(true)}" id="pathInput"/>`
   }
 
-  getSidebarContent() {
+  protected getSidebarContent() {
     return html`
       <div class="favorites-icons">
         ${this.buildFavoritesPanel(FAVORITES)}
       </div>`
   }
 
-  getMainContent() {
+  protected getMainContent() {
     return html`
       <iframe src="${this.getTruePath(false)}"></iframe>`
   }
 
-  getStatusBarFields() {
+  protected getStatusBarFields() {
     return html`
       <p class="status-bar-field">
         <img src="/img/internet-explorer/default.ico"/>
@@ -528,5 +423,105 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         <img src="/img/internet-explorer/internet.ico"/>
         <span>Internet</span>
       </p>`
+  }
+
+  private getFrameDocument() {
+    return this.frame.contentDocument || this.frame.contentWindow?.document!
+  }
+
+  private getTruePath(logical: boolean): string {
+    return typeof this.path === 'string' ? this.path : logical ? this.path.logicalPath : this.path.physicalPath
+  }
+
+  private buildFavoritesPanel(favorites: (Favorite | FavoriteFolder)[]): TemplateResult[] {
+    return favorites.map(f => {
+      if ('url' in f) {
+        return html`
+          <div class="favorite-icon" @click="${(event: Event) => this.selectFavorite(event, f)}">
+            <img src="${f.icon || '/img/internet-explorer/default.ico'}"/>
+            <span>${f.title}</span>
+          </div>`
+      } else {
+        return html`
+          <details class="favorites-folder">
+            <summary class="favorite-icon" @click="${this.expandFavoritesFolder}">
+              <img src="/img/explorer/folder-closed.png"/>
+              <span>${f.title}</span>
+            </summary>
+            ${this.buildFavoritesPanel(f.favorites)}
+          </details>`
+      }
+    })
+  }
+
+  private stop() {
+    this.frame.contentWindow?.stop()
+  }
+
+  private refresh() {
+    if (this.frame) {
+      /*
+       * This weird line takes advantage of a quirk in which setting an iframe's src to itself
+       * effectively "refreshes" the contents of the iframe
+       */
+      this.frame.src = this.frame.src
+    }
+  }
+
+  private goHome() {
+    this.navigate(HOME)
+  }
+
+  private getFavoritesMenuItems(favorites: (Favorite | FavoriteFolder)[]): (ToolbarMenuItem | ToolbarMenu)[] {
+    return favorites.map(f => {
+      if ('url' in f) {
+        return {
+          text: f.title,
+          icon: f.icon || '/img/internet-explorer/default.ico',
+          action: () => this.navigate(f.url),
+        }
+      } else {
+        return {
+          text: f.title,
+          items: this.getFavoritesMenuItems(f.favorites)
+        }
+      }
+    })
+  }
+
+  private expandFavoritesFolder(event: Event): void {
+    let target = event.target as HTMLElement
+
+    if (!target.classList.contains('favorite-icon')) {
+      target = target.parentElement!
+    }
+
+    target.classList.add('active')
+
+    const parent = target.parentElement!
+
+    Array.from(this.favoritesFolders)
+      .filter(e => e !== parent)
+      .forEach(e => e.removeAttribute('open'))
+
+    Array.from(this.favoriteIcons)
+      .filter(e => e !== target)
+      .forEach(e => e.classList.remove('active'))
+  }
+
+  private selectFavorite(event: Event, favorite: Favorite): void {
+    let target = event.target as HTMLElement
+
+    if (!target.classList.contains('favorite-icon')) {
+      target = target.parentElement!
+    }
+
+    target.classList.add('active')
+
+    Array.from(this.favoriteIcons)
+      .filter(e => e !== target)
+      .forEach(e => e.classList.remove('active'))
+
+    this.navigate(favorite.url)
   }
 }

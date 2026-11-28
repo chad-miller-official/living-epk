@@ -4,7 +4,7 @@ import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../../ui
 import {styleMap} from "lit/directives/style-map.js";
 import {property, query, state} from "lit/decorators.js";
 import {PathStack} from "../../../lib/path-stack.ts";
-import {extendedUiStyle} from "../../../lib/ui.ts";
+import {EXTENDED_UI_STYLE} from "../../ui/styles.ts";
 import {closeWindowEvent, launchEvent} from "../../../lib/events.ts";
 import {WindowRestriction} from "../../window.ts";
 import {playSound, SystemSound} from "../../../lib/os.ts";
@@ -12,7 +12,7 @@ import {playSound, SystemSound} from "../../../lib/os.ts";
 export abstract class Explorer<T> extends EpkApp {
   static styles = [
     ...EpkApp.styles,
-    extendedUiStyle,
+    EXTENDED_UI_STYLE,
     css`
       #closeButton {
         height: 18px;
@@ -30,7 +30,6 @@ export abstract class Explorer<T> extends EpkApp {
       #sidebar {
         display: flex;
         flex-direction: column;
-        flex-shrink: 0;
         min-width: 12ch;
       }
 
@@ -63,21 +62,19 @@ export abstract class Explorer<T> extends EpkApp {
       .explorer-divider {
         background-color: #eee9d5;
         cursor: col-resize;
-        min-width: 5px;
-        max-width: 5px;
         width: 5px;
       }
 
       .navigation {
-        align-items: stretch;
+        align-items: center;
         background-color: #eceadb;
         border-bottom: 1px groove #c7c5b2;
         display: flex;
-        width: 100%;
+        gap: 1px;
+        margin: 1px 0;
 
         button {
           padding: 9px 7px;
-          margin: 1px;
         }
       }
 
@@ -200,7 +197,7 @@ export abstract class Explorer<T> extends EpkApp {
     }
   }
 
-  abstract toolbarSpec: ToolbarMenu[]
+  protected abstract toolbarSpec: ToolbarMenu[]
 
   protected abstract navigate(to: string): void
 
@@ -223,13 +220,13 @@ export abstract class Explorer<T> extends EpkApp {
     return 'explorer'
   }
 
-  goBack() {
+  protected goBack() {
     if (this.pathStack.canGoBack()) {
       playSound(SystemSound.Click).then(() => this.path = this.pathStack.goBack())
     }
   }
 
-  goForward() {
+  protected goForward() {
     if (this.pathStack.canGoForward()) {
       playSound(SystemSound.Click).then(() => this.path = this.pathStack.goForward())
     }
@@ -314,6 +311,7 @@ export abstract class Explorer<T> extends EpkApp {
                    @mousedown="${this.handlePrimaryDividerDrag}"></div>
               ${this.getMainContent()}
             </div>
+          </div>
         </div>
         <div class="status-bar ${this.showStatusBar ? '' : 'hidden'}">
           ${this.getStatusBarFields()}

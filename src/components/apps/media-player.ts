@@ -9,14 +9,31 @@ import type {ResizeEvent} from "@interactjs/actions/resize/plugin";
 import {AppAbout} from "./dialog/about.ts";
 import {getFileExtension, getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
-import {FilePicker} from "./dialog/file-picker.ts";
-import {WindowRestriction} from "../window.ts";
+import {type FilePickedHandler, FilePicker} from "./dialog/file-picker.ts";
+import {type Dimensions, WindowRestriction} from "../window.ts";
+import {OLD_UI_STYLE} from "../ui/styles.ts";
+
+const SLIDER_INITIAL_POSITION = '-5px'
+
+enum PlayerState {
+  Playing = 'playing',
+  Paused = 'paused',
+  Stopped = 'stopped',
+  Ended = 'stopped',
+}
 
 @customElement('media-player')
-export class MediaPlayer extends EpkApp {
+export class MediaPlayer extends EpkApp implements FilePickedHandler {
   static styles = [
     ...EpkApp.styles,
+    OLD_UI_STYLE,
     css`
+      #progressBar {
+        background-color: white;
+        height: 16px;
+        position: relative;
+      }
+
       #slider {
         background-image: url("/img/media-player/slider.png");
         cursor: default !important;
@@ -26,97 +43,17 @@ export class MediaPlayer extends EpkApp {
         width: 11px;
       }
 
-      #toolbar {
-        z-index: 1;
-      }
-
-      #progressBar {
-        background-color: white;
-        border-bottom: 2px solid #f1efe2;
-        border-left: 2px solid #716f64;
-        border-right: 2px solid #f1efe2;
-        border-top: 2px solid #716f64;
-        height: 16px;
-        position: relative;
-        width: 100%;
-      }
-
       .buttons {
-        padding: 2px;
+        padding: 0 4px;
         border-right: 1px solid black;
         display: flex;
         gap: 8px;
       }
 
-      .button-group {
-        align-items: center;
-        display: flex;
-
-        &:last-of-type {
-          padding-right: 4px;
-        }
-
-        button {
-          align-items: center;
-          background: #ece9d8;
-          border-bottom: 2px solid #716f64;
-          border-left: 2px solid #ffffff;
-          border-right: 2px solid #716f64;
-          border-top: 2px solid #ffffff;
-          border-radius: 0;
-          display: flex;
-          height: 24px;
-          justify-content: center;
-          min-height: 0;
-          min-width: 0;
-          padding: 0;
-          width: 24px;
-
-          &.small {
-            height: fit-content;
-            padding: 3px;
-            width: fit-content;
-
-            &:not([disabled]):active * {
-              padding: 0;
-            }
-          }
-
-          &[disabled] {
-            img {
-              opacity: 0.3;
-            }
-          }
-
-          &:focus {
-            border-bottom: 2px solid #716f64;
-            border-left: 2px solid #ffffff;
-            border-right: 2px solid #716f64;
-            border-top: 2px solid #ffffff;
-            box-shadow: none;
-            outline: none;
-          }
-
-          &:hover {
-            box-shadow: none;
-          }
-
-          &:not([disabled]):active {
-            border-bottom: 2px solid #ffffff;
-            border-left: 2px solid #716f64;
-            border-right: 2px solid #ffffff;
-            border-top: 2px solid #716f64;
-
-            * {
-              padding: 2px 0 0 2px;
-            }
-          }
-        }
-      }
-
       .content {
         display: flex;
         flex-direction: column;
+        font-family: "Pixelated MS Sans Serif", Arial;
         user-select: none;
       }
 
@@ -155,24 +92,14 @@ export class MediaPlayer extends EpkApp {
 
       .timeline {
         display: grid;
-        font-family: "Pixelated MS Sans Serif", Arial;
         grid-column-gap: 8px;
         grid-template-columns: auto 36px;
         padding: 8px;
       }
 
-      .timer-wrapper {
+      .timer {
         display: flex;
         flex-grow: 1;
-        width: 100%;
-      }
-
-      .timer {
-        border-bottom: 1px solid #ffffff;
-        border-left: 1px solid #aca899;
-        border-right: 1px solid #ffffff;
-        border-top: 1px solid #aca899;
-        font-family: "Pixelated MS Sans Serif", Arial;
         margin: 6px;
         padding: 3px 1px;
         width: 100%;
@@ -183,8 +110,7 @@ export class MediaPlayer extends EpkApp {
         height: 100%;
         min-height: 0;
         width: 100%;
-      }
-    `
+      }`
   ]
 
   @query('#player')
@@ -206,45 +132,34 @@ export class MediaPlayer extends EpkApp {
   fileLinkNode?: LinkNode
 
   @state()
+  length = '00:00 (min:sec)'
+
+  @state()
   mimeType?: string
 
   @state()
-  isPlaying = false
+  sliderPosition = SLIDER_INITIAL_POSITION
 
   @state()
-  isPaused = false
-
-  @state()
-  isStopped = true
-
-  @state()
-  isEnded = false
-
-  @state()
-  length = '00:00 (min:sec)'
+  state = PlayerState.Stopped
 
   @state()
   timerText = '00:00 (min:sec)'
 
-  @state()
-  sliderPosition = '-5px'
+  private dragged = false
+  private interact?: Interactable
+  protected trackLastPosition = false
 
-  interact: Interactable | null = null
-  dragged = false
-  trackLastPosition = false
-
-  toolbarSpec: ToolbarMenu[] = [
+  private toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
       items: [
         {
           text: 'Open...', action: (event: Event) => {
             event.stopPropagation()
-            this.toolbar!.closeAll()
 
             this.dispatchEvent(launchEvent(() => {
-              const filePicker = new FilePicker()
-              filePicker.delegatingAppId = this.getAppId()
+              const filePicker = this.spawnDialog(FilePicker)
               filePicker.path = 'C:\\Users\\Chad\\My Music'
 
               const soundFilterRegex = '[.](mp3|wav)$'
@@ -292,14 +207,12 @@ export class MediaPlayer extends EpkApp {
           text: 'About Media Player',
           action: (event: Event) => {
             event.stopPropagation()
-            this.toolbar!.closeAll()
 
             this.dispatchEvent(launchEvent(() => {
-              const about = new AppAbout()
+              const about = this.spawnDialog(AppAbout)
               about.appName = 'Microsoft &reg; Media Player'
               about.appIcon = '/img/icons/media-player.ico'
               about.windowTitle = 'About Media Player'
-              about.delegatingAppId = this.getAppId()
               return about
             }, {
               size: {
@@ -319,76 +232,81 @@ export class MediaPlayer extends EpkApp {
     this.resetMimeType()
   }
 
-  disconnectedCallback() {
-    this.interact?.unset()
-  }
-
   firstUpdated() {
-    const appThis = this
     this.interact = interact(this.slider)
 
     this.interact.draggable({
       listeners: {
         move: this.handleSliderDrag.bind(this),
-        end() {
-          setTimeout(() => appThis.dragged = false, 50)
-        },
+        end: () => setTimeout(() => this.dragged = false, 50),
       },
       startAxis: 'x',
       lockAxis: 'x',
     })
   }
 
-  getMinimumDimensions() {
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    this.interact?.unset()
+  }
+
+  getMinimumDimensions(): Partial<Dimensions> {
     return {
       width: 256,
       height: this.fileLinkNode && getFileExtension(this.fileLinkNode)!.match(/mp4|webm/) ? 256 : 144
     }
   }
 
-  resetMimeType() {
-    if (this.fileLinkNode) {
-      const extension = getFileExtension(this.fileLinkNode)
-      let type: string
+  handleFilePicked(fileLinkNode: LinkNode): void {
+    this.state = PlayerState.Stopped
+    this.fileLinkNode = fileLinkNode
+    this.sliderPosition = SLIDER_INITIAL_POSITION
 
-      switch (extension) {
-        case 'mp3':
-        case 'wav':
-          type = 'audio'
-          break
-        case 'mp4':
-          type = 'video'
-          break
-        default:
-          type = ''
-          break
-      }
+    this.resetMimeType()
+    this.updateWindowProperties(true)
 
-      this.mimeType = `${type}/${extension}`
-    } else {
-      this.mimeType = undefined
-    }
+    this.player.load()
   }
 
-  updateWindowProperties(updateGeometry: boolean = false) {
+  private handleSliderDrag(event: ResizeEvent): void {
+    this.dragged = true
+    const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
+    const percentMoved = event.dx / progressBarWidth
+    this.player.currentTime += this.player.duration * percentMoved
+  }
+
+  private resetMimeType(): void {
+    const extension = this.fileLinkNode ? getFileExtension(this.fileLinkNode) : ''
+    let type: string
+
+    switch (extension) {
+      case 'mp3':
+      case 'wav':
+        type = 'audio'
+        break
+      case 'mp4':
+      case 'webm':
+        type = 'video'
+        break
+      default:
+        type = ''
+        break
+    }
+
+    this.mimeType = type && extension ? `${type}/${extension}` : undefined
+  }
+
+  private updateWindowProperties(updateGeometry: boolean = false): void {
     this.windowTitle = 'Media Player'
 
     if (this.fileLinkNode) {
-      this.windowTitle += ` - ${getLinkName(this.fileLinkNode)}`
-
-      if (this.isPlaying) {
-        this.windowTitle += ' (playing)'
-      } else if (this.isPaused) {
-        this.windowTitle += ' (paused)'
-      } else if (this.isStopped) {
-        this.windowTitle += ' (stopped)'
-      }
+      this.windowTitle += ` - ${getLinkName(this.fileLinkNode)} (${this.state})`
     }
 
     const updatedProperties: WindowProperties = {title: this.windowTitle}
 
     if (updateGeometry) {
-      updatedProperties.size = {width: 0, height: 0}
+      updatedProperties.size = {height: 0}
 
       if (this.mimeType?.startsWith('video')) {
         updatedProperties.size.height = 600
@@ -402,68 +320,7 @@ export class MediaPlayer extends EpkApp {
     this.dispatchEvent(windowPropertyChangeEvent(updatedProperties))
   }
 
-  handleFilePicked(fileLinkNode: LinkNode) {
-    this.isPlaying = false
-    this.isPaused = false
-    this.isStopped = true
-    this.isEnded = false
-
-    this.fileLinkNode = fileLinkNode
-    this.sliderPosition = '-5px'
-
-    this.resetMimeType()
-    this.updateWindowProperties(true)
-
-    this.player.load()
-  }
-
-  handleSliderDrag(event: ResizeEvent) {
-    this.dragged = true
-
-    const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
-    const percentMoved = event.dx / progressBarWidth
-    this.player.currentTime += this.player.duration * percentMoved
-  }
-
-  handlePlayPauseClick() {
-    if (this.isPlaying) {
-      this.player.pause()
-
-      this.isPlaying = false
-      this.isPaused = true
-      this.isStopped = false
-      this.isEnded = false
-
-      this.updateWindowProperties()
-    } else {
-      if (this.isEnded) {
-        this.player.currentTime = 0
-      }
-
-      this.player.play().then(() => {
-        this.isPlaying = true
-        this.isPaused = false
-        this.isStopped = false
-        this.isEnded = false
-
-        this.updateWindowProperties()
-      })
-    }
-  }
-
-  handleStopClick() {
-    this.player.pause()
-    this.player.currentTime = 0
-
-    this.isPlaying = false
-    this.isPaused = false
-    this.isStopped = true
-    this.isEnded = false
-
-    this.updateWindowProperties()
-  }
-
-  getTimeString(time: number): [string, string] {
+  private getTimeString(time: number): [string, string] {
     if (this.player.duration < 60) {
       const seconds = time.toFixed(2)
       const [whole, fraction] = seconds.toString().split('.')
@@ -475,38 +332,31 @@ export class MediaPlayer extends EpkApp {
     }
   }
 
-  handleTimeUpdate() {
+  private handleTimeUpdate(): void {
     const currentTime = this.player.currentTime
-    this.sliderPosition = `-5px + ${(currentTime / this.player.duration) * 100}%`
+    this.sliderPosition = `${SLIDER_INITIAL_POSITION} + ${(currentTime / this.player.duration) * 100}%`
     this.timerText = this.getTimeString(this.player.currentTime).join(' ')
   }
 
-  handleLoadedMetadata() {
+  private handleLoadedMetadata(): void {
     this.length = this.getTimeString(this.player?.duration)[0]
   }
 
-  handleEnded() {
-    this.isPlaying = false
-    this.isPaused = false
-    this.isStopped = true
-    this.isEnded = true
-
+  private handleEnded(): void {
+    this.state = PlayerState.Ended
     this.updateWindowProperties()
   }
 
-  handleProgressBarClick(event: PointerEvent) {
-    if (this.dragged) {
-      return
+  private skip(event: PointerEvent): void {
+    if (!this.dragged) {
+      this.dragged = false
+      const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
+      const percentMoved = event.offsetX / progressBarWidth
+      this.player.currentTime = this.player.duration * percentMoved
     }
-
-    this.dragged = false
-
-    const progressBarWidth = parseInt(window.getComputedStyle(this.progressBar).width.replace(/px$/, ''))
-    const percentMoved = event.offsetX / progressBarWidth
-    this.player.currentTime = this.player.duration * percentMoved
   }
 
-  seek(amount: number) {
+  private seek(amount: number): void {
     let newTime = this.player.currentTime + amount
 
     if (newTime < 0) {
@@ -518,9 +368,29 @@ export class MediaPlayer extends EpkApp {
     this.player.currentTime = newTime
   }
 
-  render() {
-    const sliderStyle = {left: `calc(${this.sliderPosition})`}
+  private togglePlay(): void {
+    if (this.state === PlayerState.Playing) {
+      this.player.pause()
+      this.state = PlayerState.Paused
+      this.updateWindowProperties()
+    } else {
+      if (this.state === PlayerState.Ended) {
+        this.player.currentTime = 0
+      }
 
+      this.state = PlayerState.Playing
+      this.player.play().then(() => this.updateWindowProperties())
+    }
+  }
+
+  private stop(): void {
+    this.player.pause()
+    this.player.currentTime = 0
+    this.state = PlayerState.Stopped
+    this.updateWindowProperties()
+  }
+
+  render() {
     const source = html`
       <source src="${this.fileLinkNode?.physicalPath}" type="${this.mimeType}"/>`
 
@@ -552,15 +422,15 @@ export class MediaPlayer extends EpkApp {
         <div class="content">
           ${playerElement}
           <div class="timeline">
-            <div id="progressBar" @click="${this.handleProgressBarClick}">
-              <div id="slider" style="${styleMap(sliderStyle)}"></div>
+            <div id="progressBar" class="embossed deep" @click="${this.skip}">
+              <div id="slider" style="${styleMap({left: `calc(${this.sliderPosition})`})}"></div>
             </div>
-            <div class="button-group">
-              <button type="button" ?disabled="${!this.fileLinkNode}" class="small"
+            <div class="button-group old-style">
+              <button type="button" ?disabled="${!this.fileLinkNode}" class="old-style small"
                       @click="${() => this.seek(-0.5)}">
                 <img src="/img/media-player/scroll-backward.png"/>
               </button>
-              <button type="button" ?disabled="${!this.fileLinkNode}" class="small"
+              <button type="button" ?disabled="${!this.fileLinkNode}" class="old-style small"
                       @click="${() => this.seek(0.5)}">
                 <img src="/img/media-player/scroll-forward.png"/>
               </button>
@@ -572,30 +442,28 @@ export class MediaPlayer extends EpkApp {
           </div>
           <div class="controls">
             <div class="buttons">
-              <div class="button-group">
-                <button type="button" ?disabled="${!this.fileLinkNode}"
-                        @click="${this.handlePlayPauseClick}">
-                  <img src="${`/img/media-player/${this.isPlaying ? 'pause' : 'play'}.png`}"/>
+              <div class="button-group old-style">
+                <button type="button" class="old-style" ?disabled="${!this.fileLinkNode}"
+                        @click="${this.togglePlay}">
+                  <img src="${`/img/media-player/${this.state === PlayerState.Playing ? 'pause' : 'play'}.png`}"/>
                 </button>
-                <button type="button" ?disabled="${this.isStopped}"
-                        @click="${this.handleStopClick}">
+                <button type="button" class="old-style" ?disabled="${this.state === PlayerState.Stopped}"
+                        @click="${this.stop}">
                   <img src="/img/media-player/stop.png"/>
                 </button>
               </div>
-              <div class="button-group">
-                <button type="button" ?disabled="${!this.fileLinkNode}"
+              <div class="button-group old-style">
+                <button type="button" class="old-style" ?disabled="${!this.fileLinkNode}"
                         @click="${() => this.seek(-5)}">
                   <img src="/img/media-player/rewind.png"/>
                 </button>
-                <button type="button" ?disabled="${!this.fileLinkNode}"
+                <button type="button" class="old-style" ?disabled="${!this.fileLinkNode}"
                         @click="${() => this.seek(5)}">
                   <img src="/img/media-player/fast-forward.png"/>
                 </button>
               </div>
             </div>
-            <div class="timer-wrapper">
-              <span class="timer">${this.timerText}</span>
-            </div>
+            <div class="timer embossed shallow">${this.timerText}</div>
           </div>
         </div>
       </div>`

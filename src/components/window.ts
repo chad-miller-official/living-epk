@@ -122,6 +122,8 @@ export class EpkWindow extends LitElement {
           inset 2px 2px #647ecf,
           inset -3px -3px #5c74ca,
           inset 3px 3px #607ecb;
+          
+          user-select: none;
         }
 
         &.fullscreen {
@@ -280,26 +282,26 @@ export class EpkWindow extends LitElement {
     EpkWindow.instanceCount--
   }
 
-  private resetLocation(overrideX?: string, overrideY?: string) {
+  private resetLocation(overrideX?: string, overrideY?: string): void {
     const useX = overrideX || `${this.location!.x}px`
     const useY = overrideY || `${this.location!.y}px`
     this.style.transform = `translate(${useX}, ${useY})`
   }
 
-  private resetSize(overrideHeight?: string, overrideWidth?: string) {
+  private resetSize(overrideHeight?: string, overrideWidth?: string): void {
     this.style.height = overrideHeight || `${this.size!.height}px`
     this.style.width = overrideWidth || `${this.size!.width}px`
   }
 
-  private noMinimize() {
-    return this.disallowFlags & WindowRestriction.DisallowMinimize
+  private noMinimize(): boolean {
+    return Boolean(this.disallowFlags & WindowRestriction.DisallowMinimize)
   }
 
-  private noMaximize() {
-    return this.disallowFlags & WindowRestriction.DisallowMaximize
+  private noMaximize(): boolean {
+    return Boolean(this.disallowFlags & WindowRestriction.DisallowMaximize)
   }
 
-  private resetInteract() {
+  private resetInteract(): void {
     if (this.interact) {
       this.interact.unset()
     }
@@ -339,12 +341,12 @@ export class EpkWindow extends LitElement {
     }
   }
 
-  private handleCloseWindow() {
+  private handleCloseWindow(): void {
     this.remove()
     this.isClosing = true
   }
 
-  private handleWindowPropertyChange(event: Event) {
+  private handleWindowPropertyChange(event: Event): void {
     const detail = (event as CustomEvent<WindowProperties>).detail
 
     if (detail.title) {
@@ -355,7 +357,7 @@ export class EpkWindow extends LitElement {
       this.thumbnail = detail.thumbnail
     }
 
-    if (Object.hasOwn(detail, 'state')) {
+    if ('state' in detail) {
       this.setFullscreen(detail.state === WindowState.Fullscreen)
     }
 
@@ -370,7 +372,7 @@ export class EpkWindow extends LitElement {
       this.updateLastPosition()
     }
 
-    if (Object.hasOwn(detail, 'disallowFlags')) {
+    if ('disallowFlags' in detail) {
       const oldNoMinimize = this.noMinimize()
       const oldNoMaximize = this.noMaximize()
 
@@ -391,11 +393,11 @@ export class EpkWindow extends LitElement {
     return this.app[0]
   }
 
-  private checkBlockingDialog(event: Event) {
+  private checkBlockingDialog(event: Event): boolean {
     const desktop = this.parentElement as EpkDesktop
 
     const blockingDialogWindow = desktop.windows.filter(w =>
-      w !== this && Object.hasOwn(w.getApp(), 'delegatingAppId')
+      w !== this && 'delegatingAppId' in w.getApp()
         // @ts-ignore
         ? w.getApp().delegatingAppId === this.getApp().getAppId()
         : false
@@ -441,7 +443,7 @@ export class EpkWindow extends LitElement {
     })
   }
 
-  private updateLastPosition() {
+  private updateLastPosition(): void {
     const containedAppName = this.getApp().getPositionTrackingName()
 
     EpkWindow.lastAppPositions.set(containedAppName, {
@@ -453,7 +455,7 @@ export class EpkWindow extends LitElement {
     })
   }
 
-  private handleDrag(event: InteractEvent) {
+  private handleDrag(event: InteractEvent): void {
     if (this.state >= WindowState.Maximized) {
       return
     }
@@ -468,7 +470,7 @@ export class EpkWindow extends LitElement {
     this.dispatchEvent(activeWindowChangeEvent())
   }
 
-  private handleResize(event: ResizeEvent) {
+  private handleResize(event: ResizeEvent): void {
     if (this.state) {
       return
     }
@@ -495,19 +497,19 @@ export class EpkWindow extends LitElement {
     this.dispatchEvent(activeWindowChangeEvent())
   }
 
-  private maximizeWindow() {
+  private maximizeWindow(): void {
     this.resetLocation('0', '0')
     this.resetSize('100vh', '100vw')
     this.style.top = '0'
     this.style.left = '0'
   }
 
-  private restoreWindow() {
+  private restoreWindow(): void {
     this.style.top = 'initial'
     this.style.left = 'initial'
   }
 
-  private toggleMaximized() {
+  private toggleMaximized(): void {
     if (this.state === WindowState.Minimized) {
       this.state = WindowState.Default
       this.resetSize(this.size!.height ? `${this.size!.height}px` : undefined)
@@ -524,7 +526,7 @@ export class EpkWindow extends LitElement {
     }
   }
 
-  private toggleMinimized() {
+  private toggleMinimized(): void {
     this.state = !this.state ? WindowState.Minimized : WindowState.Default
 
     if (this.state === WindowState.Minimized) {
@@ -538,7 +540,7 @@ export class EpkWindow extends LitElement {
     this.resetInteract()
   }
 
-  private setFullscreen(fullscreen: boolean) {
+  private setFullscreen(fullscreen: boolean): void {
     if (fullscreen) {
       this.previousState = this.state
       this.state = WindowState.Fullscreen
@@ -554,7 +556,7 @@ export class EpkWindow extends LitElement {
     }
   }
 
-  private handleClick(event: Event) {
+  private handleClick(event: Event): void {
     if (this.isClosing) {
       event.stopPropagation()
     } else if (!this.checkBlockingDialog(event)) {
@@ -562,13 +564,13 @@ export class EpkWindow extends LitElement {
     }
   }
 
-  private handleDblClick(event: Event) {
+  private handleDblClick(event: Event): void {
     if (!this.checkBlockingDialog(event)) {
       this.toggleMaximized()
     }
   }
 
-  private handleExit(event: Event) {
+  private handleExit(event: Event): void {
     if (!this.checkBlockingDialog(event)) {
       this.getApp()?.close()
     }

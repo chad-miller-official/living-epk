@@ -20,9 +20,8 @@ export type LinkNode = {
 }
 
 export type FolderNode = {
-  path: string
-  folderLinks: LinkNode[],
-  fileLinks: LinkNode[],
+  path: string,
+  links: LinkNode[],
   metadata?: FsMetadata,
 }
 
@@ -156,12 +155,11 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
   return {
     path,
     metadata: record.metadata,
-    folderLinks,
-    fileLinks,
+    links: [...folderLinks, ...fileLinks],
   }
 }
 
-export function getLinkName(linkNode: LinkNode, withExtension = true) {
+export function getLinkName(linkNode: LinkNode, withExtension = true): string {
   let fileName
 
   if (linkNode.type === LinkNodeType.File) {
@@ -177,8 +175,8 @@ export function getLinkName(linkNode: LinkNode, withExtension = true) {
   return fileName
 }
 
-export function getFileExtension(linkNode: LinkNode) {
-  return linkNode.physicalPath.split('.').pop()
+export function getFileExtension(linkNode: LinkNode): string {
+  return linkNode.physicalPath.split('.').pop() || ''
 }
 
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat('en-US', {
@@ -186,17 +184,25 @@ const DATE_TIME_FORMAT = new Intl.DateTimeFormat('en-US', {
   timeStyle: 'short',
 })
 
-export function getFormattedTimestamp(linkNode: LinkNode) {
+export function getFormattedTimestamp(linkNode: LinkNode): string {
   return DATE_TIME_FORMAT.format(linkNode.metadata?.timestamp)
 }
 
-export function getParentFolder(folderNode: FolderNode) {
+export function getParentFolderName(folderNode: FolderNode): string {
   const parentPathParts = folderNode.path.split('\\')
   parentPathParts.pop()
   return parentPathParts.join('\\')
 }
 
-export function linkNodeToIcon(linkNode: LinkNode) {
+export function getFileLinkNodes(folderNode: FolderNode): LinkNode[] {
+  return folderNode.links.filter(f => f.type === LinkNodeType.File)
+}
+
+export function getFolderLinkNodes(folderNode: FolderNode): LinkNode[] {
+  return folderNode.links.filter(f => f.type === LinkNodeType.Folder)
+}
+
+export function linkNodeToIcon(linkNode: LinkNode): EpkIcon {
   const title = getLinkName(linkNode)
   let icon: EpkIcon
 
@@ -240,7 +246,6 @@ export function linkNodeToIcon(linkNode: LinkNode) {
     icon = new FileExplorerIcon()
   }
 
-  icon.title = title
   icon.fileLinkNode = linkNode
 
   if (linkNode.metadata?.icon) {
@@ -250,6 +255,8 @@ export function linkNodeToIcon(linkNode: LinkNode) {
     }
   }
 
+  icon.innerText = title
   icon.classList.add('epk-icon')
+
   return icon
 }

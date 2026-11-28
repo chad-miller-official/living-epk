@@ -96,9 +96,6 @@ export abstract class EpkIcon extends LitElement {
   shadow = false
 
   @property({type: String})
-  title!: string
-
-  @property({type: String})
   viewMode = IconViewMode.Tile
 
   @state()
@@ -110,16 +107,16 @@ export abstract class EpkIcon extends LitElement {
     return {}
   }
 
-  select(event: PointerEvent) {
+  private select(event: PointerEvent): void {
     this.selected = true
     this.onclick?.(event)
   }
 
-  deselect() {
+  deselect(): void {
     this.selected = false
   }
 
-  launch(event?: MouseEvent) {
+  launch(event?: MouseEvent): void {
     if (event && this.ondblclick) {
       this.ondblclick(event)
     } else {
@@ -153,7 +150,7 @@ export abstract class EpkIcon extends LitElement {
           <img src="${iconGraphic}" class="filter" width="${iconSize}" height="${iconSize}"/>
         </div>
         <span class="icon-name ${this.shadow ? 'shadowed' : ''}" style="${styleMap(textStyle)}">
-          ${this.title}
+          <slot></slot>
         </span>
       </div>`
   }
