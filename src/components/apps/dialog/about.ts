@@ -6,7 +6,7 @@ import {Notepad} from "../notepad.ts";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {LinkNodeType} from "../../../lib/fs.ts";
 import {Dialog} from "./dialog.ts";
-import type { Dimensions } from "../../window.ts";
+import type {Dimensions} from "../../window.ts";
 
 @customElement('app-about')
 export class AppAbout extends Dialog(EpkApp) {
@@ -26,7 +26,7 @@ export class AppAbout extends Dialog(EpkApp) {
         height: 100%;
         padding: 14px;
       }
-      
+
       .app-icon {
         height: 48px;
         width: 48px;
@@ -71,7 +71,7 @@ export class AppAbout extends Dialog(EpkApp) {
       hr {
         width: 100%;
       }
-      
+
       img {
         user-select: none;
       }

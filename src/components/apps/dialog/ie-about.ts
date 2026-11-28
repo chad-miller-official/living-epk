@@ -13,7 +13,7 @@ export class InternetExplorerAbout extends Dialog(EpkApp) {
       .app {
         background-color: #ffffff;
       }
-      
+
       .content {
         column-gap: 56px;
         display: grid;

@@ -62,7 +62,7 @@ export const OLD_UI_STYLE = css`
     align-items: center;
     display: flex;
   }
-  
+
   button.old-style {
     align-items: center;
     background: #ece9d8;
