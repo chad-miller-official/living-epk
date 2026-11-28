@@ -1,20 +1,17 @@
-import type {EpkAppConstructor} from "../../../lib/support.ts";
 import {activeWindowChangeEvent} from "../../../lib/events.ts";
+import {type EpkAppConstructor} from "../../app.ts";
+
+export type EpkDialog<T> = {
+  delegatingAppId: string
+} & T
 
 export function Dialog<T extends EpkAppConstructor>(Base: T) {
   abstract class DialogMixin extends Base {
-    delegatingAppId?: string
+    delegatingAppId!: string
 
-    close(event?: Event) {
-      if (event) {
-        event.preventDefault()
-      }
-
-      if (this.delegatingAppId) {
-        this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
-      }
-
-      super.close(event)
+    close(): void {
+      this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
+      super.close()
     }
   }
 

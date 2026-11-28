@@ -2,6 +2,7 @@ import {customElement, property, query} from "lit/decorators.js"
 import {EpkApp} from "../../app.ts"
 import {css, html, nothing} from "lit";
 import {Dialog} from "./dialog.ts";
+import type {Dimensions} from "../../window.ts";
 
 @customElement('epk-alert')
 export class EpkAlert extends Dialog(EpkApp) {
@@ -9,14 +10,6 @@ export class EpkAlert extends Dialog(EpkApp) {
     ...EpkApp.styles,
     css`
       .alert {
-        align-items: flex-start;
-        display: flex;
-        flex-direction: row;
-        padding: 12px;
-        gap: 16px;
-      }
-
-      .container {
         align-items: center;
         display: flex;
         flex-direction: column;
@@ -25,20 +18,23 @@ export class EpkAlert extends Dialog(EpkApp) {
         overflow-wrap: anywhere;
       }
 
-      .left {
-        margin-right: auto;
+      .close-button {
+        margin-left: auto;
+      }
+
+      .content {
+        align-items: flex-start;
+        display: flex;
+        flex-direction: row;
+        padding: 12px;
+        gap: 16px;
       }
 
       .message {
         display: flex;
         flex-direction: column;
         gap: 16px;
-      }
-
-      .right {
-        margin-left: auto;
-      }
-    `
+      }`
   ]
 
   @query('#silencer')
@@ -46,9 +42,6 @@ export class EpkAlert extends Dialog(EpkApp) {
 
   @property({type: String})
   alertGraphic: string = '/img/error.png'
-
-  @property({type: String})
-  buttonPosition?: 'left' | 'right'
 
   @property({type: String})
   message!: string
@@ -59,39 +52,38 @@ export class EpkAlert extends Dialog(EpkApp) {
   @property({type: String})
   windowTitle = 'Error'
 
+  @property({type: String})
   windowIcon = null
-  doNotTrackLastPosition = true
 
-  getMinimumDimensions(): [number, number] {
-    return [356, 32]
+  getMinimumDimensions(): Partial<Dimensions> {
+    return {width: 356}
   }
 
-  async close(event: SubmitEvent) {
-    if (this.silenceId && this.silencer?.checked) {
-      await cookieStore.set(this.silenceId, 'true')
-    }
+  getPositionTrackingName(): string | null {
+    return null
+  }
 
-    super.close(event)
+  close(): void {
+    if (this.silenceId && this.silencer?.checked) {
+      cookieStore.set(this.silenceId, 'true').then(() => super.close())
+    }
   }
 
   render() {
     return html`
       <div class="app">
         <div class="content">
+          <img src="${this.alertGraphic}" width="32" height="32"/>
           <div class="alert">
-            <img src="${this.alertGraphic}" width="32" height="32"/>
-            <div class="container">
-              <div class="message">
-                ${this.message}
-                ${this.silenceId ? html`
-                  <div>
-                    <input type="checkbox" id="silencer"/>
-                    <label for="silencer">In the future, do not show this warning</label>
-                  </div>
-                ` : nothing}
-              </div>
-              <button type="submit" class="${this.buttonPosition}" @click="${this.close}">OK</button>
+            <div class="message">
+              ${this.message}
+              ${this.silenceId ? html`
+                <div>
+                  <input type="checkbox" id="silencer"/>
+                  <label for="silencer">In the future, do not show this warning</label>
+                </div>` : nothing}
             </div>
+            <button type="button" class="close-button" @click="${this.close}">OK</button>
           </div>
         </div>
       </div>`

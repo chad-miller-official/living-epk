@@ -12,26 +12,42 @@
 </head>
 <body>
 <epk-desktop id="desktop">
-  <file-explorer-icon class="epk-icon" slot="icons" title="Chad" color="#ffffff" shadow="true"
-                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad"}'></file-explorer-icon>
-  <file-explorer-icon class="epk-icon" slot="icons" title="My Documents" color="#ffffff"
-                      shadow="true"
-                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad\\My Documents"}'></file-explorer-icon>
-  <file-explorer-icon class="epk-icon" slot="icons" title="My Pictures" icon="/img/my-pictures.ico"
-                      windowIcon="/img/my-pictures-small.ico" color="#ffffff" shadow="true"
-                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad\\My Pictures"}'></file-explorer-icon>
-  <file-explorer-icon class="epk-icon" slot="icons" title="My Music" icon="/img/my-music.ico"
-                      windowIcon="/img/my-music-small.ico" color="#ffffff" shadow="true"
-                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad\\My Music"}'></file-explorer-icon>
-  <file-explorer-icon class="epk-icon" slot="icons" title="My Videos" icon="/img/my-videos.ico"
-                      windowIcon="/img/my-videos-small.ico" color="#ffffff" shadow="true"
-                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad\\My Videos"}'></file-explorer-icon>
-  <plaintext-icon class="epk-icon" slot="icons" title="Welcome to my zone.txt"
+  <file-explorer-icon class="epk-icon" slot="icons" color="#ffffff" shadow="true"
+                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad"}'>
+    Chad
+  </file-explorer-icon>
+  <file-explorer-icon class="epk-icon" slot="icons" color="#ffffff" shadow="true"
+                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad\\My Documents"}'>
+    My Documents
+  </file-explorer-icon>
+  <file-explorer-icon class="epk-icon" slot="icons"
+                      icon='{"large": "/img/icons/my-pictures.ico", "small": "/img/icons/small/my-pictures-small.ico"}'
+                      color="#ffffff" shadow="true"
+                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad\\My Pictures"}'>
+    My Pictures
+  </file-explorer-icon>
+  <file-explorer-icon class="epk-icon" slot="icons"
+                      icon='{"large": "/img/icons/my-music.ico", "small": "/img/icons/small/my-music-small.ico"}'
+                      color="#ffffff" shadow="true"
+                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad\\My Music"}'>
+    My Music
+  </file-explorer-icon>
+  <file-explorer-icon class="epk-icon" slot="icons"
+                      icon='{"large": "/img/icons/my-videos.ico", "small": "/img/icons/small/my-videos-small.ico"}'
+                      color="#ffffff" shadow="true"
+                      fileLinkNode='{"type": "folder", "physicalPath": "C:\\Users\\Chad\\My Videos"}'>
+    My Videos
+  </file-explorer-icon>
+  <plaintext-icon class="epk-icon" slot="icons"
                   fileLinkNode='{"type": "file", "physicalPath": "/fs/plaintext/Welcome to my zone.txt"}'
-                  color="#ffffff" shadow="true"></plaintext-icon>
-  <plaintext-icon class="epk-icon" slot="icons" title="eula.txt"
+                  color="#ffffff" shadow="true">
+    Welcome to my zone.txt
+  </plaintext-icon>
+  <plaintext-icon class="epk-icon" slot="icons"
                   fileLinkNode='{"type": "file", "physicalPath": "/fs/plaintext/eula.txt"}'
-                  color="#ffffff" shadow="true"></plaintext-icon>
+                  color="#ffffff" shadow="true">
+    eula.txt
+  </plaintext-icon>
 </epk-desktop>
 </body>
 </html>

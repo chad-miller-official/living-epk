@@ -1,16 +1,28 @@
 import {type EpkIcon, IconViewMode} from "../icon.ts";
-import {customElement, property, queryAll, state} from "lit/decorators.js";
-import {css, html, type TemplateResult} from "lit";
-import {getFormattedTimestamp, getLinkName, type LinkNode, linkNodeToIcon, LinkNodeType} from "../../lib/fs.ts";
+import {customElement, property, query, queryAll, state} from "lit/decorators.js";
+import {css, html, nothing, type TemplateResult} from "lit";
+import {
+  type FolderNode,
+  getFileLinkNodes,
+  getFolderLinkNodes,
+  getFormattedTimestamp,
+  getLinkName,
+  type LinkNode,
+  linkNodeToIcon,
+  LinkNodeType
+} from "../../lib/fs.ts";
 import {Task} from "@lit/task";
 import {GalleryIcon} from "../icons/gallery-icon.ts";
 import {FileExplorerIcon} from "../icons/file-explorer-icon.ts";
-import {alertDialog, playClick} from "../../lib/os.ts";
-import {launchEvent} from "../../lib/events.ts";
+import {alertDialog, playSound, SystemSound} from "../../lib/os.ts";
+import {launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {AppAbout} from "./dialog/about.ts";
 import {type ToolbarMenu, ToolbarSelectionStyle, ToolbarUiElement} from "../ui/toolbar.ts";
 import {Explorer} from "./common/explorer.ts";
-import {FileViewer} from "./common/file-viewer.ts";
+import {DEFAULT_WINDOW_ICON, FileViewer} from "./common/file-viewer.ts";
+import type {Dimensions} from "../window.ts";
+
+const TH_PADDING = 15
 
 enum SortColumn {
   Filename = 'filename',
@@ -22,12 +34,6 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
   static styles = [
     ...Explorer.styles,
     css`
-      #sidebar > ul {
-        border: none;
-        flex-grow: 1;
-        overflow: auto;
-      }
-
       .file-list {
         display: flex;
         flex-direction: column;
@@ -35,42 +41,67 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
         overflow: auto;
       }
 
-      .tree-item {
-        list-style-type: none;
-        width: max-content;
+      .selected {
+        span {
+          background-color: #316AC5;
+          color: #ffffff;
 
-        &.selected {
-          &.unfocused span {
-            background-color: #ece9d8;
-          }
-
-          &:not(.unfocused) span {
-            background-color: #316AC5;
+          &:hover {
             color: #ffffff;
-
-            &:hover {
-              color: #ffffff;
-            }
+            text-decoration: underline;
+            text-decoration-color: #ffffff;
           }
         }
 
-        & > div {
-          align-items: center;
-          display: flex;
-          gap: 4px;
-
-          & > span {
-            padding: 2px;
-
-            &:hover {
-              color: #3f3f9f;
-              text-decoration: underline;
-            }
-          }
+        &.unfocused span {
+          background-color: #ece9d8;
         }
       }
 
-      .selected-sort {
+      .sort {
+        &::after {
+          color: #aca797;
+          margin-left: 1ch;
+          white-space: pre;
+        }
+
+        &.asc::after {
+          content: "\\25BC";
+        }
+
+        &.desc::after {
+          content: "\\25B2";
+        }
+      }
+
+      .tree-item {
+        list-style-type: none;
+        width: max-content;
+      }
+
+      .tree-item-label {
+        align-items: center;
+        display: flex;
+        gap: 4px;
+
+        &:hover {
+          color: #3f3f9f;
+          text-decoration: underline;
+        }
+
+        & > span {
+          padding: 2px;
+        }
+      }
+
+      .tree-view {
+        -webkit-font-smoothing: none;
+        border: none;
+        flex-grow: 1;
+        overflow: auto;
+      }
+
+      col.selected {
         background-color: #f7f7f7;
       }
 
@@ -79,35 +110,35 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
         table-layout: fixed;
       }
 
-      td > div.spacer {
-        height: 1px;
-        width: 20ch;
-      }
-
-      td, th {
+      td {
         padding: 0 2px;
         white-space: nowrap;
+
+        &.spacer {
+          height: 1px;
+          width: 20ch;
+        }
       }
 
       th {
         border-bottom: 3px solid #cfc9bb;
         font-weight: normal;
+        padding: 5px 5px 5px 10px;
         text-align: start;
+        white-space: nowrap;
 
-        &:not(.divider) {
-          padding: 5px 5px 5px 10px;
+        &:active {
+          background-color: #dedfda;
+        }
 
-          &:hover {
-            background-color: #f9f8f2;
-            border-bottom-color: #f9ae13;
-          }
-
-          &:active {
-            background-color: #dedfda;
-          }
+        &:not(.divider):hover {
+          background-color: #f9f8f2;
+          border-bottom-color: #f9ae13;
         }
 
         &.divider {
+          padding: 0;
+
           div {
             background-color: #ccc8b6;
             height: 14px;
@@ -119,40 +150,30 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
             cursor: col-resize;
           }
         }
-
-        &.sort {
-          &::after {
-            color: #aca797;
-            margin-left: 1ch;
-            white-space: pre;
-          }
-
-          &.asc::after {
-            content: "\\25BC";
-          }
-
-          &.desc::after {
-            content: "\\25B2";
-          }
-        }
       }
 
-      th, thead {
+      thead {
         background-color: #eceadb;
       }`
   ]
 
-  @queryAll('.epk-icon')
-  icons!: EpkIcon[]
+  @query('th[data-column=filename]')
+  filenameHeader!: HTMLTableCellElement
+
+  @query('th[data-column=modified]')
+  modifiedHeader!: HTMLTableCellElement
 
   @queryAll('th')
   headers!: HTMLTableCellElement[]
 
-  @property({type: String})
-  windowTitle = 'File Explorer'
+  @queryAll('.epk-icon')
+  icons!: EpkIcon[]
 
   @property({type: String})
-  windowIcon = '/img/file-explorer-small.ico'
+  windowIcon = DEFAULT_WINDOW_ICON
+
+  @property({type: String})
+  windowTitle = 'File Explorer'
 
   @state()
   showSidebar = true
@@ -167,9 +188,9 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
   tree?: object
 
   private treeOpenPaths: { [path: string]: boolean } = {}
-  private selectedIcon: EpkIcon | null = null
+  private selectedIcon?: EpkIcon
 
-  toolbarSpec: ToolbarMenu[] = [
+  protected toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
       items: [
@@ -181,7 +202,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
             const linkNode = this.selectedIcon!.fileLinkNode!
 
             if (linkNode.type === LinkNodeType.File) {
-              this.selectedIcon!.handleDblClick()
+              this.selectedIcon!.launch()
             } else {
               this.navigate(linkNode.physicalPath)
             }
@@ -191,9 +212,11 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
           text: 'Explore',
           disabled: () => this.selectedIcon?.fileLinkNode?.type !== LinkNodeType.Folder,
           action: () => {
-            const fileExplorer = new FileExplorer()
-            fileExplorer.path = this.selectedIcon!.fileLinkNode!.physicalPath
-            this.dispatchEvent(launchEvent(() => new Promise<FileExplorer>(resolve => resolve(fileExplorer))))
+            this.dispatchEvent(launchEvent(() => {
+              const fileExplorer = new FileExplorer()
+              fileExplorer.path = this.selectedIcon!.fileLinkNode!.physicalPath
+              return fileExplorer
+            }))
           }
         },
         ToolbarUiElement.DIVIDER,
@@ -216,12 +239,12 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
             {
               text: 'Name',
               selected: () => this.sortColumn === SortColumn.Filename,
-              action: () => this.sortFiles({target: this.shadowRoot!.querySelector('th[data-column=filename]')!})
+              action: () => this.sortFiles(this.filenameHeader)
             },
             {
               text: 'Modified',
               selected: () => this.sortColumn === SortColumn.Modified,
-              action: () => this.sortFiles({target: this.shadowRoot!.querySelector('th[data-column=modified]')!})
+              action: () => this.sortFiles(this.modifiedHeader)
             }
           ],
         },
@@ -229,7 +252,7 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
         this.toolbarViewGoToItems([{
           text: 'Up One Level',
           disabled: () => !this.canGoUp(),
-          action: () => this.goUp(),
+          action: this.goUp.bind(this),
         }]),
         {
           text: 'Refresh',
@@ -238,10 +261,9 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
       ],
     },
     this.toolbarHelpMenu('Windows', () => {
-      const about = new AppAbout()
+      const about = this.spawnDialog(AppAbout)
       about.appName = 'Microsoft &reg; Windows'
       about.windowTitle = 'About Windows'
-      about.delegatingAppId = this.getAppId()
       return about
     })
   ]
@@ -264,51 +286,192 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
     args: () => [this.iconLoaderTask.value, '/data/_folders.json']
   })
 
+  getMinimumDimensions(): Partial<Dimensions> {
+    return {width: 256, height: 256}
+  }
+
+  protected async onLoadIcons(path: string): Promise<FolderNode> {
+    await super.onLoadIcons(path)
+    this.windowIcon = this.folderNode!.metadata?.icon?.small || DEFAULT_WINDOW_ICON
+    this.dispatchEvent(windowPropertyChangeEvent({thumbnail: this.windowIcon}))
+    return this.folderNode!
+  }
+
+  protected navigate(newPath: string): void {
+    if (this.path.replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
+      return
+    }
+
+    playSound(SystemSound.Click).then(() => {
+      this.path = newPath
+      this.pathStack.push(newPath)
+    })
+  }
+
+  protected getNavigationButtons() {
+    return html`
+      <button type="button" id="upButton" class="tool-button" ?disabled="${!this.canGoUp()}"
+              @click="${this.goUp}">
+        <img src="/img/file-explorer/up.png"/>
+      </button>
+      <div class="divider"></div>
+      <button type="button" id="treeView"
+              class="tool-button ${this.showSidebar ? 'active' : ''}"
+              @click="${() => this.showSidebar = !this.showSidebar}">
+        <img src="/img/file-explorer/tree-view.png"/>
+        <span>Folders</span>
+      </button>`
+  }
+
+  protected getAddressBar() {
+    return html`
+      <img src="${this.folderNode?.metadata?.icon?.small || DEFAULT_WINDOW_ICON}"/>
+      <input type="text" .value="${`${this.folderNode?.path}\\`}" id="pathInput"/>`
+  }
+
+  protected getSidebarContent() {
+    return html`
+      <ul class="tree-view">
+        ${this.buildFileTree(this.tree, '')}
+      </ul>`
+  }
+
+  protected getMainContent() {
+    return html`
+      <div class="file-list">
+        <table>
+          <colgroup>
+            <col
+                class="${this.sortColumn === SortColumn.Filename ? 'selected' : ''}"/>
+            <col/>
+            <col
+                class="${this.sortColumn === SortColumn.Modified ? 'selected' : ''}"/>
+          </colgroup>
+          <thead>
+          <tr>
+            <th class="sort asc" data-column="${SortColumn.Filename}"
+                @click="${(event: PointerEvent) => this.sortFiles(event.target as HTMLTableCellElement)}">
+              File Name
+            </th>
+            <th class="divider" @mousedown="${this.handleDividerDrag}">
+              <div></div>
+            </th>
+            <th data-column="${SortColumn.Modified}"
+                @click="${(event: PointerEvent) => this.sortFiles(event.target as HTMLTableCellElement)}">
+              Date Modified
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          ${this.folderNode ? getFolderLinkNodes(this.folderNode).map(linkNode => html`
+            <tr>
+              <td>${this.buildIcon(linkNode)}</td>
+              <td class="divider"></td>
+              <td class="spacer">
+              </td>
+            </tr>
+          `) : nothing}
+          ${this.folderNode ? getFileLinkNodes(this.folderNode).map(linkNode => html`
+            <tr>
+              <td>${this.buildIcon(linkNode)}</td>
+              <td class="divider"></td>
+              <td>${getFormattedTimestamp(linkNode)}</td>
+            </tr>
+          `) : nothing}
+          </tbody>
+        </table>
+      </div>`
+  }
+
+  protected getStatusBarFields() {
+    return html`
+      <p class="status-bar-field">${this.folderNode?.links.length} item(s)</p>`
+  }
+
+  private buildFileTree(tree: any, currentPath: string): TemplateResult | TemplateResult[] {
+    return Object.keys(tree).filter(folder => folder !== '.' && folder !== '$').map(folder => {
+      let nextPath = currentPath
+
+      if (nextPath) {
+        nextPath += '\\'
+      }
+
+      nextPath += folder
+
+      const metadata = tree[folder].$
+      const icon = metadata?.icon?.small || '/img/explorer/folder-closed.png'
+      const nextIsTerminalFolder = !Object.keys(tree[folder]).filter(f => f !== '.' && f !== '$').length
+      const cwdIsNext = this.path.replace(/\\$/, '') === nextPath.replace(/\\$/, '')
+
+      if (nextIsTerminalFolder) {
+        return html`
+          <li class="tree-item ${cwdIsNext ? 'selected' : ''}"
+              @click="${() => this.navigate(nextPath)}">
+            <div class="tree-item-label">
+              <img src="${icon}"/>
+              <span>${folder}</span>
+            </div>
+          </li>`
+      } else {
+        return html`
+          <li class="tree-item">
+            <details
+                ?open="${this.treeOpenPaths[nextPath] || this.path.startsWith(`${nextPath}\\`) || cwdIsNext}"
+                @toggle="${(event: ToggleEvent) => this.treeOpenPaths[nextPath] = event.newState === 'open'}">
+              <summary
+                  class="tree-item ${cwdIsNext ? 'selected' : ''}"
+                  @click="${() => this.navigate(nextPath)}">
+                <div class="tree-item-label">
+                  <img src="${icon}"/>
+                  <span>${metadata?.alias || folder}</span>
+                </div>
+              </summary>
+              <ul>
+                ${this.buildFileTree(tree[folder], nextPath)}
+              </ul>
+            </details>
+          </li>`
+      }
+    }).flat()
+  }
+
   private buildIcon(path: LinkNode): EpkIcon {
     const icon = linkNodeToIcon(path)
 
     if (icon instanceof GalleryIcon) {
       (icon as GalleryIcon).fsSpecPath = this.path
     } else if (icon instanceof FileExplorerIcon) {
-      icon.handleDblClick = () => this.navigate(icon.fileLinkNode!.physicalPath)
+      icon.ondblclick = () => this.navigate(icon.fileLinkNode!.physicalPath)
     }
 
-    icon.viewMode = IconViewMode.ListView
+    icon.viewMode = IconViewMode.List
 
     icon.onclick = () => {
       this.selectedIcon = icon
       this.toolbar?.requestUpdate()
     }
 
+    if (path.metadata?.icon) {
+      icon.icon = {
+        small: path.metadata.icon.small || icon.icon.small,
+        large: path.metadata.icon.large || icon.icon.large,
+      }
+    }
+
     return icon
   }
 
-  getMinimumDimensions(): [number, number] {
-    return [256, 256]
-  }
-
-  navigate(newPath: string) {
-    if (this.path.replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
-      return
-    }
-
-    playClick().then(() => {
-      this.path = newPath
-      this.pathStack.push(newPath)
-    })
-  }
-
-  handleClick(event: Event) {
-    super.handleClick(event)
+  protected handleClick(event: Event): void {
     const target = event.target as HTMLElement
 
-    if (target.id !== 'toolbar') {
+    if (target !== this.toolbar) {
+      this.toolbar!.closeAll()
       Array.from(this.icons).filter(i => i !== target).forEach(i => i.selected = false)
     }
 
     if (!Array.from(this.icons).some(icon => icon.selected)) {
       const wasNull = this.selectedIcon !== null
-      this.selectedIcon = null
+      this.selectedIcon = undefined
 
       if (wasNull) {
         this.toolbar?.requestUpdate()
@@ -320,19 +483,15 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
     if (selectedTreeItem) {
       if (selectedTreeItem === event.target || selectedTreeItem.contains(target)) {
         selectedTreeItem.classList.remove('unfocused')
+      } else if (target.classList.contains('tree-item')) {
+        selectedTreeItem.classList.remove('selected')
       } else {
-        if (target.classList.contains('tree-item')) {
-          selectedTreeItem.classList.remove('selected')
-        } else {
-          selectedTreeItem.classList.add('unfocused')
-        }
+        selectedTreeItem.classList.add('unfocused')
       }
     }
   }
 
-  sortFiles(event: { target: EventTarget | HTMLTableCellElement }) {
-    const target = event.target as HTMLTableCellElement
-
+  private sortFiles(target: HTMLTableCellElement): void {
     if (target.classList.contains('sort')) {
       if (target.classList.contains('asc')) {
         target.classList.remove('asc')
@@ -359,22 +518,21 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
           ? (a: LinkNode, b: LinkNode) => getLinkName(a).localeCompare(getLinkName(b))
           : (a: LinkNode, b: LinkNode) => getLinkName(b).localeCompare(getLinkName(a))
 
-        this.folderNode?.folderLinks.sort(sortAlphabetical)
-        this.folderNode?.fileLinks.sort(sortAlphabetical)
+        this.folderNode?.links.sort(sortAlphabetical)
 
         break
       case SortColumn.Modified:
-        this.folderNode?.fileLinks.sort(
+        this.folderNode?.links.sort(
           this.sortAsc
-            ? (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
-            : (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
+            ? (a, b) => (a.metadata?.timestamp || 0) - (b.metadata?.timestamp || 0)
+            : (a, b) => (b.metadata?.timestamp || 0) - (a.metadata?.timestamp || 0)
         )
 
         break
     }
   }
 
-  handleDividerDrag(mouseDownEvent: MouseEvent) {
+  private handleDividerDrag(mouseDownEvent: MouseEvent): void {
     const divider = mouseDownEvent.target as HTMLElement
 
     const precedingHeader = (divider.tagName.toLowerCase() === 'div'
@@ -390,167 +548,19 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
 
     this.connectDividerDragListeners((mouseMoveEvent: MouseEvent) => {
       const deltaX = mouseMoveEvent.clientX - startX
-
-      // Subtract 15 to account for padding within the <th> element
-      precedingHeader.style.width = `${startWidth + deltaX - 15}px`
+      precedingHeader.style.width = `${startWidth + deltaX - TH_PADDING}px`
     })
-  }
-
-  buildFileTree(tree: any, currentPath: string): TemplateResult<1> | TemplateResult<1>[] {
-    return Object.keys(tree).filter(folder => folder !== '.').map(folder => {
-      let nextPath = currentPath
-
-      if (nextPath) {
-        nextPath += '\\'
-      }
-
-      nextPath += folder
-
-      const nextIsString = typeof tree[folder] === 'string'
-      const cwdIsNext = this.path.replace(/\\$/, '') === nextPath.replace(/\\$/, '')
-
-      let icon: string
-
-      switch (folder) {
-        case 'C:':
-          icon = 'disk'
-          break
-        case 'My Music':
-          icon = 'my-music'
-          break
-        case 'My Pictures':
-          icon = 'my-pictures'
-          break
-        case 'My Videos':
-          icon = 'my-videos'
-          break
-        default:
-          icon = 'folder-closed'
-      }
-
-      if (nextIsString) {
-        return html`
-          <li class="tree-item ${cwdIsNext ? 'selected' : ''}"
-              @click="${() => this.navigate(nextPath)}">
-            <div>
-              <img src="/img/file-explorer/${icon}.ico"/>
-              <span>${folder}</span>
-            </div>
-          </li>`
-      } else {
-        return html`
-          <li class="tree-item">
-            <details
-                ?open="${this.treeOpenPaths[nextPath] || this.path.startsWith(`${nextPath}\\`) || cwdIsNext}"
-                @toggle="${(event: ToggleEvent) => this.treeOpenPaths[nextPath] = event.newState === 'open'}">
-              <summary
-                  class="tree-item ${cwdIsNext ? 'selected' : ''}"
-                  @click="${() => this.navigate(nextPath)}">
-                <div>
-                  <img src="/img/file-explorer/${icon}.ico"/>
-                  <span>${folder === 'C:' ? 'Local Disk (C:)' : folder}</span>
-                </div>
-              </summary>
-              <ul>
-                ${this.buildFileTree(tree[folder], nextPath)}
-              </ul>
-            </details>
-          </li>`
-      }
-    }).flat()
-  }
-
-  getNavigationButtons() {
-    return html`
-      <button type="button" id="upButton" class="style-2" ?disabled="${!this.canGoUp()}"
-              @click="${this.goUp}">
-        <img src="/img/file-explorer/up.png"/>
-      </button>
-      <div class="divider"></div>
-      <button type="button" id="treeView"
-              class="style-2 ${this.showSidebar ? 'active' : ''}"
-              @click="${() => this.showSidebar = !this.showSidebar}">
-        <img src="/img/file-explorer/tree-view.png"/>
-        <span>Folders</span>
-      </button>`
-  }
-
-  getAddressBar() {
-    return html`
-      <img src="${this.windowIcon}"/>
-      <input type="text" .value="${this.folderNode?.path}" id="pathInput"/>`
-  }
-
-  getSidebarContent() {
-    return html`
-      <ul class="tree-view">
-        ${this.buildFileTree(this.tree, '')}
-      </ul>`
-  }
-
-  getMainContent() {
-    return html`
-      <div class="file-list">
-        <table>
-          <colgroup>
-            <col
-                class="${this.sortColumn === SortColumn.Filename ? 'selected-sort' : ''}"/>
-            <col/>
-            <col
-                class="${this.sortColumn === SortColumn.Modified ? 'selected-sort' : ''}"/>
-          </colgroup>
-          <thead>
-          <tr>
-            <th class="sort asc" data-column="${SortColumn.Filename}"
-                @click="${this.sortFiles}">
-              File Name
-            </th>
-            <th class="divider" @mousedown="${this.handleDividerDrag}">
-              <div></div>
-            </th>
-            <th data-column="${SortColumn.Modified}" @click="${this.sortFiles}">
-              Date Modified
-            </th>
-          </tr>
-          </thead>
-          <tbody>
-          ${this.folderNode?.folderLinks.map(linkNode => html`
-            <tr>
-              <td>${this.buildIcon(linkNode)}</td>
-              <td class="divider"></td>
-              <td>
-                <div class="spacer"></div>
-              </td>
-            </tr>
-          `)}
-          ${this.folderNode?.fileLinks.map(linkNode => html`
-            <tr>
-              <td>${this.buildIcon(linkNode)}</td>
-              <td class="divider"></td>
-              <td>${getFormattedTimestamp(linkNode)}</td>
-            </tr>
-          `)}
-          </tbody>
-        </table>
-      </div>`
-  }
-
-  getStatusBarFields() {
-    return html`
-      <p class="status-bar-field">
-        ${(this.folderNode?.folderLinks.length || 0) + (this.folderNode?.fileLinks.length || 0)} item(s)
-      </p>`
   }
 
   render() {
     return this.treeLoaderTask.render({
       pending: () => html`
-        <div class="app">
-          <div class="content"></div>
+        <div class="app" @click="${this.handleClick}">
+          <div class="content">Loading...</div>
         </div>`,
       complete: () => super.render() as TemplateResult<1>,
       error: () => html`
-        <div class="app">
+        <div class="app" @click="${this.handleClick}">
           <div class="content">Error</div>
         </div>`
     })!

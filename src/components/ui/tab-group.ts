@@ -14,13 +14,24 @@ export class TabGroup extends LitElement {
       }`
   ]
 
-  @queryAssignedElements({slot: 'tabs'})
-  tabs!: HTMLButtonElement[]
-
   @queryAssignedElements({slot: 'panels'})
   panels!: HTMLElement[]
 
-  switchTab(event: Event) {
+  @queryAssignedElements({slot: 'tabs'})
+  tabs!: HTMLButtonElement[]
+
+  connectedCallback() {
+    super.connectedCallback()
+
+    this.tabs.forEach(tab => {
+      tab.onclick = this.switchTab
+      tab.role = 'tab'
+    })
+
+    this.panels.forEach(panel => panel.role = 'tabpanel')
+  }
+
+  private switchTab(event: Event): void {
     const targetTab = event.target as HTMLButtonElement
     targetTab.ariaSelected = "true"
 
@@ -40,17 +51,6 @@ export class TabGroup extends LitElement {
       .forEach(panel => panel.setAttribute('hidden', 'hidden'))
   }
 
-  connectedCallback() {
-    super.connectedCallback()
-
-    this.tabs.forEach(tab => {
-      tab.onclick = this.switchTab
-      tab.role = 'tab'
-    })
-
-    this.panels.forEach(panel => panel.role = 'tabpanel')
-  }
-
   render() {
     return html`
       <section class="tabs">
@@ -58,7 +58,6 @@ export class TabGroup extends LitElement {
           <slot name="tabs"></slot>
         </menu>
         <slot name="panels"></slot>
-      </section>
-    `
+      </section>`
   }
 }

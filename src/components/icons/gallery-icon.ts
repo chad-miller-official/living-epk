@@ -1,29 +1,31 @@
 import {customElement, property} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 import type {EpkApp} from "../app.ts";
-import type {LaunchOptions} from "../../lib/events.ts";
 import {ImageGallery} from "../apps/image-gallery.ts";
 
 @customElement('gallery-icon')
 export class GalleryIcon extends EpkIcon {
-  icon = '/img/gallery.ico'
+  icon = {
+    small: '/img/icons/small/gallery-small.ico',
+    large: '/img/icons/gallery.ico',
+  }
 
   @property({type: String})
   fsSpecPath!: string
 
-  getAppInstance(): Promise<EpkApp> {
-    return new Promise<ImageGallery>(resolve => {
-      const imageGallery = new ImageGallery()
-      imageGallery.fileLinkNode = this.fileLinkNode
-      imageGallery.fsSpecPath = this.fsSpecPath
-      return resolve(imageGallery)
-    })
+  getAppInstance(): EpkApp {
+    const imageGallery = new ImageGallery()
+    imageGallery.fileLinkNode = this.fileLinkNode
+    imageGallery.fsSpecPath = this.fsSpecPath
+    return imageGallery
   }
 
-  getLaunchOptions(): LaunchOptions {
+  getLaunchOptions() {
     return {
-      height: 600,
-      width: 800,
+      size: {
+        height: 600,
+        width: 800,
+      },
     }
   }
 }

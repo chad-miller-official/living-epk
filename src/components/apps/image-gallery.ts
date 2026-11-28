@@ -5,42 +5,45 @@ import {type FolderNode, type LinkNode, loadFolderNode} from "../../lib/fs.ts";
 import {Task, TaskStatus} from "@lit/task";
 import Panzoom, {type PanzoomObject} from "@panzoom/panzoom";
 import {styleMap} from "lit/directives/style-map.js";
-import {buttonStyle2} from "../../lib/ui.ts";
+import {EXTENDED_UI_STYLE} from "../ui/styles.ts";
 import {windowPropertyChangeEvent} from "../../lib/events.ts";
 import {alertDialog} from "../../lib/os.ts";
+import {type Dimensions, WindowState} from "../window.ts";
 
 @customElement('image-gallery')
 export class ImageGallery extends EpkApp {
   static styles = [
     ...EpkApp.styles,
-    buttonStyle2,
+    EXTENDED_UI_STYLE,
     css`
+      #image {
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        width: 100%;
+        height: 100%;
+      }
+
       .buttons {
         background-color: #eef2fb;
         display: flex;
+        gap: 5px;
         justify-content: center;
-        
-        &:not(.slideshow-controls) {
-          gap: 5px;
-          margin: 8px 8px;
-        }
-        
-        &.slideshow-controls {
-          gap: 2px;
-          margin: 0;
-        }
+        margin: 8px 8px;
       }
-      
+
       .image-wrapper {
         height: 100%;
         width: 100%;
       }
-      
+
       .slideshow {
         background-color: #000000;
       }
 
       .slideshow-controls {
+        gap: 2px;
+        margin: 0;
         opacity: 0;
         position: absolute;
         right: 0;
@@ -58,16 +61,7 @@ export class ImageGallery extends EpkApp {
         flex-direction: column;
         height: 100%;
         width: 100%;
-      }
-
-      #image {
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: contain;
-        width: 100%;
-        height: 100%;
-      }
-    `
+      }`
   ]
 
   @query('#image')
@@ -80,16 +74,16 @@ export class ImageGallery extends EpkApp {
   pauseButton!: HTMLButtonElement
 
   @property({type: String})
-  windowTitle = 'Windows Picture and Fax Viewer'
-
-  @property({type: String})
-  windowIcon = '/img/gallery-small.ico'
-
-  @property({type: String})
   fileLinkNode?: LinkNode
 
   @property({type: String})
   fsSpecPath!: string
+
+  @property({type: String})
+  windowIcon = '/img/icons/small/gallery-small.ico'
+
+  @property({type: String})
+  windowTitle = 'Windows Picture and Fax Viewer'
 
   @state()
   currentIndex = 0
@@ -97,22 +91,22 @@ export class ImageGallery extends EpkApp {
   @state()
   isSlideshow = false
 
-  panzoom: PanzoomObject | undefined
-  intervalId?: number
+  private panzoom?: PanzoomObject
+  private intervalId?: number
 
   private pathLoaderTask = new Task(this, {
     task: async ([src], {signal}) => {
       try {
         return loadFolderNode(src, signal).then((data) => {
           if (this.fileLinkNode) {
-            this.currentIndex = data.fileLinks.map(path => path.physicalPath).indexOf(this.fileLinkNode.physicalPath)
+            this.currentIndex = data.links.map(path => path.physicalPath).indexOf(this.fileLinkNode.physicalPath)
           }
 
           return data
         })
       } catch (ex: unknown) {
         alertDialog(this, 'Error', ex instanceof Error ? ex.message : String(ex))
-        return {path: src, fileLinks: [], folderLinks: []} as FolderNode
+        return {path: src, links: []} as FolderNode
       }
     },
     args: () => [this.fsSpecPath]
@@ -123,173 +117,244 @@ export class ImageGallery extends EpkApp {
     this.tabIndex = 0
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback()
-    this.panzoom?.destroy()
-    this.pause()
-  }
-
   firstUpdated() {
     window.addEventListener('keyup', this.handleKeyUp.bind(this))
   }
 
   updated() {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE && !this.isSlideshow && !this.panzoom) {
-      this.setPanzoom()
+      this.resetPanzoom()
     }
   }
 
-  getMinimumDimensions(): [number, number] {
-    return [256, 256]
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    this.panzoom?.destroy()
+    this.stop()
   }
 
-  setPanzoom() {
+  getMinimumDimensions(): Partial<Dimensions> {
+    return {width: 256, height: 256}
+  }
+
+  private resetPanzoom(): void {
     this.panzoom = Panzoom(this.image, {
       canvas: true,
       contain: 'outside',
     })
   }
 
-  exitSlideshow() {
-    window.removeEventListener('keyup', this.handleKeyUp.bind(this))
-    this.isSlideshow = false
-    this.dispatchEvent(windowPropertyChangeEvent({fullscreen: this.isSlideshow}))
-    this.pause()
-  }
-
-  handleKeyUp(event: KeyboardEvent) {
+  private handleKeyUp(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       this.exitSlideshow()
     }
   }
 
-  handleSlideshowClick() {
+  private startSlideshow(): void {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
       this.isSlideshow = true
-      this.dispatchEvent(windowPropertyChangeEvent({fullscreen: this.isSlideshow}))
+      this.dispatchEvent(windowPropertyChangeEvent({state: WindowState.Fullscreen}))
       this.panzoom?.destroy()
       this.play()
     }
   }
 
-  goToPrevious() {
-    if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
-      this.currentIndex--
-
-      if (this.currentIndex < 0) {
-        this.currentIndex = this.pathLoaderTask.value!.fileLinks.length - 1
-      }
-    }
+  private exitSlideshow(): void {
+    window.removeEventListener('keyup', this.handleKeyUp.bind(this))
+    this.isSlideshow = false
+    this.dispatchEvent(windowPropertyChangeEvent({state: WindowState.Default}))
+    this.resetPanzoom()
+    this.stop()
   }
 
-  goToNext() {
+  private goToNext(): void {
     if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
       this.currentIndex++
 
-      if (this.currentIndex >= this.pathLoaderTask.value!.fileLinks.length) {
+      if (this.currentIndex >= this.pathLoaderTask.value!.links.length) {
         this.currentIndex = 0
       }
     }
   }
 
-  play() {
+  private goToPrevious(): void {
+    if (this.pathLoaderTask.status === TaskStatus.COMPLETE) {
+      this.currentIndex--
+
+      if (this.currentIndex < 0) {
+        this.currentIndex = this.pathLoaderTask.value!.links.length - 1
+      }
+    }
+  }
+
+  private play(): void {
     this.intervalId = setInterval(() => this.goToNext(), 5000)
   }
 
-  pause() {
+  private stop(): void {
     clearInterval(this.intervalId)
   }
 
-  handlePlayClick() {
+  private handlePlayClick(): void {
     this.playButton.classList.add('active')
     this.pauseButton.classList.remove('active')
     this.play()
   }
 
-  handlePauseClick() {
+  private handleStopClick(): void {
     this.pauseButton.classList.add('active')
     this.playButton.classList.remove('active')
-    this.pause()
+    this.stop()
   }
 
   render() {
     return this.pathLoaderTask.render({
       pending: () => html`
-        <div class="app">
-          <div class="content"></div>
+        <div class="app" @click="${this.handleClick}">
+          <div class="content">
+            <div class="viewport">
+              <div class="image-wrapper">
+                <div id="image">Loading...</div>
+              </div>
+              <div class="buttons">
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/previous.png"/>
+                </button>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/next.png"/>
+                </button>
+                <div class="divider"></div>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/best-fit.png"/>
+                </button>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/actual-size.png"/>
+                </button>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/slideshow.png"/>
+                </button>
+                <div class="divider"></div>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/zoom-in.png"/>
+                </button>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/zoom-out.png"/>
+                </button>
+                <div class="divider"></div>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/print.png"/>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>`,
       complete: (folderNode: FolderNode) => {
-        const wrapperStyle = {backgroundImage: `url('${folderNode.fileLinks[this.currentIndex].physicalPath}')`}
+        const wrapperStyle = {backgroundImage: `url('${folderNode.links[this.currentIndex].physicalPath}')`}
 
-        if (this.isSlideshow) {
-          return html`
-            <div class="app">
-              <div class="content">
-                <div id="image" class="slideshow" style="${styleMap(wrapperStyle)}" @click="${this.goToNext}"></div>
-                <div class="slideshow-controls buttons">
-                  <button class="active style-2" id="play" @click="${this.handlePlayClick}">
-                    <img src="/img/image-viewer/play.png"/>
-                  </button>
-                  <button class="style-2" id="pause" @click="${this.handlePauseClick}">
-                    <img src="/img/image-viewer/pause.png"/>
-                  </button>
-                  <div class="divider"></div>
-                  <button class="style-2" @click="${this.goToPrevious}">
+        return this.isSlideshow ? html`
+          <div class="app">
+            <div class="content">
+              <div id="image" class="slideshow" style="${styleMap(wrapperStyle)}" @click="${this.goToNext}"></div>
+              <div class="slideshow-controls buttons">
+                <button class="active tool-button" id="play" @click="${this.handlePlayClick}">
+                  <img src="/img/image-viewer/play.png"/>
+                </button>
+                <button class="tool-button" id="pause" @click="${this.handleStopClick}">
+                  <img src="/img/image-viewer/pause.png"/>
+                </button>
+                <div class="divider"></div>
+                <button class="tool-button" @click="${this.goToPrevious}">
+                  <img src="/img/image-viewer/previous.png"/>
+                </button>
+                <button class="tool-button" @click="${this.goToNext}">
+                  <img src="/img/image-viewer/next.png"/>
+                </button>
+                <div class="divider"></div>
+                <button class="tool-button" @click="${this.exitSlideshow}">
+                  <img src="/img/image-viewer/exit.png"/>
+                </button>
+              </div>
+            </div>
+          </div>` : html`
+          <div class="app">
+            <div class="content">
+              <div class="viewport">
+                <div class="image-wrapper"
+                     @wheel="${(event: WheelEvent) => this.panzoom?.zoomWithWheel(event)}">
+                  <div id="image" style="${styleMap(wrapperStyle)}"></div>
+                </div>
+                <div class="buttons">
+                  <button class="tool-button" @click="${this.goToPrevious}">
                     <img src="/img/image-viewer/previous.png"/>
                   </button>
-                  <button class="style-2" @click="${this.goToNext}">
+                  <button class="tool-button" @click="${this.goToNext}">
                     <img src="/img/image-viewer/next.png"/>
                   </button>
                   <div class="divider"></div>
-                  <button class="style-2" @click="${this.exitSlideshow}">
-                    <img src="/img/image-viewer/exit.png"/>
+                  <button class="tool-button" @click="${() => this.panzoom?.zoom(1)}">
+                    <img src="/img/image-viewer/best-fit.png"/>
+                  </button>
+                  <button class="tool-button" @click="${() => this.panzoom?.zoom(4)}">
+                    <img src="/img/image-viewer/actual-size.png"/>
+                  </button>
+                  <button class="tool-button" @click="${this.startSlideshow}">
+                    <img src="/img/image-viewer/slideshow.png"/>
+                  </button>
+                  <div class="divider"></div>
+                  <button class="tool-button" @click="${() => this.panzoom?.zoomIn()}">
+                    <img src="/img/image-viewer/zoom-in.png"/>
+                  </button>
+                  <button class="tool-button" @click="${() => this.panzoom?.zoomOut()}">
+                    <img src="/img/image-viewer/zoom-out.png"/>
+                  </button>
+                  <div class="divider"></div>
+                  <button class="tool-button" @click="${() => window.print()}">
+                    <img src="/img/image-viewer/print.png"/>
                   </button>
                 </div>
               </div>
-            </div>`
-        } else {
-          return html`
-            <div class="app">
-              <div class="content">
-                <div class="viewport">
-                  <div class="image-wrapper"
-                       @wheel="${(event: WheelEvent) => this.panzoom?.zoomWithWheel(event)}">
-                    <div id="image" style="${styleMap(wrapperStyle)}"></div>
-                  </div>
-                  <div class="buttons">
-                    <button class="style-2" @click="${this.goToPrevious}">
-                      <img src="/img/image-viewer/previous.png"/>
-                    </button>
-                    <button class="style-2" @click="${this.goToNext}">
-                      <img src="/img/image-viewer/next.png"/>
-                    </button>
-                    <div class="divider"></div>
-                    <button class="style-2" @click="${() => this.panzoom?.zoom(1)}">
-                      <img src="/img/image-viewer/best-fit.png"/>
-                    </button>
-                    <button class="style-2" @click="${() => this.panzoom?.zoom(4)}">
-                      <img src="/img/image-viewer/actual-size.png"/>
-                    </button>
-                    <button class="style-2" @click="${this.handleSlideshowClick}">
-                      <img src="/img/image-viewer/slideshow.png"/>
-                    </button>
-                    <div class="divider"></div>
-                    <button class="style-2" @click="${() => this.panzoom?.zoomIn()}">
-                      <img src="/img/image-viewer/zoom-in.png"/>
-                    </button>
-                    <button class="style-2" @click="${() => this.panzoom?.zoomOut()}">
-                      <img src="/img/image-viewer/zoom-out.png"/>
-                    </button>
-                    <div class="divider"></div>
-                    <button class="style-2" @click="${() => window.print()}">
-                      <img src="/img/image-viewer/print.png"/>
-                    </button>
-                  </div>
-                </div>
+            </div>
+          </div>`
+      },
+      error: () => html`
+        <div class="app" @click="${this.handleClick}">
+          <div class="content">
+            <div class="viewport">
+              <div class="image-wrapper">
+                <div id="image">Error</div>
               </div>
-            </div>`
-        }
-      }
+              <div class="buttons">
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/previous.png"/>
+                </button>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/next.png"/>
+                </button>
+                <div class="divider"></div>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/best-fit.png"/>
+                </button>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/actual-size.png"/>
+                </button>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/slideshow.png"/>
+                </button>
+                <div class="divider"></div>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/zoom-in.png"/>
+                </button>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/zoom-out.png"/>
+                </button>
+                <div class="divider"></div>
+                <button class="tool-button" disabled>
+                  <img src="/img/image-viewer/print.png"/>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`
     })
   }
 }

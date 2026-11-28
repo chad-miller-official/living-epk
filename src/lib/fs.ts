@@ -2,40 +2,46 @@ import {MediaIcon} from "../components/icons/media-icon.ts";
 import {InternetExplorerIcon} from "../components/icons/internet-explorer-icon.ts";
 import {GalleryIcon} from "../components/icons/gallery-icon.ts";
 import {PlainTextIcon} from "../components/icons/plaintext-icon.ts";
-import {EpkIcon} from "../components/icon.ts";
+import {EpkIcon, type IconGraphic} from "../components/icon.ts";
 import {type DBSchema, type IDBPDatabase, openDB} from "idb";
 import {FileExplorerIcon} from "../components/icons/file-explorer-icon.ts";
 import {UnknownIcon} from "../components/icons/unknown-icon.ts";
 
-
 export enum LinkNodeType {
-  File = 'file', Folder = 'folder'
+  File = 'file',
+  Folder = 'folder',
 }
 
 export type LinkNode = {
-  type: LinkNodeType
-  physicalPath: string
+  type: LinkNodeType,
+  physicalPath: string,
   logicalPath: string,
-  timestamp?: number
+  metadata?: FsMetadata,
 }
 
 export type FolderNode = {
-  path: string
-  folderLinks: LinkNode[]
-  fileLinks: LinkNode[]
+  path: string,
+  links: LinkNode[],
+  metadata?: FsMetadata,
 }
 
-export class FsError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options)
-  }
+type FsMetadata = {
+  alias?: string,
+  icon?: Partial<IconGraphic>,
+  timestamp?: number,
 }
 
 type FsRecord = {
   path: string,
-  files: string | null,
-  folders: string[],
+  filesJson?: string,
+  folders: Pick<FsRecord, 'path' | 'metadata'>[],
+  metadata?: FsMetadata,
 }
+
+type FsStruct = {
+  $?: FsMetadata,
+  '.'?: string,
+} & { [dir: string]: FsStruct }
 
 interface IdbSchema extends DBSchema {
   'file-system': {
@@ -44,52 +50,50 @@ interface IdbSchema extends DBSchema {
   }
 }
 
-let _idb: IDBPDatabase<IdbSchema>
-type _FolderStructure = { [dir: string]: string }
+let idb: IDBPDatabase<IdbSchema>
 
-function _loadFoldersHelper(prefix: string, cwd: string, fsStruct: _FolderStructure | string): FsRecord[] {
+function loadFoldersHelper(prefix: string, cwd: string, fsStruct: FsStruct): FsRecord[] {
+  const folders = Object.keys(fsStruct)
+    .filter(f => !f.match(/^[.$]$/))
+    .map(f => ({
+      path: f,
+      metadata: fsStruct[f].$
+    }))
+
   const record: FsRecord = {
     path: `${prefix}${cwd}`,
-    files: null,
-    folders: [],
+    metadata: fsStruct.$,
+    filesJson: fsStruct['.'],
+    folders,
   }
 
-  if (typeof fsStruct === 'string') {
-    record.files = fsStruct
-    return [record]
-  } else {
-    record.files = fsStruct['.']
-    record.folders = Object.keys(fsStruct).filter(f => f !== '.')
+  const additionalRecords = record.folders
+    .map(m => loadFoldersHelper(`${record.path}\\`, m.path, fsStruct[m.path]))
+    .flat()
 
-    return [
-      record,
-      ...record.folders.map(m => _loadFoldersHelper(`${record.path}\\`, m, fsStruct[m])).flat()
-    ]
-  }
+  return [record, ...additionalRecords]
 }
 
-async function _loadFolders() {
+async function loadFolders() {
   const response = await fetch("/data/_folders.json")
   const folders = await response.json()
   const root = Object.keys(folders)[0]
-  return _loadFoldersHelper('', root, folders[root])
+  return loadFoldersHelper('', root, folders[root])
 }
 
 export async function initDb() {
-  if (_idb) {
+  if (idb) {
     return
   }
 
-  _idb = await openDB<IdbSchema>('chad-db', 1, {
+  idb = await openDB<IdbSchema>('chad-db', 1, {
     async upgrade(db) {
-      db.createObjectStore('file-system', {
-        keyPath: 'path',
-      })
+      db.createObjectStore('file-system', {keyPath: 'path'})
     }
   })
 
-  const records = await _loadFolders()
-  const tx = _idb.transaction('file-system', 'readwrite')
+  const records = await loadFolders()
+  const tx = idb.transaction('file-system', 'readwrite')
 
   await Promise.all([
     ...records.map(record => tx.store.put(record)),
@@ -99,10 +103,10 @@ export async function initDb() {
 
 export async function loadFolderNode(path: string, signal?: AbortSignal): Promise<FolderNode> {
   path = path.replace(/\\?$/, '')
-  const record = await _idb.get('file-system', path)
+  const record = await idb.get('file-system', path)
 
   if (!record) {
-    throw new FsError(`Failed to load file system record: ${path}`)
+    throw new Error(`Failed to load file system record: ${path}`)
   }
 
   let folderLinks: LinkNode[] = []
@@ -110,34 +114,31 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
 
   if (folders) {
     folderLinks = record.folders
-      .sort((a, b) => a.localeCompare(b))
+      .sort((a, b) => a.path.localeCompare(b.path))
       .map(folder => {
-        const fullPath = `${path}\\${folder}`
+        const fullPath = `${path}\\${folder.path}`
 
         return {
           type: LinkNodeType.Folder,
           physicalPath: fullPath,
           logicalPath: fullPath,
+          metadata: folder.metadata,
         }
       })
   }
 
   let fileLinks: LinkNode[] = []
-  const filesJson = record.files
+  const filesJson = record.filesJson
 
   if (filesJson) {
     const filesResponse = await fetch(filesJson, {signal})
 
     if (!filesResponse.ok) {
-      throw new FsError(`Failed to load files data: ${record.files}`)
+      throw new Error(`Failed to load files data: ${record.filesJson}`)
     }
 
-    type ProtoLinkNode = {
-      path: string,
-      timestamp: number,
-    }
-
-    const protoNodes = (await filesResponse.json())['paths'] as ProtoLinkNode[]
+    const filesResponseJson = await filesResponse.json()
+    const protoNodes = filesResponseJson.paths as Pick<FsRecord, 'path' | 'metadata'>[]
 
     fileLinks = protoNodes
       .sort((a, b) => a.path.localeCompare(b.path))
@@ -146,19 +147,19 @@ export async function loadFolderNode(path: string, signal?: AbortSignal): Promis
           type: LinkNodeType.File,
           physicalPath: n.path,
           logicalPath: `${path}\\${n.path.split('/').pop()}`,
-          timestamp: n.timestamp,
+          metadata: n.metadata,
         }
       })
   }
 
   return {
     path,
-    folderLinks,
-    fileLinks,
+    metadata: record.metadata,
+    links: [...folderLinks, ...fileLinks],
   }
 }
 
-export function getLinkName(linkNode: LinkNode, withExtension = true) {
+export function getLinkName(linkNode: LinkNode, withExtension = true): string {
   let fileName
 
   if (linkNode.type === LinkNodeType.File) {
@@ -174,26 +175,34 @@ export function getLinkName(linkNode: LinkNode, withExtension = true) {
   return fileName
 }
 
-export function getFileExtension(linkNode: LinkNode) {
-  return linkNode.physicalPath.split('.').pop()
+export function getFileExtension(linkNode: LinkNode): string {
+  return linkNode.physicalPath.split('.').pop() || ''
 }
 
-const _dateTimeFormat = new Intl.DateTimeFormat('en-US', {
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'full',
   timeStyle: 'short',
 })
 
-export function getFormattedTimestamp(linkNode: LinkNode) {
-  return _dateTimeFormat.format(linkNode.timestamp)
+export function getFormattedTimestamp(linkNode: LinkNode): string {
+  return DATE_TIME_FORMAT.format(linkNode.metadata?.timestamp)
 }
 
-export function getParentFolder(folderNode: FolderNode) {
+export function getParentFolderName(folderNode: FolderNode): string {
   const parentPathParts = folderNode.path.split('\\')
   parentPathParts.pop()
   return parentPathParts.join('\\')
 }
 
-export function linkNodeToIcon(linkNode: LinkNode) {
+export function getFileLinkNodes(folderNode: FolderNode): LinkNode[] {
+  return folderNode.links.filter(f => f.type === LinkNodeType.File)
+}
+
+export function getFolderLinkNodes(folderNode: FolderNode): LinkNode[] {
+  return folderNode.links.filter(f => f.type === LinkNodeType.Folder)
+}
+
+export function linkNodeToIcon(linkNode: LinkNode): EpkIcon {
   const title = getLinkName(linkNode)
   let icon: EpkIcon
 
@@ -204,12 +213,22 @@ export function linkNodeToIcon(linkNode: LinkNode) {
       case 'wav':
       case 'mp3':
         icon = new MediaIcon()
-        icon.icon = '/img/audio.ico'
+
+        icon.icon = {
+          small: '/img/icons/audio.ico',
+          large: '/img/icons/audio.ico',
+        }
+
         break
       case 'mp4':
       case 'webm':
         icon = new MediaIcon()
-        icon.icon = '/img/video.ico'
+
+        icon.icon = {
+          small: '/img/icons/video.ico',
+          large: '/img/icons/video.ico',
+        }
+
         break
       case 'html':
         icon = new InternetExplorerIcon()
@@ -227,8 +246,16 @@ export function linkNodeToIcon(linkNode: LinkNode) {
     icon = new FileExplorerIcon()
   }
 
-  icon.title = title
   icon.fileLinkNode = linkNode
+
+  if (linkNode.metadata?.icon) {
+    icon.icon = {
+      small: linkNode.metadata.icon.small || icon.icon.small,
+      large: linkNode.metadata.icon.large || icon.icon.large,
+    }
+  }
+
+  icon.innerText = title
   icon.classList.add('epk-icon')
 
   return icon

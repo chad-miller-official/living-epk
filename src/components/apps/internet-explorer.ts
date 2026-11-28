@@ -1,11 +1,12 @@
 import {customElement, property, query, queryAll, state} from "lit/decorators.js";
 import {css, html, nothing, type TemplateResult} from "lit";
-import {activeWindowChangeEvent, closeWindowEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
+import {activeWindowChangeEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../ui/toolbar.ts";
-import {EpkApp} from "../app.ts";
 import {type LinkNode, loadFolderNode} from "../../lib/fs.ts";
-import {alertDialog, playClick, warnDialog} from "../../lib/os.ts";
+import {alertDialog, playSound, SystemSound, warnDialog} from "../../lib/os.ts";
 import {Explorer} from "./common/explorer.ts";
+import {WindowState, type Dimensions} from "../window.ts";
+import {InternetExplorerAbout} from "./dialog/ie-about.ts";
 
 const COOKIE_EXPERIMENTAL_WARNING = 'quietIeExperimentalWarning'
 
@@ -56,33 +57,6 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
   static styles = [
     ...Explorer.styles,
     css`
-      .favorites-folder {
-        & > summary.favorite-icon {
-          cursor: initial;
-          padding: 2px;
-
-          &.active {
-            background-color: #316AC5;
-            color: #ffffff;
-          }
-        }
-
-        &[open] {
-          border: 1px solid #7F9DB9;
-        }
-
-        summary:focus {
-          outline: none;
-        }
-      }
-
-      .favorites-icons {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin: 2px;
-      }
-
       .favorite-icon {
         align-items: center;
         cursor: pointer;
@@ -108,6 +82,33 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
+      }
+
+      .favorites-folder {
+        & > summary.favorite-icon {
+          cursor: initial;
+          padding: 2px;
+
+          &.active {
+            background-color: #316AC5;
+            color: #ffffff;
+          }
+        }
+
+        &[open] {
+          border: 1px solid #7F9DB9;
+        }
+
+        summary:focus {
+          outline: none;
+        }
+      }
+
+      .favorites-icons {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 2px;
       }
 
       .loading-text {
@@ -139,38 +140,37 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         border: 1px groove rgb(199, 197, 178);
         color-scheme: light;
         width: 100%;
-      }
-    `
+      }`
   ]
 
   @query('iframe')
-  frame?: HTMLIFrameElement
+  frame!: HTMLIFrameElement
 
   @queryAll('.favorite-icon')
-  favoriteIcons?: HTMLElement[]
+  favoriteIcons!: HTMLElement[]
 
   @queryAll('.favorites-folder')
-  favoritesFolders?: HTMLDetailsElement[]
+  favoritesFolders!: HTMLDetailsElement[]
 
   @property()
   path: string | LinkNode = HOME
 
   @property({type: String})
-  windowTitle = 'Microsoft Internet Explorer'
+  windowIcon = '/img/icons/small/internet-explorer.ico'
 
   @property({type: String})
-  windowIcon = '/img/internet-explorer.ico'
-
-  @state()
-  isLoading = true
+  windowTitle = 'Microsoft Internet Explorer'
 
   @state()
   isFullscreen = false
 
   @state()
+  isLoading = true
+
+  @state()
   showExperimentalWarning = true
 
-  toolbarSpec: ToolbarMenu[] = [
+  protected toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
       items: [
@@ -181,16 +181,18 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
               text: 'Window',
               shortcut: 'Ctrl+N',
               action: () => {
-                const internetExplorer = new InternetExplorer()
+                this.dispatchEvent(launchEvent(() => {
+                  const internetExplorer = new InternetExplorer()
 
-                internetExplorer.path = this.path
-                internetExplorer.showAddressBar = this.showAddressBar
-                internetExplorer.showStandardButtons = this.showStandardButtons
-                internetExplorer.showStatusBar = this.showStatusBar
-                internetExplorer.pathStack = this.pathStack
-                internetExplorer.pathStack.pop()
+                  internetExplorer.path = this.path
+                  internetExplorer.showAddressBar = this.showAddressBar
+                  internetExplorer.showStandardButtons = this.showStandardButtons
+                  internetExplorer.showStatusBar = this.showStatusBar
+                  internetExplorer.pathStack = this.pathStack
+                  internetExplorer.pathStack.removeMostRecent()
 
-                this.dispatchEvent(launchEvent(() => new Promise<InternetExplorer>(resolve => resolve(internetExplorer))))
+                  return internetExplorer
+                }))
               }
             },
           ],
@@ -221,7 +223,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         {
           text: 'Copy',
           shortcut: 'Ctrl+C',
-          action: () => navigator.clipboard.writeText(this.frame?.contentWindow?.getSelection()?.toString() || ''),
+          action: () => navigator.clipboard.writeText(this.frame.contentWindow?.getSelection()?.toString() || ''),
         },
         {
           text: 'Paste',
@@ -233,7 +235,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           text: 'Select All',
           shortcut: 'Ctrl+A',
           action: () => {
-            const selection = this.frame?.contentWindow?.getSelection()
+            const selection = this.frame.contentWindow?.getSelection()
             const range = this.getFrameDocument().createRange()
 
             selection?.removeAllRanges()
@@ -255,7 +257,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           {
             text: 'Home Page',
             shortcut: 'Alt+Home',
-            action: () => this.goHome(),
+            action: this.goHome,
           }]
         ),
         {
@@ -274,30 +276,25 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
           selected: () => this.isFullscreen,
           action: () => {
             this.isFullscreen = !this.isFullscreen
-            this.dispatchEvent(windowPropertyChangeEvent({fullscreen: this.isFullscreen}))
+
+            this.dispatchEvent(windowPropertyChangeEvent({
+              state: this.isFullscreen ? WindowState.Fullscreen : WindowState.Default
+            }))
           }
         }
       ],
     },
     {
       text: 'Favorites',
-      items: this.buildFavoritesMenuItems(FAVORITES),
+      items: this.getFavoritesMenuItems(FAVORITES),
     },
-    this.toolbarHelpMenu('Internet Explorer', () => {
-      const about = new InternetExplorerAbout()
-      about.delegatingAppId = this.getAppId()
-      return about
-    }),
+    this.toolbarHelpMenu('Internet Explorer', () => this.spawnDialog(InternetExplorerAbout)),
   ]
 
   firstUpdated() {
-    const ieThis = this
-
-    this.frame?.addEventListener('load', () => {
+    this.frame.addEventListener('load', () => {
       this.isLoading = false
-
-      this.getFrameDocument()
-        ?.addEventListener('click', () => ieThis.dispatchEvent(activeWindowChangeEvent()))
+      this.getFrameDocument()?.addEventListener('click', () => this.dispatchEvent(activeWindowChangeEvent()))
     })
 
     window.addEventListener('blur', () => {
@@ -307,51 +304,16 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
     })
   }
 
-  getMinimumDimensions(): [number, number] {
-    return [400, 320]
+  getMinimumDimensions(): Partial<Dimensions> {
+    return {width: 400, height: 320}
   }
 
-  buildFavoritesMenuItems(favorites: (Favorite | FavoriteFolder)[]): (ToolbarMenuItem | ToolbarMenu)[] {
-    return favorites.map(f => {
-      if ('url' in f) {
-        return {
-          text: f.title,
-          icon: f.icon || '/img/internet-explorer/default.ico',
-          action: () => this.navigate(f.url),
-        }
-      } else {
-        return {
-          text: f.title,
-          items: this.buildFavoritesMenuItems(f.favorites)
-        }
-      }
-    })
-  }
-
-  stop() {
-    this.frame?.contentWindow?.stop()
-  }
-
-  refresh() {
-    if (this.frame) {
-      this.frame.src = this.frame.src
-    }
-  }
-
-  goHome() {
-    this.navigate(HOME)
-  }
-
-  getFrameDocument() {
-    return this.frame?.contentDocument || this.frame?.contentWindow?.document!
-  }
-
-  navigate(newPath: string) {
+  protected navigate(newPath: string) {
     if (this.getTruePath(true).replace(/\\?$/, '') === newPath.replace(/\\?$/, '')) {
       return
     }
 
-    playClick().then(async () => {
+    playSound(SystemSound.Click).then(async () => {
       let newPathToUse: string | LinkNode | undefined
 
       if (newPath.startsWith('C:')) {
@@ -360,7 +322,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         const path = parts.join('\\')
         const folder = await loadFolderNode(path)
 
-        newPathToUse = folder.fileLinks.find(l => l.logicalPath === newPath)
+        newPathToUse = folder.links.find(l => l.logicalPath === newPath)
 
         if (!newPathToUse) {
           alertDialog(this, 'Microsoft Internet Explorer', `Cannot find '${newPath}'. Make sure the path or Internet address is correct.`)
@@ -381,7 +343,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
                 `Support for external webpages is experimental. The address bar may not
                 reflect clicked links and the Back button may not behave as expected. Some external
                 webpages additionally may not function correctly.`,
-                {silenceId: COOKIE_EXPERIMENTAL_WARNING, buttonPosition: 'right'},
+                {silenceId: COOKIE_EXPERIMENTAL_WARNING},
               )
 
               this.showExperimentalWarning = false
@@ -397,110 +359,49 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
     })
   }
 
-  getTruePath(logical: boolean) {
-    return typeof this.path === 'string' ? this.path : logical ? this.path.logicalPath : this.path.physicalPath
-  }
-
-  selectFavorite(event: Event, favorite: Favorite) {
-    let target = event.target as HTMLElement
-
-    if (!target.classList.contains('favorite-icon')) {
-      target = target.parentElement!
-    }
-
-    target.classList.add('active')
-
-    Array.from(this.favoriteIcons!)
-      .filter(e => e !== target)
-      .forEach(e => e.classList.remove('active'))
-
-    this.navigate(favorite.url)
-  }
-
-  expandFavoritesFolder(event: Event) {
-    let target = event.target as HTMLElement
-
-    if (!target.classList.contains('favorite-icon')) {
-      target = target.parentElement!
-    }
-
-    target.classList.add('active')
-
-    const parent = target.parentElement!
-
-    Array.from(this.favoritesFolders!)
-      .filter(e => e !== parent)
-      .forEach(e => e.removeAttribute('open'))
-
-    Array.from(this.favoriteIcons!)
-      .filter(e => e !== target)
-      .forEach(e => e.classList.remove('active'))
-  }
-
-  buildFavoritesPanel(favorites: (Favorite | FavoriteFolder)[]): TemplateResult[] {
-    return favorites.map(f => {
-      if ('url' in f) {
-        return html`
-          <div class="favorite-icon" @click="${(event: Event) => this.selectFavorite(event, f)}">
-            <img src="${f.icon || '/img/internet-explorer/default.ico'}"/>
-            <span>${f.title}</span>
-          </div>`
-      } else {
-        return html`
-          <details class="favorites-folder">
-            <summary class="favorite-icon" @click="${this.expandFavoritesFolder}">
-              <img src="/img/internet-explorer/folder-closed.png"/>
-              <span>${f.title}</span>
-            </summary>
-            ${this.buildFavoritesPanel(f.favorites)}
-          </details>`
-      }
-    })
-  }
-
-  getNavigationButtons() {
+  protected getNavigationButtons() {
     return html`
-      <button type="button" class="style-2" @click="${this.stop}">
+      <button type="button" class="tool-button" @click="${this.stop}">
         <img src="/img/internet-explorer/stop.png"/>
       </button>
-      <button type="button" class="style-2" @click="${this.refresh}">
+      <button type="button" class="tool-button" @click="${this.refresh}">
         <img src="/img/internet-explorer/refresh.png"/>
       </button>
-      <button type="button" class="style-2" @click="${this.goHome}">
+      <button type="button" class="tool-button" @click="${this.goHome}">
         <img src="/img/internet-explorer/home.png"/>
       </button>
       <div class="divider"></div>
-      <button type="button" class="style-2 ${this.showSidebar ? 'active' : ''}"
+      <button type="button" class="tool-button ${this.showSidebar ? 'active' : ''}"
               @click="${() => this.showSidebar = !this.showSidebar}">
         <img src="/img/internet-explorer/favorites.png"/>
         <span>Favorites</span>
       </button>
       <div class="divider"></div>
-      <button type="button" class="style-2"
+      <button type="button" class="tool-button"
               @click="${() => window.print()}">
         <img src="/img/internet-explorer/print.png"/>
       </button>`
   }
 
-  getAddressBar() {
+  protected getAddressBar() {
     return html`
       <img src="/img/internet-explorer/default.ico"/>
       <input type="text" .value="${this.getTruePath(true)}" id="pathInput"/>`
   }
 
-  getSidebarContent() {
+  protected getSidebarContent() {
     return html`
       <div class="favorites-icons">
         ${this.buildFavoritesPanel(FAVORITES)}
       </div>`
   }
 
-  getMainContent() {
+  protected getMainContent() {
     return html`
       <iframe src="${this.getTruePath(false)}"></iframe>`
   }
 
-  getStatusBarFields() {
+  protected getStatusBarFields() {
     return html`
       <p class="status-bar-field">
         <img src="/img/internet-explorer/default.ico"/>
@@ -523,140 +424,104 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
         <span>Internet</span>
       </p>`
   }
-}
 
-@customElement('internet-explorer-about')
-class InternetExplorerAbout extends EpkApp {
-  static styles = [
-    ...EpkApp.styles,
-    css`
-      .about {
-        column-gap: 56px;
-        display: grid;
-        font-family: "Pixelated MS Sans Serif", Arial;
-        grid-template-areas:
-          ". info"
-          "logo form";
-        justify-content: start;
-        row-gap: 8px;
-      }
-
-      .content {
-        background-color: #ffffff;
-      }
-
-      .credits {
-        border: 1px solid #7f9db9;
-        height: 5lh;
-        max-height: 5lh;
-        overflow-y: scroll;
-        padding: 1px;
-      }
-
-      .form {
-        align-items: center;
-        display: flex;
-        grid-area: form;
-        justify-content: space-between;
-      }
-
-      .form, .info {
-        max-width: 300px;
-        width: 300px;
-      }
-
-      .info {
-        align-items: flex-start;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        grid-area: info;
-      }
-
-      .link {
-        cursor: pointer;
-        text-decoration: underline;
-      }
-
-      .logo {
-        grid-area: logo;
-        width: 32px;
-      }
-    `
-  ]
-
-  @property({type: String})
-  windowIcon = '/img/internet-explorer.ico'
-
-  @property({type: String})
-  windowTitle = 'About Internet Explorer'
-
-  delegatingAppId!: string
-
-  handleSubmit(event: SubmitEvent) {
-    event.preventDefault()
-    this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
-    this.dispatchEvent(closeWindowEvent())
+  private getFrameDocument() {
+    return this.frame.contentDocument || this.frame.contentWindow?.document!
   }
 
-  handleCopyrightClick(event: Event) {
-    event.stopPropagation()
-
-    this.dispatchEvent(launchEvent(() => new Promise<InternetExplorer>(resolve => {
-      const ie = new InternetExplorer()
-      ie.path = 'https://web.archive.org/web/20030828184444/http://www.microsoft.com/isapi/redir.dll?prd=ie&pver=6.0&ar=aboutie&sba=copyr'
-      resolve(ie)
-    })))
+  private getTruePath(logical: boolean): string {
+    return typeof this.path === 'string' ? this.path : logical ? this.path.logicalPath : this.path.physicalPath
   }
 
-  render() {
-    return html`
-      <div class="app">
-        <div class="content">
-          <div class="about window-body">
-            <div class="info">
-              <img src="/img/internet-explorer/about.png"/>
-              <div>
-                Version: 6.0.2900.5512.xpsp.080413-2111
-                <br/>
-                Cipher Strength: 128-bit
-                <br/>
-                Product ID: 76487-640-8834005-23454
-                <br/>
-                Update Versions:; SP3;
-              </div>
-              <div class="credits">
-                Based on NCSA Mosaic. NCSA Mosaic(TM); was developed at the National Center for
-                Supercomputing Applications at the University of Illinois at Urbana-Champaign.
-                <br/>
-                Distributed under a licensing agreement with Spyglass, Inc.
-                <br/>
-                Contains security software licensed from RSA Data Security Inc.
-                <br/>
-                Portions of this software are based in part on the work of the Independent JPEG
-                Group.
-                <br/>
-                Multimedia software components, including Indeo(R); video, Indeo(R) audio, and Web
-                Design Effects are provided by Intel Corp.
-                <br/>
-                Unix version contains software licensed from Mainsoft Corporation. Copyright (c)
-                1998-1999 Mainsoft Corporation. All rights reserved. Mainsoft is a trademark of
-                Mainsoft Corporation.
-                <br/>
-                Warning: This computer program is protected by copyright law and international
-                treaties. Unauthorized reproduction or distribution of this program, or any portion
-                of it, may result in severe civil and criminal penalties, and will be prosecuted to
-                the maximum extent possible under the law.
-              </div>
-            </div>
-            <img class="logo" src="/img/internet-explorer/logo.png"/>
-            <form class="form" @submit="${this.handleSubmit}">
-              <p class="link" @click=${this.handleCopyrightClick}>Copyright &copy; 1995-2004
-                Microsoft Corp.</p>
-              <button type="submit">OK</button>
-            </form>
-          </div>
-        </div>
-      </div>`
+  private buildFavoritesPanel(favorites: (Favorite | FavoriteFolder)[]): TemplateResult[] {
+    return favorites.map(f => {
+      if ('url' in f) {
+        return html`
+          <div class="favorite-icon" @click="${(event: Event) => this.selectFavorite(event, f)}">
+            <img src="${f.icon || '/img/internet-explorer/default.ico'}"/>
+            <span>${f.title}</span>
+          </div>`
+      } else {
+        return html`
+          <details class="favorites-folder">
+            <summary class="favorite-icon" @click="${this.expandFavoritesFolder}">
+              <img src="/img/explorer/folder-closed.png"/>
+              <span>${f.title}</span>
+            </summary>
+            ${this.buildFavoritesPanel(f.favorites)}
+          </details>`
+      }
+    })
+  }
+
+  private stop() {
+    this.frame.contentWindow?.stop()
+  }
+
+  private refresh() {
+    if (this.frame) {
+      /*
+       * This weird line takes advantage of a quirk in which setting an iframe's src to itself
+       * effectively "refreshes" the contents of the iframe
+       */
+      this.frame.src = this.frame.src
+    }
+  }
+
+  private goHome() {
+    this.navigate(HOME)
+  }
+
+  private getFavoritesMenuItems(favorites: (Favorite | FavoriteFolder)[]): (ToolbarMenuItem | ToolbarMenu)[] {
+    return favorites.map(f => {
+      if ('url' in f) {
+        return {
+          text: f.title,
+          icon: f.icon || '/img/internet-explorer/default.ico',
+          action: () => this.navigate(f.url),
+        }
+      } else {
+        return {
+          text: f.title,
+          items: this.getFavoritesMenuItems(f.favorites)
+        }
+      }
+    })
+  }
+
+  private expandFavoritesFolder(event: Event): void {
+    let target = event.target as HTMLElement
+
+    if (!target.classList.contains('favorite-icon')) {
+      target = target.parentElement!
+    }
+
+    target.classList.add('active')
+
+    const parent = target.parentElement!
+
+    Array.from(this.favoritesFolders)
+      .filter(e => e !== parent)
+      .forEach(e => e.removeAttribute('open'))
+
+    Array.from(this.favoriteIcons)
+      .filter(e => e !== target)
+      .forEach(e => e.classList.remove('active'))
+  }
+
+  private selectFavorite(event: Event, favorite: Favorite): void {
+    let target = event.target as HTMLElement
+
+    if (!target.classList.contains('favorite-icon')) {
+      target = target.parentElement!
+    }
+
+    target.classList.add('active')
+
+    Array.from(this.favoriteIcons)
+      .filter(e => e !== target)
+      .forEach(e => e.classList.remove('active'))
+
+    this.navigate(favorite.url)
   }
 }

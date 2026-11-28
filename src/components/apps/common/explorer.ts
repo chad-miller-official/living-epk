@@ -4,14 +4,15 @@ import {type ToolbarMenu, type ToolbarMenuItem, ToolbarUiElement} from "../../ui
 import {styleMap} from "lit/directives/style-map.js";
 import {property, query, state} from "lit/decorators.js";
 import {PathStack} from "../../../lib/path-stack.ts";
-import {buttonStyle2} from "../../../lib/ui.ts";
-import {closeWindowEvent, DisallowFlags, launchEvent} from "../../../lib/events.ts";
-import {playClick} from "../../../lib/os.ts";
+import {EXTENDED_UI_STYLE} from "../../ui/styles.ts";
+import {closeWindowEvent, launchEvent} from "../../../lib/events.ts";
+import {WindowRestriction} from "../../window.ts";
+import {playSound, SystemSound} from "../../../lib/os.ts";
 
 export abstract class Explorer<T> extends EpkApp {
   static styles = [
     ...EpkApp.styles,
-    buttonStyle2,
+    EXTENDED_UI_STYLE,
     css`
       #closeButton {
         height: 18px;
@@ -29,7 +30,6 @@ export abstract class Explorer<T> extends EpkApp {
       #sidebar {
         display: flex;
         flex-direction: column;
-        flex-shrink: 0;
         min-width: 12ch;
       }
 
@@ -52,6 +52,16 @@ export abstract class Explorer<T> extends EpkApp {
         }
       }
 
+      .content {
+        -webkit-font-smoothing: none;
+        display: flex;
+        flex-direction: column;
+        font-family: "Pixelated MS Sans Serif", Arial;
+        font-size: 11px;
+        height: 100%;
+        user-select: none;
+      }
+
       .explorer {
         background-color: #ffffff;
         display: flex;
@@ -62,26 +72,25 @@ export abstract class Explorer<T> extends EpkApp {
       .explorer-divider {
         background-color: #eee9d5;
         cursor: col-resize;
-        min-width: 5px;
-        max-width: 5px;
         width: 5px;
       }
 
+      .hidden {
+        // No way around this !important due to non-deterministic ordering of css() styles
+        display: none !important;
+      }
+
       .navigation {
-        align-items: stretch;
+        align-items: center;
         background-color: #eceadb;
         border-bottom: 1px groove #c7c5b2;
         display: flex;
-        width: 100%;
+        gap: 1px;
+        margin: 1px 0;
 
         button {
           padding: 9px 7px;
-          margin: 1px;
         }
-      }
-
-      .hidden {
-        display: none;
       }
 
       .sidebar-header {
@@ -90,20 +99,10 @@ export abstract class Explorer<T> extends EpkApp {
         display: flex;
         justify-content: space-between;
         padding: 3px 7px;
-      }
-
-      .viewport {
-        -webkit-font-smoothing: none;
-        display: flex;
-        flex-direction: column;
-        font-family: "Pixelated MS Sans Serif", Arial;
-        font-size: 11px;
-        height: 100%;
-        user-select: none;
       }`
   ]
 
-  static sidebarWidth = 160
+  private static sidebarWidth = 160
 
   @property()
   path!: T
@@ -186,10 +185,12 @@ export abstract class Explorer<T> extends EpkApp {
             event.stopPropagation()
             this.toolbar!.closeAll()
 
-            this.dispatchEvent(launchEvent(() => new Promise<T>(resolve => resolve(aboutApp())), {
-              width: 419,
-              height: 350,
-              disallowFlags: DisallowFlags.DisallowAll,
+            this.dispatchEvent(launchEvent(aboutApp, {
+              size: {
+                width: 419,
+                height: 350,
+              },
+              disallowFlags: WindowRestriction.DisallowAll,
             }))
           },
         },
@@ -197,7 +198,7 @@ export abstract class Explorer<T> extends EpkApp {
     }
   }
 
-  abstract toolbarSpec: ToolbarMenu[]
+  protected abstract toolbarSpec: ToolbarMenu[]
 
   protected abstract navigate(to: string): void
 
@@ -220,15 +221,15 @@ export abstract class Explorer<T> extends EpkApp {
     return 'explorer'
   }
 
-  goBack() {
+  protected goBack() {
     if (this.pathStack.canGoBack()) {
-      playClick().then(() => this.path = this.pathStack.goBack())
+      playSound(SystemSound.Click).then(() => this.path = this.pathStack.goBack())
     }
   }
 
-  goForward() {
+  protected goForward() {
     if (this.pathStack.canGoForward()) {
-      playClick().then(() => this.path = this.pathStack.goForward())
+      playSound(SystemSound.Click).then(() => this.path = this.pathStack.goForward())
     }
   }
 
@@ -259,59 +260,56 @@ export abstract class Explorer<T> extends EpkApp {
   }
 
   render() {
-    const sidebarStyle: any = {width: `${Explorer.sidebarWidth}px`}
-    const primaryDividerStyle: any = {}
+    const sidebarStyle: any = {}
 
-    if (!this.showSidebar) {
-      sidebarStyle.display = 'none'
-      primaryDividerStyle.display = 'none'
+    if (this.showSidebar) {
+      sidebarStyle.width = `${Explorer.sidebarWidth}px`
     }
 
     return html`
       <div class="app" @click="${this.handleClick}">
         <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"
-                     logo="/img/internet-explorer/logo.png"></epk-toolbar>
-        <section class="content">
-          <div class="viewport">
-            <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">
-              <button type="button" class="style-2"
-                      ?disabled="${!this.pathStack.canGoBack()}" @click="${this.goBack}">
-                <img src="/img/file-explorer/back.png"/>
-                <span>Back</span>
-              </button>
-              <button type="button" class="style-2"
-                      ?disabled="${!this.pathStack.canGoForward()}" @click="${this.goForward}">
-                <img src="/img/file-explorer/forward.png"/>
-              </button>
-              ${this.getNavigationButtons()}
+                     logo="/img/logo.png"></epk-toolbar>
+        <div class="content">
+          <div class="navigation ${this.showStandardButtons ? '' : 'hidden'}">
+            <button type="button" class="tool-button"
+                    ?disabled="${!this.pathStack.canGoBack()}" @click="${this.goBack}">
+              <img src="/img/explorer/back.png"/>
+              <span>Back</span>
+            </button>
+            <button type="button" class="tool-button"
+                    ?disabled="${!this.pathStack.canGoForward()}" @click="${this.goForward}">
+              <img src="/img/explorer/forward.png"/>
+            </button>
+            ${this.getNavigationButtons()}
+          </div>
+          <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
+                @submit="${this.handlePathInputSubmit}">
+            <span class="address">Address</span>
+            <div class="address-bar">
+              ${this.getAddressBar()}
             </div>
-            <form class="navigation ${this.showAddressBar ? '' : 'hidden'}"
-                  @submit="${this.handlePathInputSubmit}">
-              <span class="address">Address</span>
-              <div class="address-bar">
-                ${this.getAddressBar()}
+            <button type="submit" id="goButton" class="tool-button">
+              <img src="/img/explorer/go.png"/>
+              <span>Go</span>
+            </button>
+          </form>
+          <div class="explorer">
+            <div id="sidebar" class="${this.showSidebar ? '' : 'hidden'}" style="${styleMap(sidebarStyle)}">
+              <div class="sidebar-header">
+                Favorites
+                <button type="button" id="closeButton" class="tool-button"
+                        @click="${() => this.showSidebar = false}">
+                  <img src="/img/explorer/x.png"/>
+                </button>
               </div>
-              <button type="submit" id="goButton" class="style-2">
-                <img src="/img/file-explorer/go.png"/>
-                <span>Go</span>
-              </button>
-            </form>
-            <div class="explorer">
-              <div id="sidebar" style="${styleMap(sidebarStyle)}">
-                <div class="sidebar-header">
-                  Favorites
-                  <button type="button" id="closeButton" class="style-2"
-                          @click="${() => this.showSidebar = false}">
-                    <img src="/img/file-explorer/x.png"/>
-                  </button>
-                </div>
-                ${this.getSidebarContent()}
-              </div>
-              <div class="explorer-divider" style="${styleMap(primaryDividerStyle)}"
-                   @mousedown="${this.handlePrimaryDividerDrag}"></div>
-              ${this.getMainContent()}
+              ${this.getSidebarContent()}
             </div>
-        </section>
+            <div class="explorer-divider ${this.showSidebar ? '' : 'hidden'}"
+                 @mousedown="${this.handlePrimaryDividerDrag}"></div>
+            ${this.getMainContent()}
+          </div>
+        </div>
         <div class="status-bar ${this.showStatusBar ? '' : 'hidden'}">
           ${this.getStatusBarFields()}
         </div>

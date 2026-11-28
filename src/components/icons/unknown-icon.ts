@@ -1,29 +1,26 @@
 import {customElement} from "lit/decorators.js";
 import {EpkIcon} from "../icon.ts";
 import type {EpkApp} from "../app.ts";
-import {DisallowFlags, type LaunchOptions} from "../../lib/events.ts";
 import {EpkAlert} from "../apps/dialog/alert.ts";
 import {getLinkName} from "../../lib/fs.ts";
+import {WindowRestriction} from "../window.ts";
+import type {Launch} from "../../lib/events.ts";
 
 @customElement('unknown-icon')
 export class UnknownIcon extends EpkIcon {
-  icon = '/img/unknown.ico'
-
-  getAppInstance(): Promise<EpkApp> {
-    return new Promise<EpkAlert>(resolve => {
-      const alert = new EpkAlert()
-      alert.windowTitle = 'Windows'
-      alert.message = `Windows cannot open this file: '${getLinkName(this.fileLinkNode!)}'`
-      alert.alertGraphic = '/img/search-file.ico'
-      return resolve(alert)
-    })
+  getAppInstance(): EpkApp {
+    const alert = new EpkAlert()
+    alert.windowTitle = 'Windows'
+    alert.message = `Windows cannot open this file: '${getLinkName(this.fileLinkNode!)}'`
+    alert.alertGraphic = '/img/search-file.ico'
+    return alert
   }
 
-  getLaunchOptions(): LaunchOptions {
+  getLaunchOptions(): Omit<Launch, 'init'> {
     return {
-      width: Math.min((33 + getLinkName(this.fileLinkNode!).length) * 7, 500),
-      disallowFlags: DisallowFlags.DisallowAll,
-      centered: true,
+      size: {width: Math.min((33 + getLinkName(this.fileLinkNode!).length) * 7, 500)},
+      location: 'center',
+      disallowFlags: WindowRestriction.DisallowAll,
     }
   }
 }

@@ -1,14 +1,22 @@
 import {customElement, queryAssignedElements} from "lit/decorators.js";
 import {css, html, LitElement} from "lit";
 import {EpkIcon} from "./icon.ts";
-import {DisallowFlags, type FilePicked, type Launch} from "../lib/events.ts";
-import {EpkWindow} from "./window.ts";
+import {
+  ACTIVE_WINDOW_CHANGE_EVENT,
+  CLOSE_WINDOW_EVENT,
+  FILE_PICKED_EVENT,
+  type FilePicked,
+  type Launch,
+  LAUNCH_EVENT
+} from "../lib/events.ts";
+import {EpkWindow, WindowRestriction} from "./window.ts";
 import {EpkApp} from "./app.ts";
+import type {FilePickedHandler} from "./apps/dialog/file-picker.ts";
 
 @customElement('epk-desktop')
 export class EpkDesktop extends LitElement {
   static styles = css`
-    main {
+    .desktop {
       align-items: flex-start;
       background-image: url("/img/bliss.jpg");
       background-position: center;
@@ -20,15 +28,14 @@ export class EpkDesktop extends LitElement {
       width: 100vw;
     }
 
-    .icon-container {
+    slot[name=icons] {
       align-items: center;
       display: flex;
       flex-direction: column;
       flex-wrap: wrap;
       max-height: 100%;
       row-gap: 8px;
-    }
-  `
+    }`
 
   @queryAssignedElements({slot: 'icons'})
   icons!: EpkIcon[]
@@ -36,60 +43,21 @@ export class EpkDesktop extends LitElement {
   @queryAssignedElements({slot: 'windows'})
   windows!: EpkWindow[]
 
-  appInstanceCount = new Map<string, number>()
+  private appInstanceCount = new Map<string, number>()
 
   firstUpdated() {
-    this.addEventListener('launch', this.handleLaunch)
-    this.addEventListener('active-window-change', this.handleActiveWindowChange)
-    this.addEventListener('close-window', this.handleCloseWindow)
-    this.addEventListener('file-picked', this.handleFilePicked)
+    this.addEventListener(ACTIVE_WINDOW_CHANGE_EVENT, this.handleActiveWindowChange)
+    this.addEventListener(CLOSE_WINDOW_EVENT, this.handleCloseWindow)
+    this.addEventListener(FILE_PICKED_EVENT, this.handleFilePicked)
+    this.addEventListener(LAUNCH_EVENT, this.handleLaunch)
   }
 
-  handleFilePicked(event: Event) {
-    const detail = (event as CustomEvent<FilePicked>).detail
-    this.getWindowByAppId(detail.targetAppId)?.app[0].handleFilePicked(detail.fileLinkNode)
+  private getWindowByAppId(appId: string): EpkWindow | undefined {
+    return this.windows.find(w => w.getApp().getAppId() === appId)
   }
 
-  getWindowByAppId(appId: string) {
-    return this.windows.find(w => w.app[0].getAppId() === appId)
-  }
-
-  handleClick(event: Event) {
-    this.icons?.filter(i => i !== event.target).forEach(i => i.selected = false)
-
-    this.windows?.forEach(w => {
-      if ((w === event.target || (event.target instanceof Node && w.contains(event.target)))) {
-        w.active = true
-        return
-      } else {
-        w.active = false
-      }
-
-      let allChildren: Element[] = []
-      const children = w.app[0].querySelectorAll('.epk-icon')
-
-      if (children) {
-        allChildren = allChildren.concat(Array.from(children))
-      }
-
-      const shadowChildren = w.app[0].shadowRoot?.querySelectorAll('.epk-icon')
-
-      if (shadowChildren) {
-        allChildren = allChildren.concat(Array.from(shadowChildren))
-      }
-
-      allChildren
-        .filter(elem => elem !== event.target)
-        .forEach(elem => (elem as EpkIcon).selected = false)
-
-      if (event.target !== w.app[0]) {
-        w.app[0].toolbar?.closeAll()
-      }
-    })
-  }
-
-  handleActiveWindowChange(event: Event) {
-    const targetAppId = (event as CustomEvent).detail.targetAppId
+  private handleActiveWindowChange(event: Event): void {
+    const targetAppId = (event as CustomEvent).detail?.targetAppId
     let targetWindow: EpkWindow | undefined
 
     if (targetAppId) {
@@ -113,11 +81,11 @@ export class EpkDesktop extends LitElement {
       })
   }
 
-  handleCloseWindow(event: Event) {
+  private handleCloseWindow(event: Event): void {
     let appName: string
 
     if (event.target instanceof EpkWindow) {
-      appName = (event.target as EpkWindow).app[0].constructor.name
+      appName = (event.target as EpkWindow).getApp().constructor.name
     } else if (event.target instanceof EpkApp) {
       appName = (event.target as EpkApp).constructor.name
     } else {
@@ -128,76 +96,88 @@ export class EpkDesktop extends LitElement {
     this.appInstanceCount.set(appName, instanceCount - 1)
   }
 
-  handleLaunch(event: Event) {
+  private handleLaunch(event: Event): void {
     const launchData = (event as CustomEvent<Launch>).detail
 
-    launchData.init().then(app => {
-      const appName = app.constructor.name
-      app.classList.add('epk-app')
+    const app = launchData.init()
+    app.classList.add('epk-app')
 
-      const instanceCount = this.appInstanceCount.get(appName) || 0
-      this.appInstanceCount.set(appName, instanceCount + 1)
+    const appName = app.constructor.name
+    const instanceCount = this.appInstanceCount.get(appName) || 0
+    this.appInstanceCount.set(appName, instanceCount + 1)
 
-      const epkWindow = new EpkWindow()
+    const epkWindow = new EpkWindow()
+    epkWindow.slot = 'windows'
+    epkWindow.title = app.windowTitle
+    epkWindow.disallowFlags = launchData.disallowFlags || WindowRestriction.AllowAll
 
-      const appLastPosition = app.doNotTrackLastPosition ? {
-        x: null,
-        y: null,
-        height: null,
-        width: null,
-      } : EpkWindow.lastAppPositions.get(app.getPositionTrackingName())
+    if (app.windowIcon) {
+      epkWindow.thumbnail = app.windowIcon
+    }
 
-      epkWindow.slot = 'windows'
-      epkWindow.title = app.windowTitle
+    const positionTrackingName = app.getPositionTrackingName()
 
-      if (app.windowIcon) {
-        epkWindow.thumbnail = app.windowIcon
+    const appLastPosition = positionTrackingName
+      ? EpkWindow.lastAppPositions.get(positionTrackingName)
+      : null
+
+    const lastSize = appLastPosition?.size
+    const eventSize = launchData.size
+    const minSize = app.getMinimumDimensions()
+
+    epkWindow.size = {
+      width: lastSize?.width || eventSize?.width || minSize.width,
+      height: lastSize?.height || eventSize?.height || minSize.height,
+    }
+
+    epkWindow.minSize = minSize
+    const location = launchData.location
+
+    if (location !== 'center') {
+      epkWindow.location = {
+        x: (appLastPosition?.location.x || location?.x || 0) + (instanceCount > 0 ? 16 : 0),
+        y: (appLastPosition?.location.y || location?.y || 0) + (instanceCount > 0 ? 16 : 0),
       }
+    }
 
-      epkWindow.noHorizontalResize = (launchData.disallowFlags & DisallowFlags.DisallowHorizontalResize) > 0
-      epkWindow.noVerticalResize = (launchData.disallowFlags & DisallowFlags.DisallowVerticalResize) > 0
-      epkWindow.noMaximize = (launchData.disallowFlags & DisallowFlags.DisallowMaximize) > 0
-      epkWindow.noMinimize = (launchData.disallowFlags & DisallowFlags.DisallowMinimize) > 0
+    epkWindow.append(app)
+    this.append(epkWindow)
+  }
 
-      const [lastWidth, lastHeight] = [appLastPosition?.width, appLastPosition?.height]
-      const [minWidth, minHeight] = app.getMinimumDimensions()
-      const [eventWidth, eventHeight] = launchData.windowDimensions
+  private handleFilePicked(event: Event): void {
+    const detail = (event as CustomEvent<FilePicked>).detail
+    const app = this.getWindowByAppId(detail.targetAppId)?.getApp() as unknown as FilePickedHandler
+    app.handleFilePicked(detail.fileLinkNode)
+  }
 
-      let [widthToUse, heightToUse] = [
-        lastWidth || eventWidth || minWidth,
-        lastHeight || eventHeight || minHeight,
-      ]
+  private handleClick(event: Event): void {
+    this.icons?.filter(i => i !== event.target).forEach(i => i.deselect())
 
-      epkWindow.minWidth = minWidth
-      epkWindow.minHeight = minHeight
-      epkWindow.width = widthToUse
-      epkWindow.height = heightToUse
+    this.windows?.forEach(w => {
+      if ((w === event.target || w.contains(event.target as Node))) {
+        w.active = true
+      } else {
+        w.active = false
+        const app = w.getApp()
 
-      const position = launchData.position
+        if (event.target instanceof EpkIcon) {
+          app.getContainedIcons()
+            .filter(i => i !== event.target)
+            .forEach(i => i.deselect())
+        }
 
-      if (position !== 'center') {
-        epkWindow.x = appLastPosition?.x || (position[0] as number) || 0
-        epkWindow.y = appLastPosition?.y || (position[1] as number) || 0
-
-        if (instanceCount > 0) {
-          epkWindow.x += 16
-          epkWindow.y += 16
+        if (event.target !== app) {
+          app.toolbar?.closeAll()
         }
       }
-
-      epkWindow.append(app)
-      this.append(epkWindow)
     })
   }
 
   render() {
     return html`
-      <main @click="${this.handleClick}">
-        <div class="icon-container">
-          <slot name="icons"></slot>
-        </div>
+      <div class="desktop" @click="${this.handleClick}">
+        <slot name="icons"></slot>
         <slot name="windows"></slot>
-      </main>
-    `
+      </div>`
   }
 }

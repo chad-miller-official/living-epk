@@ -3,14 +3,16 @@ import {css, html, nothing} from "lit";
 import {Task} from "@lit/task";
 import {EpkApp} from "../app.ts";
 import dayjs from "dayjs";
-import {closeWindowEvent, DisallowFlags, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
+import {closeWindowEvent, launchEvent, windowPropertyChangeEvent} from "../../lib/events.ts";
 import {AppAbout} from "./dialog/about.ts";
 import {getLinkName, type LinkNode} from "../../lib/fs.ts";
 import {type ToolbarMenu, ToolbarUiElement} from "../ui/toolbar.ts";
-import {FilePicker} from "./dialog/file-picker.ts";
+import {type FilePickedHandler, FilePicker} from "./dialog/file-picker.ts";
+import {WindowRestriction} from "../window.ts";
+import {alertDialog} from "../../lib/os.ts";
 
 @customElement('notepad-app')
-export class Notepad extends EpkApp {
+export class Notepad extends EpkApp implements FilePickedHandler {
   static styles = [
     ...EpkApp.styles,
     css`
@@ -19,65 +21,65 @@ export class Notepad extends EpkApp {
         font-size: 12pt;
         overflow: scroll;
         resize: none;
-      }
-    `
+      }`
   ]
+
+  @query('#notepad')
+  textArea!: HTMLTextAreaElement
 
   @property({type: Object})
   fileLinkNode?: LinkNode
 
   @property({type: String})
-  windowTitle = 'Notepad'
+  windowTitle = 'Notepad - Untitled'
 
   @property({type: String})
-  windowIcon = '/img/notepad-small.ico'
+  windowIcon = '/img/icons/small/notepad-small.ico'
 
-  @property({type: Number})
+  @state()
   currentLine = 1
 
-  @property({type: Number})
+  @state()
   currentColumn = 1
-
-  @query('#notepad')
-  textArea!: HTMLTextAreaElement
 
   @state()
   showStatusBar = true
 
-  toolbarSpec: ToolbarMenu[] = [
+  private toolbarSpec: ToolbarMenu[] = [
     {
       text: 'File',
       items: [
         {
-          text: 'New', shortcut: 'Ctrl+N', action: () => {
-            const notepad = new Notepad()
-            notepad.windowTitle = 'Notepad - Untitled'
-            this.dispatchEvent(launchEvent(() => new Promise<Notepad>(resolve => resolve(notepad))))
-          },
+          text: 'New',
+          shortcut: 'Ctrl+N',
+          action: () => this.dispatchEvent(launchEvent(() => new Notepad())),
         },
         {
-          text: 'Open', shortcut: 'Ctrl+O', action: (event: Event) => {
+          text: 'Open',
+          shortcut: 'Ctrl+O',
+          action: (event: Event) => {
             event.stopPropagation()
-            this.toolbar!.closeAll()
 
-            const filePicker = new FilePicker()
-            filePicker.delegatingAppId = this._appId
-            filePicker.path = 'C:\\Users\\Chad\\My Documents'
+            this.dispatchEvent(launchEvent(() => {
+              const filePicker = this.spawnDialog(FilePicker)
+              filePicker.path = 'C:\\Users\\Chad\\My Documents'
 
-            const plaintextFilterRegex = '[.]txt$'
+              const plaintextFilterRegex = '[.]txt$'
 
-            filePicker.fileTypeFilters = [{
-              regex: plaintextFilterRegex,
-              label: 'Plain text (*.txt)',
-              selected: true
-            }]
+              filePicker.fileTypeFilters = [{
+                regex: plaintextFilterRegex,
+                label: 'Plain text (*.txt)',
+                selected: true
+              }]
 
-            filePicker.filterRegex = new RegExp(plaintextFilterRegex)
-
-            this.dispatchEvent(launchEvent(() => new Promise<FilePicker>(resolve => resolve(filePicker)), {
-              width: 500,
-              height: 400,
-              disallowFlags: DisallowFlags.DisallowMaximize | DisallowFlags.DisallowMinimize,
+              filePicker.filterRegex = new RegExp(plaintextFilterRegex)
+              return filePicker
+            }, {
+              size: {
+                width: 500,
+                height: 400,
+              },
+              disallowFlags: WindowRestriction.DisallowMaximize | WindowRestriction.DisallowMinimize,
             }))
           },
         },
@@ -101,9 +103,7 @@ export class Notepad extends EpkApp {
       text: 'Edit',
       items: [
         {
-          text: 'Undo', shortcut: 'Ctrl+Z', action: () => {
-            document.execCommand('undo')
-          },
+          text: 'Undo', shortcut: 'Ctrl+Z', action: () => document.execCommand('undo'),
         },
         {
           text: 'Cut', shortcut: 'Ctrl+X', action: () => {
@@ -132,12 +132,10 @@ export class Notepad extends EpkApp {
           },
         },
         {
-          text: 'Paste', shortcut: 'Ctrl+V', action: () => {
-            navigator.clipboard.readText().then(text => {
-              this.textArea.focus()
-              document.execCommand('insertText', false, text)
-            })
-          },
+          text: 'Paste', shortcut: 'Ctrl+V', action: () => navigator.clipboard.readText().then(text => {
+            this.textArea.focus()
+            document.execCommand('insertText', false, text)
+          }),
         },
         {
           text: 'Delete', shortcut: 'Del', action: () => {
@@ -174,18 +172,19 @@ export class Notepad extends EpkApp {
           text: 'About Notepad',
           action: (event: Event) => {
             event.stopPropagation()
-            this.toolbar!.closeAll()
 
-            const about = new AppAbout()
-            about.appName = 'Microsoft &reg; Notepad'
-            about.appIcon = '/img/notepad.ico'
-            about.windowTitle = 'About Notepad'
-            about.delegatingAppId = this.getAppId()
-
-            this.dispatchEvent(launchEvent(() => new Promise<AppAbout>(resolve => resolve(about)), {
-              width: 419,
-              height: 350,
-              disallowFlags: DisallowFlags.DisallowAll,
+            this.dispatchEvent(launchEvent(() => {
+              const about = this.spawnDialog(AppAbout)
+              about.appName = 'Microsoft &reg; Notepad'
+              about.appIcon = '/img/icons/notepad.ico'
+              about.windowTitle = 'About Notepad'
+              return about
+            }, {
+              size: {
+                width: 419,
+                height: 350,
+              },
+              disallowFlags: WindowRestriction.DisallowAll,
             }))
           },
         },
@@ -202,7 +201,9 @@ export class Notepad extends EpkApp {
       const response = await fetch(path!.physicalPath, {signal})
 
       if (!response.ok) {
-        alert('Error') // TODO XXX FIXME
+        const errorMessage = `Failed to load file: '${getLinkName(this.fileLinkNode)}'.`
+        alertDialog(this, 'Error', errorMessage)
+        return errorMessage
       }
 
       return await response.text()
@@ -210,18 +211,13 @@ export class Notepad extends EpkApp {
     args: () => [this.fileLinkNode],
   })
 
-  handleFilePicked(file?: LinkNode) {
+  handleFilePicked(file?: LinkNode): void {
     this.fileLinkNode = file
-    let title = 'Notepad'
-
-    if (this.fileLinkNode) {
-      title += ` - ${getLinkName(this.fileLinkNode, false)}`
-    }
-
+    let title = `Notepad - ${this.fileLinkNode ? getLinkName(this.fileLinkNode, false) : 'Untitled'}`
     this.dispatchEvent(windowPropertyChangeEvent({title}))
   }
 
-  calculatePosition() {
+  private calculatePosition(): void {
     const lines = this.textArea.value
       .substring(0, this.textArea.selectionStart)
       .split('\n')
@@ -233,8 +229,13 @@ export class Notepad extends EpkApp {
   render() {
     return this.noteTask.render({
       pending: () => html`
-        <div class="app">
-          <div class="content"></div>
+        <div class="app" @click="${this.handleClick}">
+          <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
+          <div class="content">Loading...</div>
+          <div class="status-bar">
+            <p class="status-bar-field spacer"></p>
+            <p class="status-bar-field">Ln 0, Col 0</p>
+          </div>
         </div>`,
       complete: (textValue) => html`
         <div class="app" @click="${this.handleClick}">
@@ -249,8 +250,13 @@ export class Notepad extends EpkApp {
             </div>` : nothing}
         </div>`,
       error: () => html`
-        <div class="app">
+        <div class="app" @click="${this.handleClick}">
+          <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
           <div class="content">Error</div>
+          <div class="status-bar">
+            <p class="status-bar-field spacer"></p>
+            <p class="status-bar-field">Ln 0, Col 0</p>
+          </div>
         </div>`,
     })
   }

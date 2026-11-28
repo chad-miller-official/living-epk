@@ -6,18 +6,15 @@ import {getLinkName} from "../../lib/fs.ts";
 
 @customElement('plaintext-icon')
 export class PlainTextIcon extends EpkIcon {
-  icon = '/img/notepad.ico'
+  icon = {
+    small: '/img/icons/small/notepad-small.ico',
+    large: '/img/icons/notepad.ico',
+  }
 
-  async getAppInstance(): Promise<EpkApp> {
-    return new Promise(resolve => {
-      const notepad = new Notepad()
-      notepad.windowTitle = `Notepad - ${this.fileLinkNode ? getLinkName(this.fileLinkNode, false) : 'Untitled'}`
-
-      if (this.fileLinkNode) {
-        notepad.fileLinkNode = this.fileLinkNode
-      }
-
-      resolve(notepad)
-    })
+  getAppInstance(): EpkApp {
+    const notepad = new Notepad()
+    notepad.windowTitle = `Notepad - ${this.fileLinkNode ? getLinkName(this.fileLinkNode, false) : 'Untitled'}`
+    notepad.fileLinkNode = this.fileLinkNode
+    return notepad
   }
 }

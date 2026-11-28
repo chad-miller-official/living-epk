@@ -67,7 +67,8 @@ An `FsRecord` contains the following data:
 * The path to the folder
 * The relative URL to a JSON file on the server containing metadata for the files in the folder
   (see: `FolderNode` below)
-* An array of paths to nested folders
+* An array of paths to nested folders represented as partial FsRecords (just the path and metadata)
+* The magical symbol **$**, which is the universal symbol for **metadata**
 
 _**The FsRecord type is for kernel use only and should never need to be touched by the user.**_
 
@@ -78,8 +79,9 @@ When the UI needs to render the contents of a folder, for example in the File Ex
 with a provided path from IndexedDB and returns a `FolderNode`, which contains the following data:
 
 * The path to the folder
-* An array of file metadata representing the files in the folder
-* An array of folder metadata representing nested folders in the folder
+* An array of file LinkNodes (see subsection below) representing the files in the folder
+* An array of folder LinkNodes representing nested folders in the folder
+* Again the magical **$**, which is metadata for the current folder
 
 The latter two data types are modeled via `LinkNode` data types.
 
@@ -88,13 +90,22 @@ The latter two data types are modeled via `LinkNode` data types.
 A `LinkNode` is analogous to Unix's beloved `inode`. It contains the following data:
 
 * The type of the `LinkNode`: either a `folder` or a `file`.
-* The relative path to the file that the `LinkNode` represents on the server
+* The physical path to the file that the `LinkNode` represents on the server
     * If the `LinkNode`'s type is `file`, then this is the actual file itself.
     * If the `LinkNode`'s type is `folder`, then this is the `FolderNode` representing the folder.
-* The timestamp of the file. This is purposely vague: it could be the created date, or it could be
-  the last modified date.
+* The logical path to the file that the `LinkNode` represents, which is what the user sees and interacts with
+* Once again, the magical **$**, which is once again file metadata.
 
-Additional metadata fields may be implemented at a later date.
+#### $ - The Metadata Symbol
+
+In the context of the website's file system, **$** is the object key for file or folder metadata.
+
+Valid metadata keys are:
+* `alias` - An alternate name for the file or folder, for UI purposes
+* `icon` - A specific set of icons to use when rendering the file or folder:
+  * `small` - A small thumbnail version of the icon to use, for example, in the File Explorer address bar
+  * `large` - A large version of the icon to use, for example, on the desktop
+* `timestamp` - A Unix timestamp specifying the last-modified date of the file or folder 
 
 ### Application
 
