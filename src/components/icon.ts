@@ -73,7 +73,6 @@ export abstract class EpkIcon extends LitElement {
     .view-tile {
       flex-direction: column;
       gap: 6px;
-      padding: 8px;
 
       .icon-name {
         max-width: 80px;

@@ -46,5 +46,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   )
 
   const splash = document.querySelector('#splash') as HTMLDivElement
-  splash.style.display = 'none'
+  splash.classList.add('hidden')
 })

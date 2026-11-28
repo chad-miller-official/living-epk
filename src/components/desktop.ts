@@ -24,16 +24,15 @@ export class EpkDesktop extends LitElement {
       box-sizing: border-box;
       display: flex;
       height: 100vh;
-      padding: 8px;
+      padding: 16px 8px;
       width: 100vw;
     }
 
     slot[name=icons] {
       display: grid;
-      grid-auto-columns: 94px;
+      grid-auto-columns: 80px;
       grid-auto-flow: column;
       grid-template-rows: repeat(auto-fill, 84px);
-      height: 100vh;
       max-height: 100%;
       row-gap: 14px;
     }`

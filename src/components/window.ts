@@ -421,7 +421,6 @@ export class EpkWindow extends LitElement {
          * as soon as the dialog box is open, because then click events don't fire when the parent window is clicked,
          * breaking blink behavior entirely.
          */
-
         this.classList.add('no-interact')
         blockingDialogWindow.blink().then(() => this.classList.remove('no-interact'))
       })
