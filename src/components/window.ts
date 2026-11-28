@@ -89,7 +89,7 @@ export class EpkWindow extends LitElement {
         &:not(.active) {
           filter: contrast(0.4) brightness(1.2);
         }
-        
+
         &.maximized {
           border-top-left-radius: 0;
           border-top-right-radius: 0;
@@ -122,7 +122,7 @@ export class EpkWindow extends LitElement {
           inset 2px 2px #647ecf,
           inset -3px -3px #5c74ca,
           inset 3px 3px #607ecb;
-          
+
           user-select: none;
         }
 
@@ -444,15 +444,17 @@ export class EpkWindow extends LitElement {
   }
 
   private updateLastPosition(): void {
-    const containedAppName = this.getApp().getPositionTrackingName()
+    const positionTrackingName = this.getApp().getPositionTrackingName()
 
-    EpkWindow.lastAppPositions.set(containedAppName, {
-      location: this.location!,
-      size: {
-        width: this.size!.width!,
-        height: this.size!.height!,
-      },
-    })
+    if (positionTrackingName) {
+      EpkWindow.lastAppPositions.set(positionTrackingName, {
+        location: this.location!,
+        size: {
+          width: this.size!.width!,
+          height: this.size!.height!,
+        },
+      })
+    }
   }
 
   private handleDrag(event: InteractEvent): void {

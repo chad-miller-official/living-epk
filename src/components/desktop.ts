@@ -115,8 +115,10 @@ export class EpkDesktop extends LitElement {
       epkWindow.thumbnail = app.windowIcon
     }
 
-    const appLastPosition = app.isPositionTrackingEnabled()
-      ? EpkWindow.lastAppPositions.get(app.getPositionTrackingName())
+    const positionTrackingName = app.getPositionTrackingName()
+
+    const appLastPosition = positionTrackingName
+      ? EpkWindow.lastAppPositions.get(positionTrackingName)
       : null
 
     const lastSize = appLastPosition?.size

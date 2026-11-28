@@ -10,19 +10,28 @@ export class InternetExplorerAbout extends Dialog(EpkApp) {
   static styles = [
     ...EpkApp.styles,
     css`
-      .about {
+      .app {
+        background-color: #ffffff;
+      }
+      
+      .content {
         column-gap: 56px;
         display: grid;
         font-family: "Pixelated MS Sans Serif", Arial;
         grid-template-areas:
           ". info"
-          "logo form";
+          "logo copyright";
         justify-content: start;
         row-gap: 8px;
       }
 
-      .content {
-        background-color: #ffffff;
+      .copyright {
+        align-items: center;
+        display: flex;
+        grid-area: copyright;
+        justify-content: space-between;
+        max-width: 300px;
+        width: 300px;
       }
 
       .credits {
@@ -33,24 +42,14 @@ export class InternetExplorerAbout extends Dialog(EpkApp) {
         padding: 1px;
       }
 
-      .form {
-        align-items: center;
-        display: flex;
-        grid-area: form;
-        justify-content: space-between;
-      }
-
-      .form, .info {
-        max-width: 300px;
-        width: 300px;
-      }
-
       .info {
         align-items: flex-start;
         display: flex;
         flex-direction: column;
         gap: 8px;
         grid-area: info;
+        max-width: 300px;
+        width: 300px;
       }
 
       .link {
@@ -61,8 +60,7 @@ export class InternetExplorerAbout extends Dialog(EpkApp) {
       .logo {
         grid-area: logo;
         width: 32px;
-      }
-    `
+      }`
   ]
 
   @property({type: String})
@@ -71,9 +69,7 @@ export class InternetExplorerAbout extends Dialog(EpkApp) {
   @property({type: String})
   windowTitle = 'About Internet Explorer'
 
-  handleCopyrightClick(event: Event) {
-    event.stopPropagation()
-
+  handleCopyrightClick(): void {
     this.dispatchEvent(launchEvent(() => {
       const ie = new InternetExplorer()
       ie.path = 'https://web.archive.org/web/20030828184444/http://www.microsoft.com/isapi/redir.dll?prd=ie&pver=6.0&ar=aboutie&sba=copyr'
@@ -84,49 +80,47 @@ export class InternetExplorerAbout extends Dialog(EpkApp) {
   render() {
     return html`
       <div class="app">
-        <div class="content">
-          <div class="about window-body">
-            <div class="info">
-              <img src="/img/internet-explorer/about.png"/>
-              <div>
-                Version: 6.0.2900.5512.xpsp.080413-2111
-                <br/>
-                Cipher Strength: 128-bit
-                <br/>
-                Product ID: 76487-640-8834005-23454
-                <br/>
-                Update Versions:; SP3;
-              </div>
-              <div class="credits">
-                Based on NCSA Mosaic. NCSA Mosaic(TM); was developed at the National Center for
-                Supercomputing Applications at the University of Illinois at Urbana-Champaign.
-                <br/>
-                Distributed under a licensing agreement with Spyglass, Inc.
-                <br/>
-                Contains security software licensed from RSA Data Security Inc.
-                <br/>
-                Portions of this software are based in part on the work of the Independent JPEG
-                Group.
-                <br/>
-                Multimedia software components, including Indeo(R); video, Indeo(R) audio, and Web
-                Design Effects are provided by Intel Corp.
-                <br/>
-                Unix version contains software licensed from Mainsoft Corporation. Copyright (c)
-                1998-1999 Mainsoft Corporation. All rights reserved. Mainsoft is a trademark of
-                Mainsoft Corporation.
-                <br/>
-                Warning: This computer program is protected by copyright law and international
-                treaties. Unauthorized reproduction or distribution of this program, or any portion
-                of it, may result in severe civil and criminal penalties, and will be prosecuted to
-                the maximum extent possible under the law.
-              </div>
+        <div class="content window-body">
+          <div class="info">
+            <img src="/img/internet-explorer/about.png"/>
+            <div>
+              Version: 6.0.2900.5512.xpsp.080413-2111
+              <br/>
+              Cipher Strength: 128-bit
+              <br/>
+              Product ID: 76487-640-8834005-23454
+              <br/>
+              Update Versions:; SP3;
             </div>
-            <img class="logo" src="/img/logo.png"/>
-            <form class="form" @submit="${this.close}">
-              <p class="link" @click=${this.handleCopyrightClick}>Copyright &copy; 1995-2004
-                Microsoft Corp.</p>
-              <button type="submit">OK</button>
-            </form>
+            <div class="credits">
+              Based on NCSA Mosaic. NCSA Mosaic(TM); was developed at the National Center for
+              Supercomputing Applications at the University of Illinois at Urbana-Champaign.
+              <br/>
+              Distributed under a licensing agreement with Spyglass, Inc.
+              <br/>
+              Contains security software licensed from RSA Data Security Inc.
+              <br/>
+              Portions of this software are based in part on the work of the Independent JPEG
+              Group.
+              <br/>
+              Multimedia software components, including Indeo(R); video, Indeo(R) audio, and Web
+              Design Effects are provided by Intel Corp.
+              <br/>
+              Unix version contains software licensed from Mainsoft Corporation. Copyright (c)
+              1998-1999 Mainsoft Corporation. All rights reserved. Mainsoft is a trademark of
+              Mainsoft Corporation.
+              <br/>
+              Warning: This computer program is protected by copyright law and international
+              treaties. Unauthorized reproduction or distribution of this program, or any portion
+              of it, may result in severe civil and criminal penalties, and will be prosecuted to
+              the maximum extent possible under the law.
+            </div>
+          </div>
+          <img class="logo" src="/img/logo.png"/>
+          <div class="copyright">
+            <p class="link" @click=${this.handleCopyrightClick}>Copyright &copy; 1995-2004
+              Microsoft Corp.</p>
+            <button type="button" @click="${this.close}">OK</button>
           </div>
         </div>
       </div>`

@@ -555,12 +555,12 @@ export class FileExplorer extends FileViewer(Explorer<string>) {
   render() {
     return this.treeLoaderTask.render({
       pending: () => html`
-        <div class="app">
+        <div class="app" @click="${this.handleClick}">
           <div class="content">Loading...</div>
         </div>`,
       complete: () => super.render() as TemplateResult<1>,
       error: () => html`
-        <div class="app">
+        <div class="app" @click="${this.handleClick}">
           <div class="content">Error</div>
         </div>`
     })!

@@ -148,7 +148,6 @@ export class MediaPlayer extends EpkApp implements FilePickedHandler {
 
   private dragged = false
   private interact?: Interactable
-  protected trackLastPosition = false
 
   private toolbarSpec: ToolbarMenu[] = [
     {
@@ -255,6 +254,10 @@ export class MediaPlayer extends EpkApp implements FilePickedHandler {
       width: 256,
       height: this.fileLinkNode && getFileExtension(this.fileLinkNode)!.match(/mp4|webm/) ? 256 : 144
     }
+  }
+
+  getPositionTrackingName(): string | null {
+    return null
   }
 
   handleFilePicked(fileLinkNode: LinkNode): void {

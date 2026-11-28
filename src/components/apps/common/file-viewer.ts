@@ -36,11 +36,11 @@ export function FileViewer<T extends EpkAppConstructor>(Base: T) {
       return this.folderNode!
     }
 
-    canGoUp() {
+    protected canGoUp() {
       return this.folderNode && getParentFolderName(this.folderNode) !== ''
     }
 
-    goUp() {
+    protected goUp() {
       if (!this.folderNode) {
         return
       }

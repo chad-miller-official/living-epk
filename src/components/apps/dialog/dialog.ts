@@ -9,13 +9,9 @@ export function Dialog<T extends EpkAppConstructor>(Base: T) {
   abstract class DialogMixin extends Base {
     delegatingAppId!: string
 
-    close(event?: Event) {
-      if (event) {
-        event.preventDefault()
-      }
-
+    close(): void {
       this.dispatchEvent(activeWindowChangeEvent(this.delegatingAppId))
-      super.close(event)
+      super.close()
     }
   }
 

@@ -210,7 +210,7 @@ export class ImageGallery extends EpkApp {
   render() {
     return this.pathLoaderTask.render({
       pending: () => html`
-        <div class="app">
+        <div class="app" @click="${this.handleClick}">
           <div class="content">
             <div class="viewport">
               <div class="image-wrapper">
@@ -317,7 +317,7 @@ export class ImageGallery extends EpkApp {
           </div>`
       },
       error: () => html`
-        <div class="app">
+        <div class="app" @click="${this.handleClick}">
           <div class="content">
             <div class="viewport">
               <div class="image-wrapper">

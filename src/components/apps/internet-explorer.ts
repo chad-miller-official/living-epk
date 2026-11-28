@@ -343,7 +343,7 @@ export class InternetExplorer extends Explorer<string | LinkNode> {
                 `Support for external webpages is experimental. The address bar may not
                 reflect clicked links and the Back button may not behave as expected. Some external
                 webpages additionally may not function correctly.`,
-                {silenceId: COOKIE_EXPERIMENTAL_WARNING, buttonPosition: 'right'},
+                {silenceId: COOKIE_EXPERIMENTAL_WARNING},
               )
 
               this.showExperimentalWarning = false

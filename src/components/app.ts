@@ -58,7 +58,6 @@ export abstract class EpkApp extends LitElement {
   abstract windowIcon: string | null
 
   private appId: string = crypto.randomUUID()
-  protected trackLastPosition = true
 
   getAppId(): string {
     return this.appId
@@ -72,12 +71,8 @@ export abstract class EpkApp extends LitElement {
     return {width: APP_DEFAULT_MINIMUM_WIDTH, height: APP_DEFAULT_MINIMUM_HEIGHT}
   }
 
-  getPositionTrackingName(): string {
+  getPositionTrackingName(): string | null {
     return this.constructor.name
-  }
-
-  isPositionTrackingEnabled(): boolean {
-    return this.trackLastPosition
   }
 
   spawnDialog<T>(DialogApp: Constructor<EpkDialog<T>>): EpkDialog<T> {

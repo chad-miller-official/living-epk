@@ -45,7 +45,6 @@ export function warnDialog(alerter: EpkApp, title: string, message: string, args
         const alert = getAlertDialog(alerter, title, message)
         alert.alertGraphic = '/img/warn.ico'
         alert.silenceId = args.silenceId
-        alert.buttonPosition = args.buttonPosition || undefined
         return alert
       },
       getAlertDialogLaunchArgs(message)

@@ -229,7 +229,7 @@ export class Notepad extends EpkApp implements FilePickedHandler {
   render() {
     return this.noteTask.render({
       pending: () => html`
-        <div class="app">
+        <div class="app" @click="${this.handleClick}">
           <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
           <div class="content">Loading...</div>
           <div class="status-bar">
@@ -250,7 +250,7 @@ export class Notepad extends EpkApp implements FilePickedHandler {
             </div>` : nothing}
         </div>`,
       error: () => html`
-        <div class="app">
+        <div class="app" @click="${this.handleClick}">
           <epk-toolbar id="toolbar" .toolbarSpec="${this.toolbarSpec}"></epk-toolbar>
           <div class="content">Error</div>
           <div class="status-bar">
